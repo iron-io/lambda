@@ -3,6 +3,7 @@ package main
 // TODO(reed): separate into own client package
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -66,6 +67,7 @@ func (bc baseCmd) baseURL() string {
 func (bc baseCmd) get(url string) (string, error) {
 	// TODO(reed): query string params aren't gonna work w/ multiples.
 	resp, err := http.Get(bc.baseURL() + url + "?oauth=" + bc.Token)
+	defer resp.Body.Close()
 	if err != nil {
 		return "", err
 	}
@@ -74,6 +76,16 @@ func (bc baseCmd) get(url string) (string, error) {
 }
 
 // return results
-func (bc baseCmd) post(url string) string {
-	return ""
+func (bc baseCmd) postJSON(url string, jsons map[string]interface{}) (string, error) {
+	jsonstr, err := json.Marshal(jsons)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.Post(bc.baseURL()+url+"?oauth="+bc.Token, "application/json", bytes.NewBuffer(jsonstr))
+	defer resp.Body.Close()
+	if err != nil {
+		return "", err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	return string(body), err
 }

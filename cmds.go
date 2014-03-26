@@ -1,10 +1,9 @@
 package main
 
-// TODO(reed): separate into client package
-
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 )
 
 // TODO(reed): turn into client
@@ -19,10 +18,12 @@ import (
 //baseCmd
 //}
 
-//type QueueCmd struct {
-//// TODO(reed)
-//baseCmd
-//}
+type QueueCmd struct {
+	// TODO(reed)
+	baseCmd
+	codeName string
+	payload  string
+}
 
 //type SchedCmd struct {
 //// TODO(reed)
@@ -64,17 +65,56 @@ type LogCmd struct {
 //func (r *RunCmd) Run() {
 //}
 
-//func (q *QueueCmd) Help() string {
-//return `
-//iron_worker [flags] upload [.worker]
+// Takes one parameter, the task_id to log
+func (q *QueueCmd) Args(args ...string) error {
+	if len(args) != 1 {
+		return errors.New("error: queue takes one argument")
+	}
+	q.codeName = args[0]
 
-//[flags]:
-//-imaflag
-//`
-//}
+	// TODO(reed): this is bad, and I should feel bad
+	if *payloadFileFlag != "" {
+		body, err := ioutil.ReadFile(*payloadFileFlag)
+		if err != nil {
+			return err
+		}
+		q.payload = string(body)
+		return nil
+	}
 
-//func (q *QueueCmd) Run() {
-//}
+	q.payload = *payloadFlag
+	return nil
+}
+
+func (q *QueueCmd) Help() string {
+	return `iron_worker [flags] queue $WORKER
+
+[flags]:
+-payload      = payload, typically json, to send to worker
+-payloadFile  = location of file with payload
+`
+}
+
+func (q *QueueCmd) Run() {
+	// TODO(reed): delay, timeout, priority... move to Args()?
+	task := struct {
+		CodeName string `json:"code_name"`
+		Payload  string `json:"payload"`
+	}{
+		q.codeName,
+		q.payload,
+	}
+
+	resp, err := q.postJSON("/projects/"+q.ProjectID+"/tasks",
+		map[string]interface{}{
+			"tasks": []interface{}{task},
+		})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Printf("%s", resp)
+}
 
 //func (s *SchedCmd) Help() string {
 //return `
@@ -110,12 +150,11 @@ func (l *LogCmd) Args(args ...string) error {
 }
 
 func (s *LogCmd) Help() string {
-	return `
-  iron_worker [flags] log task_id
+	return `iron_worker [flags] log task_id
 
-  [flags]:
-  -imaflag
-  `
+[flags]:
+-imaflag
+`
 }
 
 func (s *LogCmd) Run() {
