@@ -1,17 +1,17 @@
 package main
 
-// TODO(reed): separate into own client package
-
 import (
-	"bytes"
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"strconv"
+	"fmt"
+
+	"github.com/iron-io/iron_go/config"
+	"github.com/iron-io/iron_go/worker"
 )
 
-const AWS_US_EAST_HOST = `worker-aws-us-east-1.iron.io`
+// TODO(reed): default flags for everybody
+//--config CONFIG              config file
+//-e, --env ENV                    environment
+//--project-id PROJECT_ID      project id
+//--token TOKEN                token
 
 // The idea is:
 //  validate arguments
@@ -26,66 +26,16 @@ type Command interface {
 	Run()                 // cmd specific
 }
 
-type baseCmd struct {
-	Token      string `json:"token"`
-	ProjectID  string `json:"project_id"`
-	Host       string `json:"host"`
-	Protocol   string `json:"protocol"`
-	Port       int    `json:"port"`
-	APIVersion int    `json:"api_version"`
+// A command is mostly an alias for a worker, defining
+// a Config() method that allows it to be an iron_worker specific worker
+type command struct {
+	worker.Worker
+	hud_URL_str string
 }
 
-func (bc *baseCmd) Config() {
-	// TODO(reed): better way to change zero value?
-	bc.Host = AWS_US_EAST_HOST
-	bc.Protocol = "https"
-	bc.Port = 443
-	bc.APIVersion = 2
-
-	switch {
-	// TODO(reed): env variables, etc.
-	case exists(os.ExpandEnv("$HOME") + "/.iron.json"):
-		body, _ := ioutil.ReadFile(os.ExpandEnv("$HOME") + "/.iron.json")
-		json.Unmarshal(body, &bc)
-		fallthrough
-	case exists("iron.json"):
-		body, _ := ioutil.ReadFile("iron.json")
-		json.Unmarshal(body, &bc)
-	}
-}
-
-func exists(fname string) bool {
-	_, err := os.Stat(fname)
-	return !os.IsNotExist(err)
-}
-
-func (bc baseCmd) baseURL() string {
-	return bc.Protocol + "://" + bc.Host + ":" + strconv.Itoa(bc.Port) + "/" + strconv.Itoa(bc.APIVersion)
-}
-
-// return results
-func (bc baseCmd) get(url string) (string, error) {
-	// TODO(reed): query string params aren't gonna work w/ multiples.
-	resp, err := http.Get(bc.baseURL() + url + "?oauth=" + bc.Token)
-	defer resp.Body.Close()
-	if err != nil {
-		return "", err
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	return string(body), err
-}
-
-// return results
-func (bc baseCmd) postJSON(url string, jsons map[string]interface{}) (string, error) {
-	jsonstr, err := json.Marshal(jsons)
-	if err != nil {
-		return "", err
-	}
-	resp, err := http.Post(bc.baseURL()+url+"?oauth="+bc.Token, "application/json", bytes.NewBuffer(jsonstr))
-	defer resp.Body.Close()
-	if err != nil {
-		return "", err
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	return string(body), err
+func (bc *command) Config() {
+	bc.Settings = config.Config("iron_worker")
+	bc.hud_URL_str = `Check 'http://hud.iron.io/tq/projects/` + bc.Settings.ProjectId + "/"
+	fmt.Println(LINES, `Configuring client`)
+	fmt.Println(BLANKS, `Project id="`+bc.Settings.ProjectId+`"`)
 }
