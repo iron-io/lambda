@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/iron-io/iron_go/config"
@@ -14,28 +15,40 @@ import (
 //--token TOKEN                token
 
 // The idea is:
+//  parse flags
 //  validate arguments
 //  if ^ goes well, config
 //  if ^ goes well, run
 //
 //  ...and if anything goes wrong, help()
 type Command interface {
-	Args(...string) error // validate arguments
-	Config()              // configure env variables
-	Help() string         // custom command help, TODO(reed): export? really?
-	Run()                 // cmd specific
+	Flags(...string) error // parse subcommand specific flags
+	Args() error           // validate arguments
+	Config() error         // configure env variables
+	Usage() func()         // custom command help TODO(reed): all local now?
+	Run()                  // cmd specific
 }
 
-// A command is mostly an alias for a worker, defining
-// a Config() method that allows it to be an iron_worker specific worker
+// A command is the base for all commands implementing the Command interface.
 type command struct {
-	worker.Worker
+	wrkr        worker.Worker
+	flags       *WorkerFlags
 	hud_URL_str string
+	help        *bool
 }
 
-func (bc *command) Config() {
-	bc.Settings = config.Config("iron_worker")
-	bc.hud_URL_str = `Check 'http://hud.iron.io/tq/projects/` + bc.Settings.ProjectId + "/"
+// All Commands will do similar configuration
+func (bc *command) Config() error {
+	bc.wrkr.Settings = config.Config("iron_worker")
+	// TODO(reed): directly passing ENV to ironcli
+
+	if bc.wrkr.Settings.ProjectId == "" {
+		return errors.New("did not find project id in any config files or env variables")
+	}
+
+	bc.hud_URL_str = `Check 'https://hud.iron.io/tq/projects/` + bc.wrkr.Settings.ProjectId + "/"
+
 	fmt.Println(LINES, `Configuring client`)
-	fmt.Println(BLANKS, `Project id="`+bc.Settings.ProjectId+`"`)
+	fmt.Println(BLANKS, `Project id="`+bc.wrkr.Settings.ProjectId+`"`)
+	return nil
 }

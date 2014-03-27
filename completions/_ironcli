@@ -1,0 +1,54 @@
+#compdef ironcli
+
+# oh-my-zsh completion plugin
+# put me in ~/.oh-my-zsh/custom/plugins/ironcli
+
+local -a _1st_arguments
+
+_1st_arguments=(
+  "upload":"upload a code package with a .worker"
+  "queue":"queue some codes"
+  "schedule":"schedule a task"
+  "log":"print task's log"
+  "status":"get status of a task"
+)
+
+_arguments '*:: :->command'
+
+if (( CURRENT == 1 )); then
+  _describe -t commands "ironcli command" _1st_arguments
+  return
+fi
+
+local -a _command_args
+case "$words[1]" in
+  queue)
+    _command_args=(
+      '-payload''[payload to pass to task]' \
+      '-payload-file''[payload from file to pass to task]' \
+      '-priority''[0(default), 1 or 2 priority queue to use]' \
+      '-timeout''[0-3600(default) max runtime in seconds for task]' \
+      '-delay''[seconds to delay before queueing task]' \
+      '-wait''[wait for task to complete and print log]' \
+    )
+    ;;
+  schedule)
+    _command_args=(
+      '-payload''[payload to pass to task]' \
+      '-payload-file''[payload from file to pass to task]' \
+      '-priority''[0(default), 1 or 2 priority queue to use]' \
+      '-timeout''[0-3600(default) max runtime in seconds for task]' \
+      '-delay''[seconds to delay before queueing task]' \
+      '-max-concurrency''[maximum allowed concurrency]' \
+      '-run-every''[time between runs in sec (>=60)]' \
+      '-run-times''[number of times to run, default 1]' \
+      '-start-at''[time to start task, form: "Mon Jan 2 15:04:05 -0700 2006"]' \
+      '-end-at''[time to end task, form: "Mon Jan 2 15:04:05 -0700 2006"]' \
+    )
+    ;;
+  esac
+
+_arguments \
+  $_command_args \
+  && return 0
+

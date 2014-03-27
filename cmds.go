@@ -6,15 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/iron-io/iron_go/worker"
 )
 
-//type UploadCmd struct {
-//baseCmd
-//// TODO(reed)
-//}
+type UploadCmd struct {
+	// TODO(reed)
+	command
+
+	codes worker.Code
+}
 
 //type RunCmd struct {
 //// TODO(reed)
@@ -22,15 +25,33 @@ import (
 //}
 
 type QueueCmd struct {
-	// TODO(reed)
 	command
+
+	// flags
+	payload     *string
+	payloadFile *string
+	priority    *int
+	timeout     *int
+	delay       *int
+	wait        *bool
+
+	// payload
 	task worker.Task
 }
 
 type SchedCmd struct {
-	// TODO(reed)
 	command
-	sched worker.Schedule
+	payload     *string
+	payloadFile *string
+	priority    *int
+	timeout     *int
+	delay       *int
+	maxConc     *int
+	runEvery    *int
+	runTimes    *int
+	endAt       *string // time.RubyTime
+	startAt     *string // time.RubyTime
+	sched       worker.Schedule
 }
 
 type StatusCmd struct {
@@ -69,70 +90,87 @@ type LogCmd struct {
 //func (r *RunCmd) Run() {
 //}
 
-// Takes one parameter, the code package to schedule
-func (s *SchedCmd) Args(args ...string) error {
-	if len(args) != 1 {
-		return errors.New("error: queue takes one argument")
-	}
+// TODO(reed): help in progress
+func (s *SchedCmd) Flags(args ...string) error {
+	s.flags = NewWorkerFlagSet(s.Usage())
 
-	if err := checkPriority(); err != nil {
-		return err
-	}
-	payload, err := payload()
+	s.payload = s.flags.payload()
+	s.payloadFile = s.flags.payloadFile()
+	s.priority = s.flags.priority()
+	s.timeout = s.flags.timeout()
+	s.delay = s.flags.delay()
+	s.maxConc = s.flags.maxConc()
+	s.runEvery = s.flags.runEvery()
+	s.runTimes = s.flags.runTimes()
+	s.endAt = s.flags.endAt()
+	s.startAt = s.flags.startAt()
+
+	err := s.flags.Parse(args)
 	if err != nil {
 		return err
 	}
 
-	delay := time.Duration(*delayFlag) * time.Second
+	return s.flags.validateAllFlags()
+}
+
+// Takes one parameter, the code package to schedule
+func (s *SchedCmd) Args() error {
+	if s.flags.NArg() != 1 {
+		return errors.New("error: queue takes one argument")
+	}
+
+	delay := time.Duration(*s.delay) * time.Second
 
 	s.sched = worker.Schedule{
-		CodeName: args[0],
-		Payload:  payload,
+		CodeName: s.flags.Arg(0),
 		Delay:    &delay,
-		Priority: priorityFlag,
+		Priority: s.priority,
+		RunTimes: s.runTimes,
+	}
+
+	payload := *s.payload
+	if *s.payloadFile != "" {
+		pload, err := ioutil.ReadFile(*s.payloadFile)
+		if err != nil {
+			return err
+		}
+		payload = string(pload)
+	}
+
+	if payload != "" {
+		s.sched.Payload = payload
+	}
+
+	if *s.endAt != "" {
+		t, _ := time.Parse(time.RubyDate, *s.endAt) // checked in validateFlags()
+		s.sched.EndAt = &t
+	}
+	if *s.startAt != "" {
+		t, _ := time.Parse(time.RubyDate, *s.startAt)
+		s.sched.StartAt = &t
+	}
+	if *s.maxConc > 0 {
+		s.sched.MaxConcurrency = s.maxConc
+	}
+	if *s.runEvery > 0 {
+		s.sched.RunEvery = s.runEvery
 	}
 
 	return nil
 }
 
-// TODO(reed): move me
-func payload() (string, error) {
-	if *payloadFileFlag != "" {
-		body, err := ioutil.ReadFile(*payloadFileFlag)
-		return string(body), err
+func (s *SchedCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, `usage: iron_worker schedule [OPTIONS] CODE_PACKAGE_NAME`)
+		s.flags.PrintDefaults()
 	}
-	return *payloadFlag, nil
 }
 
-// TODO(reed): move me
-func checkPriority() error {
-	if *priorityFlag < 0 || *priorityFlag > 2 {
-		return errors.New("priority can only be 0(default), 1, or 2")
-	}
-	return nil
-}
-
-func (q *SchedCmd) Help() string {
-	return `usage: iron_worker schedule CODE_PACKAGE_NAME [OPTIONS]
--payload      = payload, typically json, to send to worker
--payloadFile  = location of file with payload
--priority PRIORITY          0 (default), 1, 2
--timeout TIMEOUT            maximum run time in seconds from 0 to 3600 (default)
-`
-	//-p, --payload PAYLOAD            payload to pass
-	//-f, --payload-file PAYLOAD_FILE  payload file to pass
-	//--priority PRIORITY          0 (default), 1, 2
-	//--timeout TIMEOUT            maximum run time in seconds from 0 to 3600 (default)
-	//--delay DELAY                delay before start in seconds
-	//--start-at TIME              start task at specified time
-	//--end-at TIME                stop running task at specified time
-	//--run-times RUN_TIMES        run task no more times than specified
-}
-
+// schedules a task
 func (s *SchedCmd) Run() {
 	fmt.Println(LINES, "Scheduling task")
 
-	ids, err := s.Schedule(s.sched)
+	ids, err := s.wrkr.Schedule(s.sched)
 	if err != nil {
 		fmt.Println(BLANKS, err)
 		return
@@ -141,65 +179,70 @@ func (s *SchedCmd) Run() {
 	id := ids[0]
 
 	fmt.Printf("%s scheduled %s with id: %s\n", BLANKS, s.sched.CodeName, id)
-	fmt.Println(BLANKS, s.hud_URL_str+"scheduled_jobs/"+id, INFO)
+	fmt.Println(BLANKS, s.hud_URL_str+"scheduled_jobs/"+id+INFO)
 }
 
-// Takes one parameter, the codes name to queue
-func (q *QueueCmd) Args(args ...string) error {
-	// TODO(reed): delay, timeout, priority... move to Args()?
-	if len(args) != 1 {
-		return errors.New("error: queue takes one argument")
-	}
+func (q *QueueCmd) Flags(args ...string) error {
+	q.flags = NewWorkerFlagSet(q.Usage())
 
-	if err := checkPriority(); err != nil {
-		return err
-	}
-	payload, err := payload()
+	q.payload = q.flags.payload()
+	q.payloadFile = q.flags.payloadFile()
+	q.priority = q.flags.priority()
+	q.timeout = q.flags.timeout()
+	q.delay = q.flags.delay()
+	q.wait = q.flags.wait()
+
+	err := q.flags.Parse(args)
 	if err != nil {
 		return err
 	}
 
-	if err := checkTimeout(); err != nil {
-		return err
+	return q.flags.validateAllFlags()
+}
+
+// Takes 1 arg for codes name
+func (q *QueueCmd) Args() error {
+	if q.flags.NArg() != 1 {
+		return errors.New("error: queue takes one argument")
 	}
 
-	delay := time.Duration(*delayFlag) * time.Second
-	timeout := time.Duration(*timeoutFlag) * time.Second
+	payload := *q.payload
+	if *q.payloadFile != "" {
+		pload, err := ioutil.ReadFile(*q.payloadFile)
+		if err != nil {
+			return err
+		}
+		payload = string(pload)
+	}
+
+	delay := time.Duration(*q.delay) * time.Second
+	timeout := time.Duration(*q.timeout) * time.Second
 
 	q.task = worker.Task{
-		CodeName: args[0],
-		Payload:  payload,
+		CodeName: q.flags.Arg(0),
 		Delay:    &delay,
 		Timeout:  &timeout,
-		Priority: *priorityFlag,
+		Priority: *q.priority,
+	}
+
+	if payload != "" {
+		q.task.Payload = payload
 	}
 
 	return nil
 }
 
-// TODO(reed): move me
-func checkTimeout() error {
-	if *timeoutFlag < 0 || *timeoutFlag > 3600 {
-		return errors.New("timeout must be 0-3600(default)")
+func (q *QueueCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, `usage: iron_worker queue [OPTIONS] CODE_PACKAGE_NAME`)
+		q.flags.PrintDefaults()
 	}
-	return nil
-}
-
-func (q *QueueCmd) Help() string {
-	return `usage: iron_worker queue CODE_PACKAGE_NAME [OPTIONS]
--p, --payload PAYLOAD            payload to pass
--f, --payload-file PAYLOAD_FILE  payload file to pass
---priority PRIORITY          0 (default), 1, 2
---timeout TIMEOUT            maximum run time in seconds from 0 to 3600 (default)
---delay DELAY                delay before start in seconds
---wait                       wait for task to complete and print log
-`
 }
 
 func (q *QueueCmd) Run() {
 	fmt.Println(LINES, "Queueing task")
 
-	ids, err := q.TaskQueue(q.task)
+	ids, err := q.wrkr.TaskQueue(q.task)
 	if err != nil {
 		fmt.Println(BLANKS, err)
 		return
@@ -207,13 +250,13 @@ func (q *QueueCmd) Run() {
 	// TODO(reed): > 1 ever?
 	id := ids[0]
 
-	fmt.Printf("%s Queued %s with id: %s\n", BLANKS, q.task.CodeName, id)
+	fmt.Printf("%s Queued %s with id: \"%s\"\n", BLANKS, q.task.CodeName, id)
 	fmt.Println(BLANKS, q.hud_URL_str+"jobs/"+id+INFO)
 
-	if *waitFlag {
+	if *q.wait {
 		fmt.Println(LINES, "Waiting for task", id)
 
-		out := q.WaitForTaskLog(id)
+		out := q.wrkr.WaitForTaskLog(id)
 
 		log := <-out
 		fmt.Println(LINES, "Done")
@@ -222,57 +265,127 @@ func (q *QueueCmd) Run() {
 	}
 }
 
+// TODO(reed): flags
+func (s *StatusCmd) Flags(args ...string) error {
+	s.flags = NewWorkerFlagSet(s.Usage())
+	err := s.flags.Parse(args)
+	if err != nil {
+		return err
+	}
+
+	return s.flags.validateAllFlags()
+}
+
 // Takes one parameter, the task_id to acquire status of
-func (s *StatusCmd) Args(args ...string) error {
-	if len(args) != 1 {
+func (s *StatusCmd) Args() error {
+	if s.flags.NArg() != 1 {
 		return errors.New("error: status takes one argument")
 	}
-	s.taskID = args[0]
+	s.taskID = s.flags.Arg(0)
 	return nil
 }
 
 // TODO(reed): flags
-func (s *StatusCmd) Help() string {
-	return `iron_worker [flags] status task_id
-
-[flags]:
--h=show this message
-`
+func (s *StatusCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, `usage: iron_worker status [OPTIONS] task_id`)
+		s.flags.PrintDefaults()
+	}
 }
 
 func (s *StatusCmd) Run() {
-	fmt.Println(LINES, "Getting status of task with id", s.taskID)
-	taskInfo, err := s.TaskInfo(s.taskID)
+	fmt.Println(LINES, `Getting status of task with id "`+s.taskID+`"`)
+	taskInfo, err := s.wrkr.TaskInfo(s.taskID)
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println(BLANKS, taskInfo.Status)
 }
 
+func (l *LogCmd) Flags(args ...string) error {
+	l.flags = NewWorkerFlagSet(l.Usage())
+	err := l.flags.Parse(args)
+	if err != nil {
+		return err
+	}
+	return l.flags.validateAllFlags()
+}
+
 // Takes one parameter, the task_id to log
-func (l *LogCmd) Args(args ...string) error {
-	if len(args) != 1 {
+func (l *LogCmd) Args() error {
+	if l.flags.NArg() < 1 {
 		return errors.New("error: log takes one argument")
 	}
-	l.taskID = args[0]
+	l.taskID = l.flags.Arg(0)
 	return nil
 }
 
 // TODO(reed): flags
-func (l *LogCmd) Help() string {
-	return `iron_worker [flags] log task_id
-
-[flags]:
--h=show this message
-`
+func (l *LogCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, `usage: iron_worker log [OPTIONS] task_id`)
+		l.flags.PrintDefaults()
+	}
 }
 
 func (l *LogCmd) Run() {
 	fmt.Println(LINES, "Getting log for task with id", l.taskID)
-	out, err := l.TaskLog(l.taskID)
+	out, err := l.wrkr.TaskLog(l.taskID)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	fmt.Println(string(out))
+}
+
+func (u *UploadCmd) Flags(args ...string) error {
+	u.flags = NewWorkerFlagSet(u.Usage())
+	// TODO(reed): flags
+	err := u.flags.Parse(args)
+	if err != nil {
+		return err
+	}
+	return u.flags.validateAllFlags()
+}
+
+// Takes one parameter, the task_id to log
+func (u *UploadCmd) Args() error {
+	if u.flags.NArg() < 1 {
+		return errors.New("error: upload takes one argument")
+	}
+	// TODO(reed): camel_case thing
+	worker := u.flags.Arg(0) + ".worker"
+	if _, err := os.Stat(worker); os.IsNotExist(err) {
+		return err
+	}
+	dw, err := parseWorker(worker)
+	if err != nil {
+		return err
+	}
+	// TODO(reed): pass params
+	if u.codes, err = dw.code(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// TODO(reed): flags
+func (u *UploadCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, `usage: iron_worker upload [OPTIONS] worker`)
+		u.flags.PrintDefaults()
+	}
+}
+
+func (u *UploadCmd) Run() {
+	fmt.Println(LINES, `Uploading worker "`+u.codes.Name+`"`)
+	id, err := u.wrkr.CodePackageUpload(u.codes)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	id = string(id)
+	fmt.Println(BLANKS, `Code package uploaded code with id="`+id+`"`)
+	fmt.Println(BLANKS, u.hud_URL_str+"code/"+id+INFO)
 }

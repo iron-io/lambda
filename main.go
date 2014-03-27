@@ -6,21 +6,8 @@ import (
 	"os"
 )
 
-// TODO(reed): can flags be put in their respective type and parsed at runtime?
-// this is ghastly and each method in cmds.go has flag pointers everywhere
 var (
-	// for queue
-	payloadFlag     = flag.String("payload", "", "give worker payload")
-	payloadFileFlag = flag.String("payload-file", "", "give worker payload file")
-	priorityFlag    = flag.Int("priority", 0, "0(default), 1, or 2")
-	timeoutFlag     = flag.Int("timeout", 3600, "0-3600(default) max runtime for task")
-	delayFlag       = flag.Int("delay", 0, "seconds to delay before queueing task")
-	waitFlag        = flag.Bool("wait", false, "wait for task to complete and print log")
-
-	// for ---
-	// ...
-
-	helpFlag = flag.Bool("h", false, "show this")
+	helpFlag = flag.Bool("help", false, "show this")
 	commands map[string]Command
 )
 
@@ -33,9 +20,9 @@ const (
 func usage() {
 	fmt.Fprintln(os.Stderr, `usage of ironcli:
 
-ironcli [flags] [command]
+ironcli [command] [flags] [args]
 
-run 'ironcli -h [command]' for [command] specific help
+run 'ironcli -help [command]' for [command]'s flags/args
 
 [command]:`)
 	for c, _ := range commands {
@@ -47,9 +34,8 @@ run 'ironcli -h [command]' for [command] specific help
 }
 
 func init() {
-	// TODO(reed): move this into getCommand()
 	commands = map[string]Command{
-		//"upload":   new(UploadCmd),
+		"upload": new(UploadCmd),
 		//"run":      new(RunCmd),
 		"queue":    new(QueueCmd),
 		"schedule": new(SchedCmd),
@@ -72,17 +58,25 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *helpFlag {
-		fmt.Println("usage for ", flag.Arg(0)+":")
-		fmt.Printf("%s", cmd.Help())
-		os.Exit(0)
+	// each command defines its flags, err is either ErrHelp or bad flag value
+	if err := cmd.Flags(flag.Args()[1:]...); err != nil {
+		if err != flag.ErrHelp {
+			fmt.Println(err)
+		}
+		os.Exit(2)
 	}
 
-	if err := cmd.Args(flag.Args()[1:]...); err != nil {
+	if err := cmd.Args(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		cmd.Usage()() // pick this or that
+		os.Exit(2)
+	}
+
+	err := cmd.Config() // TODO(reed): this could be errors?
+	if err != nil {
 		fmt.Println(err)
-		os.Exit(0)
+		os.Exit(2)
 	}
 
-	cmd.Config() // TODO(reed): this could be errors?
-	cmd.Run()    // TODO(reed): want output?
+	cmd.Run() // TODO(reed): want output?
 }
