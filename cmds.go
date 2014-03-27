@@ -116,16 +116,17 @@ func (q *SchedCmd) Help() string {
 	return `usage: iron_worker schedule CODE_PACKAGE_NAME [OPTIONS]
 -payload      = payload, typically json, to send to worker
 -payloadFile  = location of file with payload
--p, --payload PAYLOAD            payload to pass
--f, --payload-file PAYLOAD_FILE  payload file to pass
---priority PRIORITY          0 (default), 1, 2
---timeout TIMEOUT            maximum run time in seconds from 0 to 3600 (default)
---delay DELAY                delay before start in seconds
---start-at TIME              start task at specified time
---end-at TIME                stop running task at specified time
---run-times RUN_TIMES        run task no more times than specified
---run-every RUN_EVERY        run task every RUN_EVERY seconds
+-priority PRIORITY          0 (default), 1, 2
+-timeout TIMEOUT            maximum run time in seconds from 0 to 3600 (default)
 `
+	//-p, --payload PAYLOAD            payload to pass
+	//-f, --payload-file PAYLOAD_FILE  payload file to pass
+	//--priority PRIORITY          0 (default), 1, 2
+	//--timeout TIMEOUT            maximum run time in seconds from 0 to 3600 (default)
+	//--delay DELAY                delay before start in seconds
+	//--start-at TIME              start task at specified time
+	//--end-at TIME                stop running task at specified time
+	//--run-times RUN_TIMES        run task no more times than specified
 }
 
 func (s *SchedCmd) Run() {
@@ -158,6 +159,10 @@ func (q *QueueCmd) Args(args ...string) error {
 		return err
 	}
 
+	if err := checkTimeout(); err != nil {
+		return err
+	}
+
 	delay := time.Duration(*delayFlag) * time.Second
 	timeout := time.Duration(*timeoutFlag) * time.Second
 
@@ -169,6 +174,14 @@ func (q *QueueCmd) Args(args ...string) error {
 		Priority: *priorityFlag,
 	}
 
+	return nil
+}
+
+// TODO(reed): move me
+func checkTimeout() error {
+	if *timeoutFlag < 0 || *timeoutFlag > 3600 {
+		return errors.New("timeout must be 0-3600(default)")
+	}
 	return nil
 }
 
@@ -223,7 +236,7 @@ func (s *StatusCmd) Help() string {
 	return `iron_worker [flags] status task_id
 
 [flags]:
--imaflag
+-h=show this message
 `
 }
 
@@ -250,7 +263,7 @@ func (l *LogCmd) Help() string {
 	return `iron_worker [flags] log task_id
 
 [flags]:
--imaflag
+-h=show this message
 `
 }
 

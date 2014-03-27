@@ -31,13 +31,18 @@ const (
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, `
-  usage of iron_worker:
+	fmt.Fprintln(os.Stderr, `usage of ironcli:
 
-  iron_worker [flags] [command]
-  
-  run iron_worker -h [command] for [command] specific help
-  `)
+ironcli [flags] [command]
+
+run 'ironcli -h [command]' for [command] specific help
+
+[command]:`)
+	for c, _ := range commands {
+		fmt.Fprintln(os.Stderr, "\t", c)
+	}
+	fmt.Fprintln(os.Stderr, `[flag]:`)
+	flag.PrintDefaults()
 	os.Exit(0)
 }
 
