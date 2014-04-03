@@ -1,12 +1,15 @@
-// CodePackageUpload uploads a code package
 package main
 
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/iron-io/iron_go/worker"
 )
@@ -27,6 +30,7 @@ type dotWorker struct {
 	dirs    map[string]string
 }
 
+// TODO need to incorporate flags here for, e.g. max-concurrency, retries
 func (dw *dotWorker) code() (worker.Code, error) {
 	codes := worker.Code{
 		Name:     dw.name,
@@ -34,25 +38,58 @@ func (dw *dotWorker) code() (worker.Code, error) {
 		FileName: `__runner__.sh`,
 	}
 
-	exec, err := ioutil.ReadFile(dw.exec)
+	execr, err := ioutil.ReadFile(dw.exec)
+	if err != nil {
+		return codes, err
+	}
+	execPath := filepath.Base(dw.exec)
+
+	source := worker.CodeSource{
+		dw.exec: execr,
+	}
+	runtimeText, err := runtime(source, dw.runtime, execPath)
 	if err != nil {
 		return codes, err
 	}
 
 	runner := []byte(RUNNER +
-		runtime(dw.runtime, dw.exec) + ` \"$@\"`) //+`#{File.basename(@exec.path)} #{params}
+		runtimeText + ` \"$@\"`) //+`#{File.basename(@exec.path)} #{params}
 
-	// TODO(reed): pass or receive one of these from runtime() somehow
-	source := worker.CodeSource{
-		dw.exec:         exec,
-		`__runner__.sh`: runner,
+	source[`__runner__.sh`] = runner
+
+	for f, storeAs := range dw.files {
+		contents, err := ioutil.ReadFile(f)
+		if err != nil {
+			return codes, err
+		}
+		source[storeAs] = contents
 	}
 
-	//for f, storeAs := range dw.files {
-	//}
-	//for dir, storeAs := range dw.dirs {
+	for dir, storeAs := range dw.dirs {
+		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
+			}
 
-	//}
+			contents, err := ioutil.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			// TODO(reed): works except './' & '.' ... come back with eurekas
+			path = path[len(dir):]
+			source[storeAs+path] = contents
+			return nil
+		})
+		if err != nil {
+			return codes, err
+		}
+	}
+
+	//uh, isn't the point not to have ruby installed? /headspin
+	for gem, version := range dw.gems {
+		out, _ := exec.Command("gem", "dependency", gem, "-v", version, "--pipe").Output()
+		fmt.Println(string(out))
+	}
 
 	codes.Source = source
 
@@ -92,7 +129,12 @@ export PATH
 // TODO(reed): the image viewer thing? uh wha?
 func parseWorker(dotWorkerFile string) (*dotWorker, error) {
 	dw := &dotWorker{
-		name: dotWorkerFile[:len(dotWorkerFile)-7], // TODO(reed): camel_case ?
+		name:  dotWorkerFile[:len(dotWorkerFile)-7], // TODO(reed): camel_case ?
+		pip:   make(map[string]string),
+		gems:  make(map[string]string),
+		envs:  make(map[string]string),
+		files: make(map[string]string),
+		dirs:  make(map[string]string),
 	}
 
 	f, err := os.Open(dotWorkerFile)
@@ -105,8 +147,17 @@ func parseWorker(dotWorkerFile string) (*dotWorker, error) {
 		if line == "" || strings.HasPrefix(line, "#") { // no comments, blank lines
 			continue
 		}
-		words := strings.Fields(line)
-		err := dw.parseLine(words)
+		// recursively descend lines with comma postfix
+		for strings.HasSuffix(line, ",") {
+			if !scanner.Scan() {
+				return nil, errors.New("expected new line with value after: " + line)
+			}
+			line += " " + strings.TrimSpace(scanner.Text())
+		}
+
+		// at this point, words first token is the key and all comma separated
+		// values are tokens after it, possibly 1 w/o comma
+		err := dw.parseLine(line)
 		if err != nil {
 			return nil, err
 		}
@@ -117,81 +168,160 @@ func parseWorker(dotWorkerFile string) (*dotWorker, error) {
 	return dw, nil
 }
 
-func rmQuotes(s string) string {
-	return s[1 : len(s)-1]
+func isQuote(r rune) bool {
+	return r == '\'' || r == '"'
 }
 
-// TODO(reed): don't tokenize lines at a time, build real lexer
-func (dw *dotWorker) parseLine(line []string) error {
-	switch line[0] {
+// TODO(reed): these are handle wrong and space separated would work fine
+func isComma(r rune) bool {
+	return r == ','
+}
+
+// ScanWords is a split function for a Scanner that returns each
+// comma-separated word of text, with surrounding spaces and quotes deleted.
+// Also trailing comments will be sliced off.
+// TODO(reed): true/false for remote
+func scanWords(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	// Skip leading spaces.
+	start := 0
+	for width := 0; start < len(data); start += width {
+		var r rune
+		r, width = utf8.DecodeRune(data[start:])
+		if r == '#' {
+			start = len(data) // skip comments
+		}
+		if isQuote(r) { // at our word
+			start += width
+			break
+		}
+
+	}
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	// Scan until quote, marking end of word.
+	for width, i := 0, start; i < len(data); i += width {
+		var r rune
+		r, width = utf8.DecodeRune(data[i:])
+		if isQuote(r) {
+			return i + width, data[start:i], nil
+		}
+	}
+	// If we're at EOF, we have a final, non-empty, non-terminated word. Return it.
+	if atEOF && len(data) > start {
+		return len(data), data[start:], nil
+	}
+	// Request more data.
+	return 0, nil, nil
+}
+
+// TODO(reed): yeahh these aren't guaranteed to be lines, so new name
+// TODO(reed): scanner will also allow things like 'hello" or "hello'
+// TODO(reed): small methods, bud
+func (dw *dotWorker) parseLine(arg string) error {
+	key := strings.Fields(arg)[0] // first field is space separated
+	scanner := bufio.NewScanner(strings.NewReader(arg[len(key):]))
+	scanner.Split(scanWords) // custom func above
+
+	switch key {
 	case "runtime":
-		if len(line) < 2 {
+		if !scanner.Scan() {
 			return errors.New("runtime takes one arg")
 		}
-		runtime := rmQuotes(line[1])
+		runtime := scanner.Text()
 		switch runtime {
 		// TODO(reed): ehhh, duplication of concerns? server take care of this?
-		case "binary", "go", "java", "mono", "node", "php", "python", "ruby":
+		case "binary", "go", "java", "mono", "node", "php", "python", "ruby", "perl":
 			dw.runtime = runtime
 		default:
 			return errors.New(runtime + " not a valid runtime")
 		}
 	case "stack":
-		if len(line) < 2 {
+		if !scanner.Scan() {
 			return errors.New("stack takes one arg")
 		}
-		dw.stack = rmQuotes(line[1])
+		// TODO(reed): validate stack here?
+		dw.stack = scanner.Text()
 	case "name":
+		if !scanner.Scan() {
+			return errors.New("name takes one arg")
+		}
+		dw.name = scanner.Text()
 	case "set_env":
-	case "full_remote_build":
+		if !scanner.Scan() {
+			return errors.New("set_env takes two args: \"KEY\", \"VALUE\"")
+		}
+		key := scanner.Text()
+		if !scanner.Scan() {
+			return errors.New("set_env takes two args: \"KEY\", \"VALUE\"")
+		}
+		value := scanner.Text()
+		dw.envs[key] = value
+	case "full_remote_build", "remote":
+		if !scanner.Scan() {
+			dw.remote = true
+			break
+		}
+		switch scanner.Text() {
+		case "true":
+			dw.remote = true
+		case "false":
+			dw.remote = false
+		default:
+			return errors.New("full_remote_build can only be true or false")
+		}
 	case "build":
+		// TODO what?
 	case "exec":
-		if len(line) < 2 {
+		if !scanner.Scan() {
 			return errors.New("exec takes a file path")
 		}
-		dw.exec = rmQuotes(line[1])
-		if len(line) == 3 {
-			dw.name = rmQuotes(line[2])
+		dw.exec = scanner.Text()
+		if scanner.Scan() {
+			dw.name = scanner.Text()
 		}
 	case "file":
-		if err := dw.parseFile(line); err != nil {
-			return err
+		if !scanner.Scan() {
+			return errors.New("file takes a file path")
 		}
+		arg1 := scanner.Text()
+		fname := filepath.Base(arg1)
+		if scanner.Scan() {
+			fname = scanner.Text()
+		}
+		// map[on_disk]on_upload
+		dw.files[arg1] = fname
 	case "dir":
-		if err := dw.parseDir(line); err != nil {
-			return err
+		if !scanner.Scan() {
+			return errors.New("dir takes a file path")
 		}
+		arg1 := scanner.Text()
+		fname := filepath.Base(arg1)
+		if scanner.Scan() {
+			fname = scanner.Text()
+		}
+		// map[on_disk]on_upload
+		dw.dirs[arg1] = fname
 	case "deb":
+		// TODO(reed):
 	case "gem":
+		if !scanner.Scan() {
+			return errors.New("gem takes a gem")
+		}
+		gem := scanner.Text()
+		version := ">=0"
+		if scanner.Scan() {
+			version = scanner.Text()
+		}
+		dw.gems[gem] = version
 	case "gemfile":
+		// TODO(reed):
 	case "jar":
+		// TODO(reed):
 	case "pip":
+		// TODO(reed):
 	default:
-		return errors.New(line[0] + " not a valid .worker field")
+		return errors.New(key + " not a valid .worker field")
 	}
-	return nil
-}
-
-func (dw *dotWorker) parseFile(line []string) error {
-	if len(line) < 2 {
-		return errors.New("file requires path")
-	}
-	fname := line[1]
-	if len(line) == 3 {
-		fname = line[2]
-	}
-	dw.files[line[1]] = fname
-	return nil
-}
-
-func (dw *dotWorker) parseDir(line []string) error {
-	if len(line) < 2 {
-		return errors.New("dir requires path")
-	}
-	dirName := line[1]
-	if len(line) == 3 {
-		dirName = line[2]
-	}
-	dw.dirs[line[1]] = dirName
 	return nil
 }

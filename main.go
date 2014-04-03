@@ -68,7 +68,6 @@ func main() {
 
 	if err := cmd.Args(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		cmd.Usage()() // pick this or that
 		os.Exit(2)
 	}
 

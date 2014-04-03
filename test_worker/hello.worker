@@ -1,2 +1,6 @@
 runtime 'go'
+
 exec 'hello_worker.go'
+
+dir '.'
+
