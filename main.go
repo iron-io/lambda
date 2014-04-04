@@ -35,8 +35,8 @@ run 'ironcli -help [command]' for [command]'s flags/args
 
 func init() {
 	commands = map[string]Command{
-		"upload": new(UploadCmd),
-		//"run":      new(RunCmd),
+		"upload":   new(UploadCmd),
+		"run":      new(RunCmd),
 		"queue":    new(QueueCmd),
 		"schedule": new(SchedCmd),
 		"status":   new(StatusCmd),

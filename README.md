@@ -25,9 +25,7 @@ you've done that, then you can continue.
 
 # Currently supported commands
 
-__WARNING:__ cannot upload most things from `ironcli` currently, use `github.com/iron-io/iron_worker_ruby_ng`
-
-But a basic one file "go" or "binary" worker currently works, if you want to do that.
+__WARNING:__ still in progress (especially upload), if running into issues: use `github.com/iron-io/iron_worker_ruby_ng`
 
 ### Queue a task: 
 
@@ -60,3 +58,15 @@ __WARNING:__ not working without a -payload for reasons yet to be hunted down
 With a (currently basic) .worker in current directory (see /test\_worker):
 
 `ironcli upload WORKER`
+
+Currently, runtime specific dependencies are not supported. "file" and "dir"
+should work fine. "full\_remote\_build" also not yet supported.
+
+### Run a task locally (useful for testing):
+
+`ironcli run WORKER`
+
+Where WORKER is the name of a .worker file.
+
+Due to environment disparities, this could not work on a local environment yet
+work fine once uploaded. Things should work best under amd64 Ubuntu Linux.

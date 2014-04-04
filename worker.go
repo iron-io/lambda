@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,6 +30,61 @@ type dotWorker struct {
 	envs    map[string]string
 	files   map[string]string
 	dirs    map[string]string
+}
+
+func mergeFiles(source worker.CodeSource, files map[string]string) error {
+	for f, storeAs := range files {
+		contents, err := ioutil.ReadFile(f)
+		if err != nil {
+			return err
+		}
+		source[storeAs] = contents
+	}
+	return nil
+}
+
+func mergeDirs(source worker.CodeSource, dirs map[string]string) error {
+	for dir, storeAs := range dirs {
+		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
+			}
+
+			contents, err := ioutil.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			// TODO(reed): works except './' & '.' ... come back with eurekas
+			path = path[len(dir):]
+			source[storeAs+path] = contents
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// TODO(reed): merge gems
+func mergeGems(source worker.CodeSource, gems map[string]string) error {
+	for gem, version := range gems {
+		out, _ := exec.Command("gem", "dependency", gem, "-v", version, "--pipe").Output()
+		scanner := bufio.NewScanner(bytes.NewReader(out))
+		for scanner.Scan() {
+			//out, _ := exec.Command("gem", "contents", scanner.Text()).Output()
+			//fmt.Println(string(out))
+		}
+	}
+	return nil
+}
+
+func fixGithubURL(url string) string {
+	if strings.HasPrefix(url, "http://github.com/") || strings.HasPrefix(url, "https://github.com/") {
+		url = strings.Replace(url, "//github.com/", "//raw.github.com/", 1)
+		url = strings.Replace(url, "/blob/", "/", 1)
+	}
+	return url
 }
 
 // TODO need to incorporate flags here for, e.g. max-concurrency, retries
@@ -57,38 +114,14 @@ func (dw *dotWorker) code() (worker.Code, error) {
 
 	source[`__runner__.sh`] = runner
 
-	for f, storeAs := range dw.files {
-		contents, err := ioutil.ReadFile(f)
-		if err != nil {
-			return codes, err
-		}
-		source[storeAs] = contents
+	if err = mergeFiles(source, dw.files); err != nil {
+		return codes, err
 	}
-
-	for dir, storeAs := range dw.dirs {
-		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-			if info.IsDir() {
-				return nil
-			}
-
-			contents, err := ioutil.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			// TODO(reed): works except './' & '.' ... come back with eurekas
-			path = path[len(dir):]
-			source[storeAs+path] = contents
-			return nil
-		})
-		if err != nil {
-			return codes, err
-		}
+	if err = mergeDirs(source, dw.dirs); err != nil {
+		return codes, err
 	}
-
-	//uh, isn't the point not to have ruby installed? /headspin
-	for gem, version := range dw.gems {
-		out, _ := exec.Command("gem", "dependency", gem, "-v", version, "--pipe").Output()
-		fmt.Println(string(out))
+	if err = mergeGems(source, dw.gems); err != nil {
+		return codes, err
 	}
 
 	codes.Source = source
@@ -128,6 +161,15 @@ export PATH
 //
 // TODO(reed): the image viewer thing? uh wha?
 func parseWorker(dotWorkerFile string) (*dotWorker, error) {
+	// TODO(reed): turnkey
+	if strings.HasPrefix(dotWorkerFile, "http://") || strings.HasPrefix(dotWorkerFile, "https://") {
+		url := fixGithubURL(dotWorkerFile)
+
+		resp, _ := http.Get(url)
+		fmt.Println(resp.Body)
+		fmt.Println(filepath.Base(url))
+	}
+
 	dw := &dotWorker{
 		name:  dotWorkerFile[:len(dotWorkerFile)-7], // TODO(reed): camel_case ?
 		pip:   make(map[string]string),

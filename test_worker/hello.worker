@@ -2,5 +2,9 @@ runtime 'go'
 
 exec 'hello_worker.go'
 
-dir '.'
+ dir "../test_worker"
+
+ file "iron.json"
+
+# gem "mail"
 

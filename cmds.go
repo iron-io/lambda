@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/iron-io/iron_go/worker"
@@ -19,10 +21,17 @@ type UploadCmd struct {
 	codes worker.Code
 }
 
-//type RunCmd struct {
-//// TODO(reed)
-//baseCmd
-//}
+type RunCmd struct {
+	// TODO(reed)
+	command
+
+	payload     *string
+	payloadFile *string
+
+	containerPath string
+	pload         string // final payload
+	codes         worker.Code
+}
 
 type QueueCmd struct {
 	command
@@ -65,30 +74,6 @@ type LogCmd struct {
 	command
 	taskID string
 }
-
-//func (u *UploadCmd) Help() string {
-//return `
-//iron_worker [flags] upload [.worker]
-
-//[flags]:
-//-imaflag
-//`
-//}
-
-//func (u *UploadCmd) Run() {
-//}
-
-//func (r *RunCmd) Help() string {
-//return `
-//iron_worker [flags] upload [.worker]
-
-//[flags]:
-//-imaflag
-//`
-//}
-
-//func (r *RunCmd) Run() {
-//}
 
 // TODO(reed): help in progress
 func (s *SchedCmd) Flags(args ...string) error {
@@ -348,7 +333,7 @@ func (u *UploadCmd) Flags(args ...string) error {
 	return u.flags.validateAllFlags()
 }
 
-// Takes one parameter, the task_id to log
+// takes parameter with name for worker
 func (u *UploadCmd) Args() error {
 	if u.flags.NArg() < 1 {
 		return errors.New("error: upload takes one argument")
@@ -358,6 +343,7 @@ func (u *UploadCmd) Args() error {
 	if _, err := os.Stat(worker); os.IsNotExist(err) {
 		return err
 	}
+	// TODO(reed): turnkey
 	dw, err := parseWorker(worker)
 	if err != nil {
 		return err
@@ -388,4 +374,91 @@ func (u *UploadCmd) Run() {
 	id = string(id)
 	fmt.Println(BLANKS, `Code package uploaded code with id="`+id+`"`)
 	fmt.Println(BLANKS, u.hud_URL_str+"code/"+id+INFO)
+}
+
+func (r *RunCmd) Flags(args ...string) error {
+	r.flags = NewWorkerFlagSet(r.Usage())
+	r.payload = r.flags.payload()
+	r.payloadFile = r.flags.payloadFile()
+	// TODO(reed): flags
+	err := r.flags.Parse(args)
+	if err != nil {
+		return err
+	}
+	return r.flags.validateAllFlags()
+}
+
+func (r *RunCmd) Args() error {
+	if r.flags.NArg() < 1 {
+		return errors.New("error: run takes one argument")
+	}
+
+	// TODO(reed): camel_case thing
+	worker := r.flags.Arg(0) + ".worker"
+	if _, err := os.Stat(worker); os.IsNotExist(err) {
+		return err
+	}
+	// TODO(reed): turnkey
+	dw, err := parseWorker(worker)
+	if err != nil {
+		return err
+	}
+	// TODO(reed): pass params
+	if r.codes, err = dw.code(); err != nil {
+		return err
+	}
+
+	payload := *r.payload
+	if *r.payloadFile != "" {
+		pload, err := ioutil.ReadFile(*r.payloadFile)
+		if err != nil {
+			return err
+		}
+		payload = string(pload)
+	}
+	r.pload = payload
+
+	return nil
+}
+
+func (r *RunCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, `usage: iron_worker run [OPTIONS] worker`)
+		r.flags.PrintDefaults()
+	}
+}
+
+// TODO(reed): config?
+func (r *RunCmd) Run() {
+	fmt.Println(LINES, `Running worker "`+r.codes.Name+`" locally`)
+
+	// just print errs, since there's no turning back
+	var err error
+	r.containerPath, err = ioutil.TempDir("", "iron-worker-"+r.flags.Arg(0)+"-")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer os.RemoveAll(r.containerPath)
+
+	err = ioutil.WriteFile(r.containerPath+"/__payload__", []byte(r.pload), 0666)
+	if err != nil {
+		fmt.Println(err)
+	}
+	for file, bytes := range r.codes.Source {
+		if err := os.MkdirAll(filepath.Dir(r.containerPath+"/"+file), 0755); err != nil {
+			fmt.Println(err)
+		}
+		if err := ioutil.WriteFile(r.containerPath+"/"+file, bytes, 0666); err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	out, _ := exec.Command("sh", r.containerPath+"/__runner__.sh",
+		"-payload", r.containerPath+"/__payload__",
+		"-config", r.containerPath+"/__config__",
+		"-id", "0").CombinedOutput()
+
+	fmt.Println(string(out))
+
+	os.RemoveAll(r.containerPath)
 }
