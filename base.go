@@ -10,7 +10,7 @@ import (
 
 // TODO(reed): default flags for everybody
 //--config CONFIG              config file
-//-e, --env ENV                    environment
+//-e, --env ENV                environment
 //--project-id PROJECT_ID      project id
 //--token TOKEN                token
 
@@ -34,16 +34,25 @@ type command struct {
 	wrkr        worker.Worker
 	flags       *WorkerFlags
 	hud_URL_str string
-	help        *bool
+	token       *string
+	projectID   *string
 }
 
 // All Commands will do similar configuration
 func (bc *command) Config() error {
-	bc.wrkr.Settings = config.Config("iron_worker")
-	// TODO(reed): directly passing ENV to ironcli
+	bc.wrkr.Settings = config.ConfigWithEnv("iron_worker", *envFlag)
+	if *projectIDFlag != "" {
+		bc.wrkr.Settings.ProjectId = *projectIDFlag
+	}
+	if *tokenFlag != "" {
+		bc.wrkr.Settings.Token = *tokenFlag
+	}
 
 	if bc.wrkr.Settings.ProjectId == "" {
 		return errors.New("did not find project id in any config files or env variables")
+	}
+	if bc.wrkr.Settings.Token == "" {
+		return errors.New("did not find token in any config files or env variables")
 	}
 
 	bc.hud_URL_str = `Check 'https://hud.iron.io/tq/projects/` + bc.wrkr.Settings.ProjectId + "/"

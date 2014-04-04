@@ -15,14 +15,13 @@ import (
 )
 
 type UploadCmd struct {
-	// TODO(reed)
+	// TODO(reed): flags (once merged in iron_go)... quick
 	command
 
 	codes worker.Code
 }
 
 type RunCmd struct {
-	// TODO(reed)
 	command
 
 	payload     *string
@@ -64,21 +63,16 @@ type SchedCmd struct {
 }
 
 type StatusCmd struct {
-	// TODO(reed)
 	command
 	taskID string
 }
 
 type LogCmd struct {
-	// TODO(reed)
 	command
 	taskID string
 }
 
-// TODO(reed): help in progress
 func (s *SchedCmd) Flags(args ...string) error {
-	s.flags = NewWorkerFlagSet(s.Usage())
-
 	s.payload = s.flags.payload()
 	s.payloadFile = s.flags.payloadFile()
 	s.priority = s.flags.priority()
@@ -160,7 +154,6 @@ func (s *SchedCmd) Run() {
 		fmt.Println(BLANKS, err)
 		return
 	}
-	// TODO(reed): > 1 ever?
 	id := ids[0]
 
 	fmt.Printf("%s scheduled %s with id: %s\n", BLANKS, s.sched.CodeName, id)
@@ -232,7 +225,6 @@ func (q *QueueCmd) Run() {
 		fmt.Println(BLANKS, err)
 		return
 	}
-	// TODO(reed): > 1 ever?
 	id := ids[0]
 
 	fmt.Printf("%s Queued %s with id: \"%s\"\n", BLANKS, q.task.CodeName, id)
@@ -250,7 +242,6 @@ func (q *QueueCmd) Run() {
 	}
 }
 
-// TODO(reed): flags
 func (s *StatusCmd) Flags(args ...string) error {
 	s.flags = NewWorkerFlagSet(s.Usage())
 	err := s.flags.Parse(args)
@@ -270,7 +261,6 @@ func (s *StatusCmd) Args() error {
 	return nil
 }
 
-// TODO(reed): flags
 func (s *StatusCmd) Usage() func() {
 	return func() {
 		fmt.Fprintln(os.Stderr, `usage: iron_worker status [OPTIONS] task_id`)
@@ -305,7 +295,6 @@ func (l *LogCmd) Args() error {
 	return nil
 }
 
-// TODO(reed): flags
 func (l *LogCmd) Usage() func() {
 	return func() {
 		fmt.Fprintln(os.Stderr, `usage: iron_worker log [OPTIONS] task_id`)

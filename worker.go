@@ -45,7 +45,11 @@ func mergeFiles(source worker.CodeSource, files map[string]string) error {
 
 func mergeDirs(source worker.CodeSource, dirs map[string]string) error {
 	for dir, storeAs := range dirs {
-		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		dir, err := filepath.Abs(dir)
+		if err != nil {
+			return err
+		}
+		err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 			if info.IsDir() {
 				return nil
 			}
@@ -54,7 +58,6 @@ func mergeDirs(source worker.CodeSource, dirs map[string]string) error {
 			if err != nil {
 				return err
 			}
-			// TODO(reed): works except './' & '.' ... come back with eurekas
 			path = path[len(dir):]
 			source[storeAs+path] = contents
 			return nil
@@ -95,14 +98,14 @@ func (dw *dotWorker) code() (worker.Code, error) {
 		FileName: `__runner__.sh`,
 	}
 
-	execr, err := ioutil.ReadFile(dw.exec)
+	execContents, err := ioutil.ReadFile(dw.exec)
 	if err != nil {
 		return codes, err
 	}
 	execPath := filepath.Base(dw.exec)
 
 	source := worker.CodeSource{
-		dw.exec: execr,
+		dw.exec: execContents,
 	}
 	runtimeText, err := runtime(source, dw.runtime, execPath)
 	if err != nil {
@@ -161,9 +164,9 @@ export PATH
 //
 // TODO(reed): the image viewer thing? uh wha?
 func parseWorker(dotWorkerFile string) (*dotWorker, error) {
-	// TODO(reed): turnkey
 	if strings.HasPrefix(dotWorkerFile, "http://") || strings.HasPrefix(dotWorkerFile, "https://") {
 		url := fixGithubURL(dotWorkerFile)
+		return nil, errors.New("not ready for that yet hot shot") // TODO(reed): turnkey
 
 		resp, _ := http.Get(url)
 		fmt.Println(resp.Body)
@@ -214,7 +217,7 @@ func isQuote(r rune) bool {
 	return r == '\'' || r == '"'
 }
 
-// TODO(reed): these are handle wrong and space separated would work fine
+// TODO(reed): these are handled wrong and space separated would work fine
 func isComma(r rune) bool {
 	return r == ','
 }

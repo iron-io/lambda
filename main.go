@@ -7,7 +7,11 @@ import (
 )
 
 var (
-	helpFlag = flag.Bool("help", false, "show this")
+	helpFlag      = flag.Bool("help", false, "show this")
+	tokenFlag     = flag.String("token", "", "provide OAuth token")
+	projectIDFlag = flag.String("project-id", "", "provide project ID")
+	envFlag       = flag.String("env", "", "provide specific dev environment")
+
 	commands map[string]Command
 )
 
@@ -18,11 +22,9 @@ const (
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, `usage of ironcli:
+	fmt.Fprintln(os.Stderr, `usage of ironcli: ironcli [command] [flags] [args]
 
-ironcli [command] [flags] [args]
-
-run 'ironcli -help [command]' for [command]'s flags/args
+  run 'ironcli -help [command]' for [command]'s flags/args
 
 [command]:`)
 	for c, _ := range commands {
@@ -71,7 +73,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	err := cmd.Config() // TODO(reed): this could be errors?
+	err := cmd.Config()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(2)

@@ -9,6 +9,10 @@ WIP
 
 `go get github.com/iron-io/ironcli`
 
+__WARNING__ currently won't work on pull until some changes get merged in `iron-io/iron_go`
+
+... I can change dep to my fork to fix if this is an issue in the mean time
+
 # Before Getting Started
 
 Before you can use IronWorker, be sure you've [created a free account with
