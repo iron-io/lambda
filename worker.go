@@ -16,6 +16,7 @@ import (
 	"github.com/iron-io/iron_go/worker"
 )
 
+// in memory primitive representation of a .worker file
 type dotWorker struct {
 	runtime string
 	stack   string
@@ -91,6 +92,7 @@ func fixGithubURL(url string) string {
 }
 
 // TODO need to incorporate flags here for, e.g. max-concurrency, retries
+// create code package (zip) from parsed .worker info
 func (dw *dotWorker) code() (worker.Code, error) {
 	codes := worker.Code{
 		Name:     dw.name,
@@ -160,8 +162,6 @@ export PATH
 # TODO(reed): #{runtime_run_code(local, params)}
 `
 
-// name = someName.worker
-//
 // TODO(reed): the image viewer thing? uh wha?
 func parseWorker(dotWorkerFile string) (*dotWorker, error) {
 	if strings.HasPrefix(dotWorkerFile, "http://") || strings.HasPrefix(dotWorkerFile, "https://") {

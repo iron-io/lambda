@@ -10,17 +10,14 @@ import (
 
 // TODO(reed): default flags for everybody
 //--config CONFIG              config file
-//-e, --env ENV                environment
-//--project-id PROJECT_ID      project id
-//--token TOKEN                token
 
 // The idea is:
-//  parse flags
-//  validate arguments
-//  if ^ goes well, config
-//  if ^ goes well, run
+//     parse flags -- if help, Usage() && quit
+//  -> validate arguments, configure command
+//  -> configure client
+//  -> run command
 //
-//  ...and if anything goes wrong, help()
+//  if anything goes wrong, peace
 type Command interface {
 	Flags(...string) error // parse subcommand specific flags
 	Args() error           // validate arguments

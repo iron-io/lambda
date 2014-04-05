@@ -59,7 +59,8 @@ type SchedCmd struct {
 	runTimes    *int
 	endAt       *string // time.RubyTime
 	startAt     *string // time.RubyTime
-	sched       worker.Schedule
+
+	sched worker.Schedule
 }
 
 type StatusCmd struct {
@@ -73,6 +74,8 @@ type LogCmd struct {
 }
 
 func (s *SchedCmd) Flags(args ...string) error {
+	s.flags = NewWorkerFlagSet(s.Usage())
+
 	s.payload = s.flags.payload()
 	s.payloadFile = s.flags.payloadFile()
 	s.priority = s.flags.priority()
@@ -369,7 +372,6 @@ func (r *RunCmd) Flags(args ...string) error {
 	r.flags = NewWorkerFlagSet(r.Usage())
 	r.payload = r.flags.payload()
 	r.payloadFile = r.flags.payloadFile()
-	// TODO(reed): flags
 	err := r.flags.Parse(args)
 	if err != nil {
 		return err
@@ -421,8 +423,7 @@ func (r *RunCmd) Usage() func() {
 func (r *RunCmd) Run() {
 	fmt.Println(LINES, `Running worker "`+r.codes.Name+`" locally`)
 
-	// just print errs, since there's no turning back
-	var err error
+	var err error // just print errs, since there's no turning back
 	r.containerPath, err = ioutil.TempDir("", "iron-worker-"+r.flags.Arg(0)+"-")
 	if err != nil {
 		fmt.Println(err)
