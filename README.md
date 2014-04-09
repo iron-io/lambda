@@ -7,11 +7,19 @@ WIP
 
 # Install
 
-`go get github.com/iron-io/ironcli`
+`go get github.com/iron-io/ironcli` -- if you're into that
 
-__WARNING__ currently won't work on pull until some changes get merged in `iron-io/iron_go`
+__Downloads (all 64-bit):__
 
-... I can change dep to my fork to fix if this is an issue in the mean time
+[Mac](bin/mac/ironcli)
+
+[Linux](bin/linux/ironcli)
+
+[Windows](bin/win/ironcli.exe)
+
+You can either run the binary directly or add somewhere in your $PATH
+
+Homebrew/deb/msi installer coming...
 
 # Before Getting Started
 
@@ -29,7 +37,7 @@ you've done that, then you can continue.
 
 # Currently supported commands
 
-__WARNING:__ still in progress (especially upload), if running into issues: use `github.com/iron-io/iron_worker_ruby_ng`
+__WARNING:__ still in progress (only upload problematic), if running into issues: use `github.com/iron-io/iron_worker_ruby_ng`
 
 ### Queue a task: 
 
@@ -59,7 +67,7 @@ __WARNING:__ not working without a -payload for reasons yet to be hunted down
 
 ### Upload a task:
 
-With a (currently basic) .worker in current directory (see /test\_worker):
+With a .worker in current directory (see /test\_worker):
 
 `ironcli upload WORKER`
 
