@@ -15,10 +15,14 @@ import (
 )
 
 type UploadCmd struct {
-	// TODO(reed): flags (once merged in iron_go)... quick
 	command
 
-	codes worker.Code
+	// TODO(reed): config flag ?
+	config       *string
+	maxConc      *int
+	retries      *int
+	retriesDelay *int
+	codes        worker.Code
 }
 
 type RunCmd struct {
@@ -317,6 +321,11 @@ func (l *LogCmd) Run() {
 
 func (u *UploadCmd) Flags(args ...string) error {
 	u.flags = NewWorkerFlagSet(u.Usage())
+	u.maxConc = u.flags.maxConc()
+	u.retries = u.flags.retries()
+	u.retriesDelay = u.flags.retriesDelay()
+	u.config = u.flags.config()
+
 	// TODO(reed): flags
 	err := u.flags.Parse(args)
 	if err != nil {
@@ -336,13 +345,22 @@ func (u *UploadCmd) Args() error {
 		return err
 	}
 	// TODO(reed): turnkey
-	dw, err := parseWorker(worker)
+	var err error
+	u.codes, err = bundleCodes(worker)
 	if err != nil {
 		return err
 	}
-	// TODO(reed): pass params
-	if u.codes, err = dw.code(); err != nil {
-		return err
+	if *u.maxConc > 0 {
+		u.codes.MaxConcurrency = *u.maxConc
+	}
+	if *u.retries > 0 {
+		u.codes.Retries = *u.retries
+	}
+	if *u.retriesDelay > 0 {
+		u.codes.RetriesDelay = time.Duration(*u.retriesDelay) * time.Second
+	}
+	if *u.config != "" {
+		u.codes.Config = *u.config
 	}
 	return nil
 }
@@ -390,12 +408,9 @@ func (r *RunCmd) Args() error {
 		return err
 	}
 	// TODO(reed): turnkey
-	dw, err := parseWorker(worker)
+	var err error
+	r.codes, err = bundleCodes(worker)
 	if err != nil {
-		return err
-	}
-	// TODO(reed): pass params
-	if r.codes, err = dw.code(); err != nil {
 		return err
 	}
 

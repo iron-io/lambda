@@ -91,10 +91,14 @@ func fixGithubURL(url string) string {
 	return url
 }
 
-// TODO need to incorporate flags here for, e.g. max-concurrency, retries
 // create code package (zip) from parsed .worker info
-func (dw *dotWorker) code() (worker.Code, error) {
-	codes := worker.Code{
+func bundleCodes(dotWorker string) (codes worker.Code, err error) {
+	dw, err := parseWorker(dotWorker)
+	if err != nil {
+		return codes, err
+	}
+
+	codes = worker.Code{
 		Name:     dw.name,
 		Runtime:  `sh`,
 		FileName: `__runner__.sh`,
@@ -114,7 +118,12 @@ func (dw *dotWorker) code() (worker.Code, error) {
 		return codes, err
 	}
 
-	runner := []byte(RUNNER +
+	envs := ""
+	for k, v := range dw.envs {
+		envs += "\n" + `export ` + k + `="` + v + `"`
+	}
+
+	runner := []byte(RUNNER + envs + "\n" +
 		runtimeText + ` \"$@\"`) //+`#{File.basename(@exec.path)} #{params}
 
 	source[`__runner__.sh`] = runner
@@ -157,9 +166,6 @@ export LD_LIBRARY_PATH
 PATH=.:./bin:./__debs__/usr/bin:./__debs__/bin:$PATH
 export PATH
 
-# TODO(reed): #{container.runner_additions}
-
-# TODO(reed): #{runtime_run_code(local, params)}
 `
 
 // TODO(reed): the image viewer thing? uh wha?

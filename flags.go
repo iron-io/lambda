@@ -63,6 +63,18 @@ func (wf *WorkerFlags) startAt() *string {
 	return wf.String("start-at", "", "time or datetime of form 'Mon Jan 2 15:04:05 -0700 2006'")
 }
 
+func (wf *WorkerFlags) retries() *int {
+	return wf.Int("retries", 0, "max times to retry failed task, max 10, default 0")
+}
+
+func (wf *WorkerFlags) retriesDelay() *int {
+	return wf.Int("retries-delay", 0, "time between retries, in seconds. default 0")
+}
+
+func (wf *WorkerFlags) config() *string {
+	return wf.String("config", "", "provide config string (re: JSON/YAML) that will be available in file on upload")
+}
+
 // TODO(reed): pretty sure there's a better way to get types from flags...
 func (wf *WorkerFlags) validateAllFlags() error {
 	if timeout := wf.Lookup("timeout"); timeout != nil {

@@ -6,5 +6,7 @@ exec 'hello_worker.go'
 
  file "iron.json"
 
+set_env "TREBEK", "MOM"
+
 # gem "mail"
 
