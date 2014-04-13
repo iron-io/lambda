@@ -1,3 +1,4 @@
+// Package contains the command line interface for iron-worker.
 package main
 
 import (
@@ -7,6 +8,10 @@ import (
 )
 
 var (
+	// These are located after binary on command line
+	// TODO(reed): kind of awkward, since there are 2 different flag sets now:
+	//  e.g.
+	//    ironcli -token=123456789 upload -max-concurrency=10 my_worker
 	helpFlag      = flag.Bool("help", false, "show this")
 	tokenFlag     = flag.String("token", "", "provide OAuth token")
 	projectIDFlag = flag.String("project-id", "", "provide project ID")
@@ -79,5 +84,5 @@ func main() {
 		os.Exit(2)
 	}
 
-	cmd.Run() // TODO(reed): want output?
+	cmd.Run()
 }

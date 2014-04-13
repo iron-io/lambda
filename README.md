@@ -32,8 +32,8 @@ you've done that, then you can continue.
 
 # Help
 
-`ironcli -help` for list of commands, flags
-`ironcli COMMAND -help` for command specific help
+`ironcli --help` for list of commands, flags
+`ironcli COMMAND --help` for command specific help
 
 # Currently supported commands
 
@@ -45,7 +45,7 @@ __WARNING:__ still in progress (only upload problematic), if running into issues
 
 ### Wait for queued task and print log: 
 
-`ironcli queue -wait CODENAME`
+`ironcli queue --wait CODENAME`
 
 ### Status of task:
 
@@ -61,7 +61,7 @@ Hint: Acquire `TASK_ID` from a previously queued task.
 
 ### Schedule task:
 
-`ironcli schedule -payload=" " -start-at="Mon Dec 25 15:04:05 -0700 2014" CODENAME`
+`ironcli schedule --payload=" " --start-at="Mon Dec 25 15:04:05 -0700 2014" CODENAME`
 
 __WARNING:__ not working without a -payload for reasons yet to be hunted down
 

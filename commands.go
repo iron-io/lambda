@@ -1,5 +1,7 @@
 package main
 
+// Contains each command and its configuration
+
 // TODO(reed): fix: empty schedule payload not working ?
 
 import (
@@ -11,8 +13,60 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/iron-io/iron_go/config"
 	"github.com/iron-io/iron_go/worker"
 )
+
+// TODO(reed): default flags for everybody
+//--config CONFIG              config file
+
+// The idea is:
+//     parse flags -- if help, Usage() && quit
+//  -> validate arguments, configure command
+//  -> configure client
+//  -> run command
+//
+//  if anything goes wrong, peace
+type Command interface {
+	Flags(...string) error // parse subcommand specific flags
+	Args() error           // validate arguments
+	Config() error         // configure env variables
+	Usage() func()         // custom command help TODO(reed): all local now?
+	Run()                  // cmd specific
+}
+
+// A command is the base for all commands implementing the Command interface.
+type command struct {
+	wrkr        worker.Worker
+	flags       *WorkerFlags
+	hud_URL_str string
+	token       *string
+	projectID   *string
+}
+
+// All Commands will do similar configuration
+func (bc *command) Config() error {
+	bc.wrkr.Settings = config.ConfigWithEnv("iron_worker", *envFlag)
+	if *projectIDFlag != "" {
+		bc.wrkr.Settings.ProjectId = *projectIDFlag
+	}
+	if *tokenFlag != "" {
+		bc.wrkr.Settings.Token = *tokenFlag
+	}
+
+	if bc.wrkr.Settings.ProjectId == "" {
+		return errors.New("did not find project id in any config files or env variables")
+	}
+	if bc.wrkr.Settings.Token == "" {
+		return errors.New("did not find token in any config files or env variables")
+	}
+
+	bc.hud_URL_str = `Check 'https://hud.iron.io/tq/projects/` + bc.wrkr.Settings.ProjectId + "/"
+
+	fmt.Println(LINES, `Configuring client`)
+	fmt.Println(BLANKS, `Project id="`+bc.wrkr.Settings.ProjectId+`"`)
+	return nil
+}
 
 type UploadCmd struct {
 	command
@@ -99,10 +153,9 @@ func (s *SchedCmd) Flags(args ...string) error {
 	return s.flags.validateAllFlags()
 }
 
-// Takes one parameter, the code package to schedule
 func (s *SchedCmd) Args() error {
 	if s.flags.NArg() != 1 {
-		return errors.New("error: queue takes one argument")
+		return errors.New("error: schedule takes one argument")
 	}
 
 	delay := time.Duration(*s.delay) * time.Second
@@ -152,7 +205,6 @@ func (s *SchedCmd) Usage() func() {
 	}
 }
 
-// schedules a task
 func (s *SchedCmd) Run() {
 	fmt.Println(LINES, "Scheduling task")
 
@@ -185,7 +237,7 @@ func (q *QueueCmd) Flags(args ...string) error {
 	return q.flags.validateAllFlags()
 }
 
-// Takes 1 arg for codes name
+// Takes 1 arg for worker name
 func (q *QueueCmd) Args() error {
 	if q.flags.NArg() != 1 {
 		return errors.New("error: queue takes one argument")
@@ -326,7 +378,6 @@ func (u *UploadCmd) Flags(args ...string) error {
 	u.retriesDelay = u.flags.retriesDelay()
 	u.config = u.flags.config()
 
-	// TODO(reed): flags
 	err := u.flags.Parse(args)
 	if err != nil {
 		return err
@@ -365,7 +416,6 @@ func (u *UploadCmd) Args() error {
 	return nil
 }
 
-// TODO(reed): flags
 func (u *UploadCmd) Usage() func() {
 	return func() {
 		fmt.Fprintln(os.Stderr, `usage: iron_worker upload [OPTIONS] worker`)
