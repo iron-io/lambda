@@ -93,7 +93,15 @@ func fixGithubURL(url string) string {
 
 // create code package (zip) from parsed .worker info
 func bundleCodes(dotWorker string) (codes worker.Code, err error) {
+	err = os.Chdir(filepath.Dir(dotWorker)) // side effects
+	if err != nil {
+		return codes, err
+	}
+
+	dotWorker = filepath.Base(dotWorker) // TODO(reed): camelCase here
+
 	dw, err := parseWorker(dotWorker)
+
 	if err != nil {
 		return codes, err
 	}

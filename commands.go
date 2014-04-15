@@ -5,9 +5,11 @@ package main
 // TODO(reed): fix: empty schedule payload not working ?
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -64,8 +66,32 @@ func (bc *command) Config() error {
 	bc.hud_URL_str = `Check 'https://hud.iron.io/tq/projects/` + bc.wrkr.Settings.ProjectId + "/"
 
 	fmt.Println(LINES, `Configuring client`)
-	fmt.Println(BLANKS, `Project id="`+bc.wrkr.Settings.ProjectId+`"`)
+
+	pName, err := projectName(bc.wrkr.Settings)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf(`%s Project '%s' with id='%s'`, BLANKS, pName, bc.wrkr.Settings.ProjectId)
+	fmt.Println()
 	return nil
+}
+
+func projectName(config config.Settings) (string, error) {
+	// get project name -- go api won't play ball
+	resp, err := http.Get(fmt.Sprintf("%s://%s:%d/%s/projects/%s?oauth=%s",
+		config.Scheme, config.Host, config.Port,
+		config.ApiVersion, config.ProjectId, config.Token))
+
+	if err != nil {
+		return "", err
+	}
+
+	var reply struct {
+		Name string `json:"name"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&reply)
+	return reply.Name, err
 }
 
 type UploadCmd struct {
