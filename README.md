@@ -11,11 +11,11 @@ WIP
 
 __Downloads (all 64-bit):__
 
-[Mac](https://github.com/iron-io/ironcli/releases/download/v0.0.1-alpha/ironcli_mac)
+[Mac](https://github.com/iron-io/ironcli/releases/download/v0.0.2-alpha/ironcli_mac)
 
-[Linux](https://github.com/iron-io/ironcli/releases/download/v0.0.1-alpha/ironcli_linux)
+[Linux](https://github.com/iron-io/ironcli/releases/download/v0.0.2-alpha/ironcli_linux)
 
-[Windows](https://github.com/iron-io/ironcli/releases/download/v0.0.1-alpha/ironcli.exe)
+[Windows](https://github.com/iron-io/ironcli/releases/download/v0.0.2-alpha/ironcli.exe)
 
 You can either run the binary directly or add somewhere in your $PATH
 
