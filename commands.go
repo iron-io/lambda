@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/iron-io/iron_go/config"
@@ -102,7 +103,9 @@ type UploadCmd struct {
 	maxConc      *int
 	retries      *int
 	retriesDelay *int
-	codes        worker.Code
+	codes        worker.Code // for fields, not code
+	cmd          string
+	zip          string
 }
 
 type RunCmd struct {
@@ -416,17 +419,13 @@ func (u *UploadCmd) Args() error {
 	if u.flags.NArg() < 1 {
 		return errors.New("error: upload takes one argument")
 	}
-	// TODO(reed): camel_case thing
-	worker := u.flags.Arg(0) + ".worker"
-	if _, err := os.Stat(worker); os.IsNotExist(err) {
+	u.zip = u.flags.Arg(0)
+	// make sure it exists
+	if _, err := os.Stat(u.zip + ".zip"); err != nil {
 		return err
 	}
-	// TODO(reed): turnkey
-	var err error
-	u.codes, err = bundleCodes(worker)
-	if err != nil {
-		return err
-	}
+	// TODO move "command" field into "worker.Code"
+	u.cmd = strings.Join(u.flags.Args()[1:], " ")
 	if *u.maxConc > 0 {
 		u.codes.MaxConcurrency = *u.maxConc
 	}
@@ -451,7 +450,7 @@ func (u *UploadCmd) Usage() func() {
 
 func (u *UploadCmd) Run() {
 	fmt.Println(LINES, `Uploading worker "`+u.codes.Name+`"`)
-	id, err := u.wrkr.CodePackageUpload(u.codes)
+	id, err := pushCodes(u.zip, u.cmd, &u.wrkr, u.codes)
 
 	if err != nil {
 		fmt.Println(err)
@@ -484,11 +483,11 @@ func (r *RunCmd) Args() error {
 		return err
 	}
 	// TODO(reed): turnkey
-	var err error
-	r.codes, err = bundleCodes(worker)
-	if err != nil {
-		return err
-	}
+	//var err error
+	//r.codes, err = bundleCodes(worker)
+	//if err != nil {
+	//return err
+	//}
 
 	payload := *r.payload
 	if *r.payloadFile != "" {
