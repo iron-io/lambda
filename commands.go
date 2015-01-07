@@ -421,7 +421,10 @@ func (u *UploadCmd) Args() error {
 	}
 	u.zip = u.flags.Arg(0)
 	// make sure it exists
-	if _, err := os.Stat(u.zip + ".zip"); err != nil {
+	if !strings.HasSuffix(u.zip, ".zip") {
+		return errors.New("file extension must be .zip, got: " + u.zip)
+	}
+	if _, err := os.Stat(u.zip); err != nil {
 		return err
 	}
 	// TODO move "command" field into "worker.Code"
