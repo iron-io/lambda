@@ -5,6 +5,12 @@ Go version of the cli.
 
 WIP
 
+# docker version upload
+
+For example:
+
+`$ ironcli upload xxx.zip ruby your_ruby_command`
+
 # Install
 
 `go get github.com/iron-io/ironcli` -- if you're into that
