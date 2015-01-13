@@ -3,9 +3,9 @@ set -e
 #
 # TODO urls
 # This script is meant for quick & easy install via:
-#   'curl -sSL https://get.iron.io | sh'
+#   'curl -sSL http://get.iron.io/cli | sh'
 # or:
-#   'wget -qO- https://get.iron.io | sh'
+#   'wget -qO- http://get.iron.io/cli | sh'
 #
 
 command_exists() {
