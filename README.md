@@ -13,7 +13,11 @@ For example:
 
 # Install
 
-`go get github.com/iron-io/ironcli` -- if you're into that
+## Quick and Easy (Recommended)
+
+`curl -sSL http://get.iron.io/cli | sh`
+
+## Download Yourself
 
 __Downloads (all 64-bit):__
 
@@ -24,6 +28,8 @@ __Downloads (all 64-bit):__
 [Windows](https://github.com/iron-io/ironcli/releases/download/v0.0.2-alpha/ironcli.exe)
 
 You can either run the binary directly or add somewhere in your $PATH
+
+## Coming soon...
 
 Homebrew/deb/msi installer coming...
 
