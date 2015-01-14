@@ -1,15 +1,7 @@
 ironcli
 =======
 
-Go version of the cli. 
-
-WIP
-
-# docker version upload
-
-For example:
-
-`$ ironcli upload xxx.zip ruby your_ruby_command`
+Go version of the Iron.io command line tools.  
 
 # Install
 
