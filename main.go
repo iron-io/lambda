@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 var (
@@ -17,7 +18,9 @@ var (
 	projectIDFlag = flag.String("project-id", "", "provide project ID")
 	envFlag       = flag.String("env", "", "provide specific dev environment")
 
-	commands map[string]Command
+	// i.e. worker: { commands... }
+	//			mq:			{ commands... }
+	commands map[string]map[string]Command
 )
 
 const (
@@ -27,27 +30,49 @@ const (
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, `usage of ironcli: ironcli [command] [flags] [args]
+	fmt.Fprintln(os.Stderr, `usage of ironcli: ironcli [product] [command] [flags] [args]
 
-  run 'ironcli -help [command]' for [command]'s flags/args
+where [product] is one of:
 
-[command]:`)
-	for c, _ := range commands {
-		fmt.Fprintln(os.Stderr, "\t", c)
-	}
+  worker
+
+run 'ironcli -help [product] for a list of commands.
+run 'ironcli -help [product] [command]' for [command]'s flags/args.
+`)
 	fmt.Fprintln(os.Stderr, `[flag]:`)
 	flag.PrintDefaults()
 	os.Exit(0)
 }
 
+func pusage(p string) {
+	// TODO list commands
+	switch p {
+	case "worker":
+		fmt.Fprintln(os.Stderr, p, "commands:")
+		for cmd := range commands["worker"] {
+			fmt.Fprintln(os.Stderr, "\t", cmd)
+		}
+		os.Exit(0)
+	case "mq":
+		fmt.Fprintln(os.Stderr, "not yet")
+		os.Exit(1)
+	default:
+		fmt.Fprintln(os.Stderr, "invalid product", `"`+p+`",`, "see -help")
+		os.Exit(1)
+	}
+}
+
 func init() {
-	commands = map[string]Command{
-		"upload":   new(UploadCmd),
-		"run":      new(RunCmd),
-		"queue":    new(QueueCmd),
-		"schedule": new(SchedCmd),
-		"status":   new(StatusCmd),
-		"log":      new(LogCmd),
+	commands = map[string]map[string]Command{
+		"worker": map[string]Command{
+			"upload":   new(UploadCmd),
+			"run":      new(RunCmd),
+			"queue":    new(QueueCmd),
+			"schedule": new(SchedCmd),
+			"status":   new(StatusCmd),
+			"log":      new(LogCmd),
+		},
+		// TODO mq
 	}
 }
 
@@ -58,15 +83,31 @@ func main() {
 		usage()
 	}
 
-	cmd, ok := commands[flag.Arg(0)]
+	product := flag.Arg(0)
+	cmds, ok := commands[product]
+	if !ok {
+		pusage(product)
+	}
+
+	if flag.NArg() < 2 {
+		pusage(product)
+	}
+
+	cmdName := flag.Arg(1)
+	cmd, ok := cmds[cmdName]
 
 	if !ok {
-		fmt.Fprintln(os.Stderr, flag.Arg(0), "not a command, see -h")
-		os.Exit(0)
+		switch strings.TrimSpace(cmdName) {
+		case "-h", "help", "--help", "-help":
+			pusage(product)
+		default:
+			fmt.Fprintln(os.Stderr, cmdName, "not a command, see -h")
+		}
+		os.Exit(1)
 	}
 
 	// each command defines its flags, err is either ErrHelp or bad flag value
-	if err := cmd.Flags(flag.Args()[1:]...); err != nil {
+	if err := cmd.Flags(flag.Args()[2:]...); err != nil {
 		if err != flag.ErrHelp {
 			fmt.Println(err)
 		}
