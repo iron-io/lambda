@@ -58,7 +58,7 @@ else
 fi
 
 # TODO latest ?
-release='v0.0.3-alpha'
+release='v0.0.4'
 url='https://github.com/iron-io/ironcli/releases/download'
 
 # perform some very rudimentary platform detection

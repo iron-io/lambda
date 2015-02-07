@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"os"
 	"strconv"
@@ -75,15 +74,16 @@ func (wf *WorkerFlags) config() *string {
 	return wf.String("config", "", "provide config string (re: JSON/YAML) that will be available in file on upload")
 }
 
+func (wf *WorkerFlags) stack() *string {
+	return wf.String("stack", "default", "provide a stack to run your codes in")
+}
+
 // TODO(reed): pretty sure there's a better way to get types from flags...
 func (wf *WorkerFlags) validateAllFlags() error {
 	if timeout := wf.Lookup("timeout"); timeout != nil {
-		timeout, err := strconv.Atoi(timeout.Value.String())
+		_, err := strconv.Atoi(timeout.Value.String())
 		if err != nil {
 			return err
-		}
-		if timeout < 0 || timeout > 3600 {
-			return errors.New("timeout can only be 0-3600(default)")
 		}
 	}
 
@@ -97,12 +97,9 @@ func (wf *WorkerFlags) validateAllFlags() error {
 	}
 
 	if priority := wf.Lookup("priority"); priority != nil {
-		priority, err := strconv.Atoi(priority.Value.String())
+		_, err := strconv.Atoi(priority.Value.String())
 		if err != nil {
 			return err
-		}
-		if priority < 0 || priority > 2 {
-			return errors.New("priority can only be 0(default), 1, or 2")
 		}
 	}
 

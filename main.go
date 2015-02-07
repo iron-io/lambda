@@ -13,7 +13,9 @@ var (
 	// TODO(reed): kind of awkward, since there are 2 different flag sets now:
 	//  e.g.
 	//    ironcli -token=123456789 upload -max-concurrency=10 my_worker
+	versionFlag   = flag.Bool("version", false, "what year is it")
 	helpFlag      = flag.Bool("help", false, "show this")
+	hFlag         = flag.Bool("h", false, "show this")
 	tokenFlag     = flag.String("token", "", "provide OAuth token")
 	projectIDFlag = flag.String("project-id", "", "provide project ID")
 	envFlag       = flag.String("env", "", "provide specific dev environment")
@@ -27,19 +29,23 @@ const (
 	LINES  = "-----> "
 	BLANKS = "       "
 	INFO   = "' for more info"
+
+	Version = "0.0.4"
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, `usage of ironcli: ironcli [product] [command] [flags] [args]
+	fmt.Fprintln(os.Stderr, "usage of", os.Args[0]+`:
+
+ `, os.Args[0], `[product] [command] [flags] [args]
 
 where [product] is one of:
 
   worker
 
-run 'ironcli -help [product] for a list of commands.
-run 'ironcli -help [product] [command]' for [command]'s flags/args.
+run '`+os.Args[0], `[product] -help for a list of commands.
+run '`+os.Args[0], `[product] [command] -help' for [command]'s flags/args.
 `)
-	fmt.Fprintln(os.Stderr, `[flag]:`)
+	fmt.Fprintln(os.Stderr, `[flags]:`)
 	flag.PrintDefaults()
 	os.Exit(0)
 }
@@ -66,7 +72,6 @@ func init() {
 	commands = map[string]map[string]Command{
 		"worker": map[string]Command{
 			"upload":   new(UploadCmd),
-			"run":      new(RunCmd),
 			"queue":    new(QueueCmd),
 			"schedule": new(SchedCmd),
 			"status":   new(StatusCmd),
@@ -78,6 +83,13 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	if *helpFlag || *hFlag {
+		usage()
+	} else if *versionFlag {
+		fmt.Fprintln(os.Stderr, Version)
+		os.Exit(0)
+	}
 
 	if flag.NArg() < 1 {
 		usage()

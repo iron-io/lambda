@@ -38,6 +38,7 @@ func pushCodes(zipName, command string, w *worker.Worker, args worker.Code) (id 
 		"max_concurrency": args.MaxConcurrency,
 		"retries":         args.Retries,
 		"retries_delay":   args.RetriesDelay.Seconds(),
+		"stack":           args.Stack,
 	})
 	if err != nil {
 		return "", err
