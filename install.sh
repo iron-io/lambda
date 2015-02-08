@@ -24,9 +24,9 @@ esac
 
 if command_exists iron ; then
   echo >&2 'Warning: "iron" command appears to already exist.'
-  echo >&2 'Please ensure that you do not already have iron installed.'
-  echo >&2 'You may press Ctrl+C now to abort this process and rectify this situation.'
-  ( set -x; sleep 20 )
+  echo >&2 'If you are just upgrading your iron cli client, ignore this and wait a few seconds.'
+  echo >&2 'You may press Ctrl+C now to abort this process.'
+  ( set -x; sleep 10 )
 fi
 
 user="$(id -un 2>/dev/null || true)"
