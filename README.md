@@ -11,15 +11,9 @@ Go version of the Iron.io command line tools.
 
 ## Download Yourself
 
-__Downloads (all 64-bit):__
+Grab the latest version for your system on the [Releases](https://github.com/iron-io/ironcli/releases) page. 
 
-[Mac](https://github.com/iron-io/ironcli/releases/download/v0.0.2-alpha/ironcli_mac)
-
-[Linux](https://github.com/iron-io/ironcli/releases/download/v0.0.2-alpha/ironcli_linux)
-
-[Windows](https://github.com/iron-io/ironcli/releases/download/v0.0.2-alpha/ironcli.exe)
-
-You can either run the binary directly or add somewhere in your $PATH
+You can either run the binary directly or add somewhere in your $PATH. 
 
 ## Coming soon...
 
