@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -223,7 +224,7 @@ func (s *SchedCmd) Usage() func() {
 }
 
 func (s *SchedCmd) Run() {
-	fmt.Println(LINES, "Scheduling task")
+	fmt.Println(LINES, "Scheduling task '"+s.sched.CodeName+"'")
 
 	ids, err := s.wrkr.Schedule(s.sched)
 	if err != nil {
@@ -232,7 +233,7 @@ func (s *SchedCmd) Run() {
 	}
 	id := ids[0]
 
-	fmt.Printf("%s scheduled %s with id: %s\n", BLANKS, s.sched.CodeName, id)
+	fmt.Printf("%s Scheduled task with id='%s'\n", BLANKS, id)
 	fmt.Println(BLANKS, s.hud_URL_str+"scheduled_jobs/"+id+INFO)
 }
 
@@ -294,7 +295,7 @@ func (q *QueueCmd) Usage() func() {
 }
 
 func (q *QueueCmd) Run() {
-	fmt.Println(LINES, "Queueing task")
+	fmt.Println(LINES, "Queueing task '"+q.task.CodeName+"'")
 
 	ids, err := q.wrkr.TaskQueue(q.task)
 	if err != nil {
@@ -303,7 +304,7 @@ func (q *QueueCmd) Run() {
 	}
 	id := ids[0]
 
-	fmt.Printf("%s Queued %s with id: \"%s\"\n", BLANKS, q.task.CodeName, id)
+	fmt.Printf("%s Queued task with id='%s'\n", BLANKS, id)
 	fmt.Println(BLANKS, q.hud_URL_str+"jobs/"+id+INFO)
 
 	if *q.wait {
@@ -345,7 +346,7 @@ func (s *StatusCmd) Usage() func() {
 }
 
 func (s *StatusCmd) Run() {
-	fmt.Println(LINES, `Getting status of task with id "`+s.taskID+`"`)
+	fmt.Println(LINES, `Getting status of task with id='`+s.taskID+`'`)
 	taskInfo, err := s.wrkr.TaskInfo(s.taskID)
 	if err != nil {
 		fmt.Println(err)
@@ -379,7 +380,7 @@ func (l *LogCmd) Usage() func() {
 }
 
 func (l *LogCmd) Run() {
-	fmt.Println(LINES, "Getting log for task with id", l.taskID)
+	fmt.Println(LINES, "Getting log for task with id='"+l.taskID+"'")
 	out, err := l.wrkr.TaskLog(l.taskID)
 	if err != nil {
 		fmt.Println(err)
@@ -416,6 +417,8 @@ func (u *UploadCmd) Args() error {
 	if _, err := os.Stat(u.zip); err != nil {
 		return err
 	}
+	u.codes.Name = strings.TrimSuffix(filepath.Base(u.zip), ".zip")
+
 	// TODO move "command" field into "worker.Code"
 	u.cmd = strings.Join(u.flags.Args()[1:], " ")
 	if *u.maxConc > 0 {
@@ -444,7 +447,7 @@ func (u *UploadCmd) Usage() func() {
 }
 
 func (u *UploadCmd) Run() {
-	fmt.Println(LINES, `Uploading worker "`+u.codes.Name+`"`)
+	fmt.Println(LINES, `Uploading worker '`+u.codes.Name+`'`)
 	id, err := pushCodes(u.zip, u.cmd, &u.wrkr, u.codes)
 
 	if err != nil {
@@ -452,6 +455,6 @@ func (u *UploadCmd) Run() {
 		return
 	}
 	id = string(id)
-	fmt.Println(BLANKS, `Code package uploaded code with id="`+id+`"`)
+	fmt.Println(BLANKS, `Uploaded code package with id='`+id+`'`)
 	fmt.Println(BLANKS, u.hud_URL_str+"code/"+id+INFO)
 }
