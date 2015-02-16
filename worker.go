@@ -7,8 +7,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"path/filepath"
-	"strings"
 
 	"github.com/iron-io/iron_go/api"
 	"github.com/iron-io/iron_go/worker"
@@ -32,7 +30,7 @@ func pushCodes(zipName, command string, w *worker.Worker, args worker.Code) (id 
 	}
 	jEncoder := json.NewEncoder(mMetaWriter)
 	err = jEncoder.Encode(map[string]interface{}{
-		"name":            strings.TrimSuffix(filepath.Base(zipName), ".zip"),
+		"name":            args.Name,
 		"command":         command,
 		"config":          args.Config,
 		"max_concurrency": args.MaxConcurrency,
