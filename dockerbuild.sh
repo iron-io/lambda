@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# This will build both the linux and mac binaries (only if you're on a Mac)
+
 img="treeder/golang-ubuntu:1.4.2on14.04"
 
 go build -o ironcli_mac
