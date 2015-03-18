@@ -8,6 +8,10 @@ set -e
 #   'wget -qO- http://get.iron.io/cli | sh'
 #
 
+# UPDATE RELEASE HERE AFTER A NEW VERSION IS RELEASED
+# TODO latest ?
+release='0.0.5'
+PD
 command_exists() {
   command -v "$@" > /dev/null 2>&1
 }
@@ -57,8 +61,6 @@ else
     exit 1
 fi
 
-# TODO latest ?
-release='0.0.4'
 url='https://github.com/iron-io/ironcli/releases/download'
 
 # perform some very rudimentary platform detection
