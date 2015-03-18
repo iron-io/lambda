@@ -10,7 +10,7 @@ set -e
 
 # UPDATE RELEASE HERE AFTER A NEW VERSION IS RELEASED
 # TODO latest ?
-release='0.0.5'
+release='v0.0.5'
 
 command_exists() {
   command -v "$@" > /dev/null 2>&1
@@ -30,7 +30,7 @@ if command_exists iron ; then
   echo >&2 'Warning: "iron" command appears to already exist.'
   echo >&2 'If you are just upgrading your iron cli client, ignore this and wait a few seconds.'
   echo >&2 'You may press Ctrl+C now to abort this process.'
-  ( set -x; sleep 10 )
+  ( set -x; sleep 5 )
 fi
 
 user="$(id -un 2>/dev/null || true)"
@@ -81,6 +81,8 @@ case "$(uname)" in
     exit 0
     ;;
 esac
+
+iron --version
 
 cat >&2 <<'EOF'
 

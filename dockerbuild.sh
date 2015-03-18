@@ -21,7 +21,7 @@ echo "dir $godir"
 
 # todo: should check if ironmq-build container exists and reuse it so we don't start with a fresh build each time
 # Using go install here so it installs gorocksdb the first time. It also does go build, so all good.
-docker run -i --name ironcli-build -v "$godir":/go/src -w /go/src/github.com/iron-io/ironcli -p 0.0.0.0:8080:8080 $img sh -c 'go install && go build -o ironcli_linux' || docker start -i ironcli-build
+#docker run -i --name ironcli-build -v "$godir":/go/src -w /go/src/github.com/iron-io/ironcli -p 0.0.0.0:8080:8080 $img sh -c 'go install && go build -o ironcli_linux' || docker start -i ironcli-build
 
 # to bash in
-#docker run -it --name ironcli-build -v "$godir":/go/src -w /go/src/github.com/iron-io/ironcli -p 0.0.0.0:8080:8080 $img /bin/bash
+docker run -it --name ironcli-bash -v "$godir":/go/src -w /go/src/github.com/iron-io/ironcli -p 0.0.0.0:8080:8080 $img /bin/bash
