@@ -30,8 +30,8 @@ you've done that, then you can continue.
 
 # Help
 
-`ironcli --help` for list of commands, flags
-`ironcli COMMAND --help` for command specific help
+`iron worker --help` for list of commands, flags
+`iron worker COMMAND --help` for command specific help
 
 # Currently supported commands
 
@@ -39,27 +39,27 @@ __WARNING:__ still in progress (only upload problematic), if running into issues
 
 ### Queue a task: 
 
-`ironcli queue CODENAME`
+`iron worker queue CODENAME`
 
 ### Wait for queued task and print log: 
 
-`ironcli queue --wait CODENAME`
+`iron worker queue --wait CODENAME`
 
 ### Status of task:
 
-`ironcli status TASK_ID`
+`iron worker status TASK_ID`
 
 Hint: Acquire `TASK_ID` from a previously queued task.
 
 ### Log task:
 
-`ironcli log TASK_ID`
+`iron worker log TASK_ID`
 
 Hint: Acquire `TASK_ID` from a previously queued task.
 
 ### Schedule task:
 
-`ironcli schedule --payload=" " --start-at="Mon Dec 25 15:04:05 -0700 2014" CODENAME`
+`iron worker schedule --payload=" " --start-at="Mon Dec 25 15:04:05 -0700 2014" CODENAME`
 
 __WARNING:__ not working without a -payload for reasons yet to be hunted down
 
@@ -67,14 +67,14 @@ __WARNING:__ not working without a -payload for reasons yet to be hunted down
 
 With a .worker in current directory (see /test\_worker):
 
-`ironcli upload WORKER`
+`iron worker upload WORKER`
 
 Currently, runtime specific dependencies are not supported. "file" and "dir"
 should work fine. "full\_remote\_build" also not yet supported.
 
 ### Run a task locally (useful for testing):
 
-`ironcli run WORKER`
+`iron worker run WORKER`
 
 Where WORKER is the name of a .worker file.
 
