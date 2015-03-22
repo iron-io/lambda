@@ -99,6 +99,7 @@ type UploadCmd struct {
 
 	// TODO(reed): config flag ?
 	config       *string
+	configFile   *string
 	stack        *string
 	maxConc      *int
 	retries      *int
@@ -396,6 +397,7 @@ func (u *UploadCmd) Flags(args ...string) error {
 	u.retries = u.flags.retries()
 	u.retriesDelay = u.flags.retriesDelay()
 	u.config = u.flags.config()
+	u.configFile = u.flags.configFile()
 
 	err := u.flags.Parse(args)
 	if err != nil {
@@ -433,9 +435,19 @@ func (u *UploadCmd) Args() error {
 	if *u.retriesDelay > 0 {
 		u.codes.RetriesDelay = time.Duration(*u.retriesDelay) * time.Second
 	}
-	if *u.config != "" {
+	config := *u.config
+	if config != "" {
 		u.codes.Config = *u.config
 	}
+
+	if *u.configFile != "" {
+		pload, err := ioutil.ReadFile(*u.configFile)
+		if err != nil {
+			return err
+		}
+		u.codes.Config = string(pload)
+	}
+
 	return nil
 }
 

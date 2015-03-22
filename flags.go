@@ -22,6 +22,10 @@ func (wf *WorkerFlags) payload() *string {
 	return wf.String("payload", "", "give worker payload")
 }
 
+func (wf *WorkerFlags) configFile() *string {
+	return wf.String("config-file", "", "upload file for worker config")
+}
+
 func (wf *WorkerFlags) payloadFile() *string {
 	return wf.String("payload-file", "", "give worker payload of file contents")
 }
@@ -84,6 +88,15 @@ func (wf *WorkerFlags) validateAllFlags() error {
 		_, err := strconv.Atoi(timeout.Value.String())
 		if err != nil {
 			return err
+		}
+	}
+
+	if configFile := wf.Lookup("config-file"); configFile != nil {
+		configFile := configFile.Value.String()
+		if configFile != "" {
+			if _, err := os.Stat(configFile); os.IsNotExist(err) {
+				return err
+			}
 		}
 	}
 

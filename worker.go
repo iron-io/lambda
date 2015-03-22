@@ -85,6 +85,7 @@ func pushCodes(zipName, command string, w *worker.Worker, args worker.Code) (id 
 	if err != nil {
 		return "", err
 	}
+
 	if err = api.ResponseAsError(response); err != nil {
 		return "", err
 	}
