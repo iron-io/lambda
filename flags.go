@@ -18,6 +18,10 @@ func NewWorkerFlagSet(usage func()) *WorkerFlags {
 	return &WorkerFlags{flags}
 }
 
+func (wf *WorkerFlags) name() *string {
+	return wf.String("name", "", "override code package name")
+}
+
 func (wf *WorkerFlags) payload() *string {
 	return wf.String("payload", "", "give worker payload")
 }

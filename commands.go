@@ -97,7 +97,7 @@ func projectName(config config.Settings) (string, error) {
 type UploadCmd struct {
 	command
 
-	// TODO(reed): config flag ?
+	name         *string
 	config       *string
 	configFile   *string
 	stack        *string
@@ -392,6 +392,7 @@ func (l *LogCmd) Run() {
 
 func (u *UploadCmd) Flags(args ...string) error {
 	u.flags = NewWorkerFlagSet(u.Usage())
+	u.name = u.flags.name()
 	u.stack = u.flags.stack()
 	u.maxConc = u.flags.maxConc()
 	u.retries = u.flags.retries()
@@ -419,7 +420,12 @@ func (u *UploadCmd) Args() error {
 	if _, err := os.Stat(u.zip); err != nil {
 		return err
 	}
-	u.codes.Name = strings.TrimSuffix(filepath.Base(u.zip), ".zip")
+
+	if *u.name != "" {
+		u.codes.Name = *u.name
+	} else {
+		u.codes.Name = strings.TrimSuffix(filepath.Base(u.zip), ".zip")
+	}
 
 	// TODO move "command" field into "worker.Code"
 	u.cmd = strings.Join(u.flags.Args()[1:], " ")
