@@ -100,13 +100,14 @@ type UploadCmd struct {
 	name         *string
 	config       *string
 	configFile   *string
-	stack        *string
+	stack        *string // deprecated
+	image        string
 	maxConc      *int
 	retries      *int
 	retriesDelay *int
 	codes        worker.Code // for fields, not code
-	cmd          string
-	zip          string
+	cmd          *string
+	zip          *string
 }
 
 type QueueCmd struct {
@@ -407,23 +408,22 @@ func (u *UploadCmd) Flags(args ...string) error {
 	return u.flags.validateAllFlags()
 }
 
-// takes parameter with name for worker
+// `iron worker upload [--zip [ZIPFILE]] [IMAGE] [COMMAND]`
 func (u *UploadCmd) Args() error {
 	if u.flags.NArg() < 1 {
-		return errors.New("error: upload takes one argument, the name of the zip to upload")
+		return errors.New("error: upload takes at least one argument, the name of the image to use.")
 	}
-	u.zip = u.flags.Arg(0)
-	// make sure it exists
-	if !strings.HasSuffix(u.zip, ".zip") {
-		return errors.New("file extension must be .zip, got: " + u.zip)
-	}
-	if _, err := os.Stat(u.zip); err != nil {
-		return err
+	if *u.stack != "" {
+		// deprecated
+		u.codes.Stack = u.stack
+		u.zip = u.flags.Arg(0)
+	} else {
+		u.image = u.flags.Arg(0)
 	}
 
 	if *u.name != "" {
 		u.codes.Name = *u.name
-	} else {
+	} else if u.zip != "" {
 		u.codes.Name = strings.TrimSuffix(filepath.Base(u.zip), ".zip")
 	}
 
@@ -434,6 +434,16 @@ func (u *UploadCmd) Args() error {
 	}
 	if *u.stack != "" {
 		u.codes.Stack = *u.stack
+	}
+	if *u.zip != "" {
+		u.codes.Zip = *u.zip
+		// make sure it exists
+		if !strings.HasSuffix(u.zip, ".zip") {
+			return errors.New("file extension must be .zip, got: " + u.zip)
+		}
+		if _, err := os.Stat(u.zip); err != nil {
+			return err
+		}
 	}
 	if *u.retries > 0 {
 		u.codes.Retries = *u.retries

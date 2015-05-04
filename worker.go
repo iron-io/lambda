@@ -37,6 +37,7 @@ func pushCodes(zipName, command string, w *worker.Worker, args worker.Code) (id 
 		"retries":         args.Retries,
 		"retries_delay":   args.RetriesDelay.Seconds(),
 		"stack":           args.Stack,
+		"image":           args.Image,
 	})
 	if err != nil {
 		return "", err

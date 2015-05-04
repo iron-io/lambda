@@ -83,7 +83,7 @@ func (wf *WorkerFlags) config() *string {
 }
 
 func (wf *WorkerFlags) stack() *string {
-	return wf.String("stack", "default", "provide a stack to run your codes in")
+	return wf.String("stack", "default", "DEPRECATED: pass in image instead.")
 }
 
 // TODO(reed): pretty sure there's a better way to get types from flags...
