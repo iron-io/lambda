@@ -14,12 +14,7 @@ import (
 )
 
 // create code package (zip) from parsed .worker info
-func pushCodes(zipName, command string, w *worker.Worker, args worker.Code) (id string, err error) {
-	r, err := zip.OpenReader(zipName)
-	if err != nil {
-		return "", err
-	}
-	defer r.Close()
+func pushCodes(zipName, command *string, w *worker.Worker, args worker.Code) (id string, err error) {
 
 	// TODO i don't get why i can't write from disk to wire, but I give up
 	var body bytes.Buffer
@@ -28,47 +23,63 @@ func pushCodes(zipName, command string, w *worker.Worker, args worker.Code) (id 
 	if err != nil {
 		return "", err
 	}
-	jEncoder := json.NewEncoder(mMetaWriter)
-	err = jEncoder.Encode(map[string]interface{}{
+	reqMap := map[string]interface{}{
 		"name":            args.Name,
-		"command":         command,
 		"config":          args.Config,
 		"max_concurrency": args.MaxConcurrency,
 		"retries":         args.Retries,
 		"retries_delay":   args.RetriesDelay.Seconds(),
-		"stack":           args.Stack,
-		"image":           args.Image,
-	})
+	}
+	if command != nil && *command != "" {
+		reqMap["command"] = *command
+	}
+	if args.Stack != nil && *args.Stack != "" {
+		reqMap["stack"] = *args.Stack
+	}
+	if args.Image != nil && *args.Image != "" {
+		reqMap["image"] = *args.Image
+	}
+
+	jEncoder := json.NewEncoder(mMetaWriter)
+	err = jEncoder.Encode(reqMap)
 	if err != nil {
 		return "", err
 	}
-	mFileWriter, err := mWriter.CreateFormFile("file", "worker.zip")
-	if err != nil {
-		return "", err
-	}
-	zWriter := zip.NewWriter(mFileWriter)
+	if zipName != nil && *zipName != "" {
+		r, err := zip.OpenReader(*zipName)
+		if err != nil {
+			return "", err
+		}
+		defer r.Close()
 
-	for _, f := range r.File {
-		fWriter, err := zWriter.Create(f.Name)
+		mFileWriter, err := mWriter.CreateFormFile("file", "worker.zip")
 		if err != nil {
-			log15.Info("hi2")
 			return "", err
 		}
-		rc, err := f.Open()
-		if err != nil {
-			log15.Info("hi3")
-			return "", err
-		}
-		_, err = io.Copy(fWriter, rc)
-		rc.Close()
-		if err != nil {
-			log15.Info("hi4")
-			return "", err
-		}
-	}
+		zWriter := zip.NewWriter(mFileWriter)
 
-	zWriter.Close()
-	mWriter.Close()
+		for _, f := range r.File {
+			fWriter, err := zWriter.Create(f.Name)
+			if err != nil {
+				log15.Info("hi2")
+				return "", err
+			}
+			rc, err := f.Open()
+			if err != nil {
+				log15.Info("hi3")
+				return "", err
+			}
+			_, err = io.Copy(fWriter, rc)
+			rc.Close()
+			if err != nil {
+				log15.Info("hi4")
+				return "", err
+			}
+		}
+
+		zWriter.Close()
+		mWriter.Close()
+	}
 
 	req, err := http.NewRequest("POST", api.Action(w.Settings, "codes").URL.String(), &body)
 	if err != nil {

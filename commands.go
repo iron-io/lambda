@@ -101,7 +101,7 @@ type UploadCmd struct {
 	config       *string
 	configFile   *string
 	stack        *string // deprecated
-	image        string
+	image        *string
 	maxConc      *int
 	retries      *int
 	retriesDelay *int
@@ -411,39 +411,54 @@ func (u *UploadCmd) Flags(args ...string) error {
 // `iron worker upload [--zip [ZIPFILE]] [IMAGE] [COMMAND]`
 func (u *UploadCmd) Args() error {
 	if u.flags.NArg() < 1 {
-		return errors.New("error: upload takes at least one argument, the name of the image to use.")
+		return errors.New("upload takes at least one argument, the name of the image to use.")
 	}
 	if *u.stack != "" {
 		// deprecated
 		u.codes.Stack = u.stack
-		u.zip = u.flags.Arg(0)
+		u.image = nil
+		z := u.flags.Arg(0)
+		u.zip = &z
+		// must have command here
+		c := strings.Join(u.flags.Args()[1:], " ")
+		u.cmd = &c
 	} else {
-		u.image = u.flags.Arg(0)
+		im := u.flags.Arg(0)
+		u.image = &im
+		u.stack = nil
+		// command is optional
+		if u.flags.NArg() > 1 {
+			// TODO move "command" field into "worker.Code"
+			c := strings.Join(u.flags.Args()[1:], " ")
+			u.cmd = &c
+		} else {
+			u.cmd = nil
+		}
 	}
 
 	if *u.name != "" {
 		u.codes.Name = *u.name
-	} else if u.zip != "" {
-		u.codes.Name = strings.TrimSuffix(filepath.Base(u.zip), ".zip")
+	} else if *u.zip != "" {
+		u.codes.Name = strings.TrimSuffix(filepath.Base(*u.zip), ".zip")
+	} else {
+		// must have an image at this point
+		u.codes.Name = *u.image
 	}
 
-	// TODO move "command" field into "worker.Code"
-	u.cmd = strings.Join(u.flags.Args()[1:], " ")
 	if *u.maxConc > 0 {
 		u.codes.MaxConcurrency = *u.maxConc
 	}
-	if *u.stack != "" {
-		u.codes.Stack = *u.stack
-	}
 	if *u.zip != "" {
-		u.codes.Zip = *u.zip
 		// make sure it exists
-		if !strings.HasSuffix(u.zip, ".zip") {
-			return errors.New("file extension must be .zip, got: " + u.zip)
+		if !strings.HasSuffix(*u.zip, ".zip") {
+			return errors.New("file extension must be .zip, got: " + *u.zip)
 		}
-		if _, err := os.Stat(u.zip); err != nil {
+		if _, err := os.Stat(*u.zip); err != nil {
 			return err
 		}
+	} else {
+		// no zip defined
+		u.zip = nil
 	}
 	if *u.retries > 0 {
 		u.codes.Retries = *u.retries
