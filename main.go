@@ -28,7 +28,7 @@ var (
 const (
 	LINES  = "-----> "
 	BLANKS = "       "
-	INFO   = "' for more info"
+	INFO   = " for more info"
 
 	Version = "0.0.6"
 )
