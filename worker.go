@@ -10,12 +10,10 @@ import (
 
 	"github.com/iron-io/iron_go/api"
 	"github.com/iron-io/iron_go/worker"
-	"gopkg.in/inconshreveable/log15.v2"
 )
 
 // create code package (zip) from parsed .worker info
-func pushCodes(zipName, command *string, w *worker.Worker, args worker.Code) (id string, err error) {
-
+func pushCodes(zipName string, w *worker.Worker, args worker.Code) (id string, err error) {
 	// TODO i don't get why i can't write from disk to wire, but I give up
 	var body bytes.Buffer
 	mWriter := multipart.NewWriter(&body)
@@ -30,23 +28,23 @@ func pushCodes(zipName, command *string, w *worker.Worker, args worker.Code) (id
 		"retries":         args.Retries,
 		"retries_delay":   args.RetriesDelay.Seconds(),
 	}
-	if command != nil && *command != "" {
-		reqMap["command"] = *command
+	if args.Command != "" {
+		reqMap["command"] = args.Command
 	}
-	if args.Stack != nil && *args.Stack != "" {
-		reqMap["stack"] = *args.Stack
+	if args.Stack != "" {
+		reqMap["stack"] = args.Stack
 	}
-	if args.Image != nil && *args.Image != "" {
-		reqMap["image"] = *args.Image
+	if args.Image != "" {
+		reqMap["image"] = args.Image
 	}
 
 	jEncoder := json.NewEncoder(mMetaWriter)
-	err = jEncoder.Encode(reqMap)
-	if err != nil {
+	if err := jEncoder.Encode(reqMap); err != nil {
 		return "", err
 	}
-	if zipName != nil && *zipName != "" {
-		r, err := zip.OpenReader(*zipName)
+
+	if zipName != "" {
+		r, err := zip.OpenReader(zipName)
 		if err != nil {
 			return "", err
 		}
@@ -61,25 +59,22 @@ func pushCodes(zipName, command *string, w *worker.Worker, args worker.Code) (id
 		for _, f := range r.File {
 			fWriter, err := zWriter.Create(f.Name)
 			if err != nil {
-				log15.Info("hi2")
 				return "", err
 			}
 			rc, err := f.Open()
 			if err != nil {
-				log15.Info("hi3")
 				return "", err
 			}
 			_, err = io.Copy(fWriter, rc)
 			rc.Close()
 			if err != nil {
-				log15.Info("hi4")
 				return "", err
 			}
 		}
 
 		zWriter.Close()
-		mWriter.Close()
 	}
+	mWriter.Close()
 
 	req, err := http.NewRequest("POST", api.Action(w.Settings, "codes").URL.String(), &body)
 	if err != nil {
@@ -92,7 +87,6 @@ func pushCodes(zipName, command *string, w *worker.Worker, args worker.Code) (id
 	req.Header.Set("Content-Type", mWriter.FormDataContentType())
 	req.Header.Set("User-Agent", w.Settings.UserAgent)
 
-	// dumpRequest(req) NOTE: never do this here, it breaks stuff
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
@@ -102,12 +96,8 @@ func pushCodes(zipName, command *string, w *worker.Worker, args worker.Code) (id
 		return "", err
 	}
 
-	// dumpResponse(response)
-
 	var data struct {
-		Id         string `json:"id"`
-		Msg        string `json:"msg"`
-		StatusCode int    `json:"status_code"`
+		Id string `json:"id"`
 	}
 	err = json.NewDecoder(response.Body).Decode(&data)
 	return data.Id, err
