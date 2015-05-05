@@ -429,10 +429,10 @@ func (u *UploadCmd) Args() error {
 
 	if *u.name != "" {
 		u.codes.Name = *u.name
-	} else if u.codes.Image != "" { // prefer image over zip name
-		u.codes.Name = u.codes.Image
 	} else if *u.zip != "" {
 		u.codes.Name = strings.TrimSuffix(filepath.Base(*u.zip), ".zip")
+	} else { // must have image
+		u.codes.Name = u.codes.Image
 	}
 
 	if *u.zip != "" {
