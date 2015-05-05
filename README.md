@@ -28,6 +28,8 @@ system](http://dev.iron.io/worker/reference/configuration/) (either in a json
 file or using ENV variables). You only need to do that once for your machine. If
 you've done that, then you can continue.
 
+[See the official docs](http://dev.iron.io/worker/beta/cli/) for more detailed info on using Docker for IronWorker.
+
 # Help
 
 `iron worker --help` for list of commands, flags
@@ -63,20 +65,6 @@ Hint: Acquire `TASK_ID` from a previously queued task.
 
 __WARNING:__ not working without a -payload for reasons yet to be hunted down
 
-### Upload a task:
+### Upload a worker:
 
-With a .worker in current directory (see /test\_worker):
-
-`iron worker upload WORKER`
-
-Currently, runtime specific dependencies are not supported. "file" and "dir"
-should work fine. "full\_remote\_build" also not yet supported.
-
-### Run a task locally (useful for testing):
-
-`iron worker run WORKER`
-
-Where WORKER is the name of a .worker file.
-
-Due to environment disparities, this could not work on a local environment yet
-work fine once uploaded. Things should work best under amd64 Ubuntu Linux.
+`iron worker upload --zip hello.zip [IMAGE] [COMMAND]`

@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -63,7 +62,7 @@ func (bc *command) Config() error {
 		return errors.New("did not find token in any config files or env variables")
 	}
 
-	bc.hud_URL_str = `Check 'https://hud.iron.io/tq/projects/` + bc.wrkr.Settings.ProjectId + "/"
+	bc.hud_URL_str = `Check https://hud.iron.io/tq/projects/` + bc.wrkr.Settings.ProjectId + "/"
 
 	fmt.Println(LINES, `Configuring client`)
 
@@ -100,13 +99,13 @@ type UploadCmd struct {
 	name         *string
 	config       *string
 	configFile   *string
-	stack        *string
+	stack        *string // deprecated
 	maxConc      *int
 	retries      *int
 	retriesDelay *int
+	zip          *string
 	codes        worker.Code // for fields, not code
 	cmd          string
-	zip          string
 }
 
 type QueueCmd struct {
@@ -399,6 +398,7 @@ func (u *UploadCmd) Flags(args ...string) error {
 	u.retriesDelay = u.flags.retriesDelay()
 	u.config = u.flags.config()
 	u.configFile = u.flags.configFile()
+	u.zip = u.flags.zip()
 
 	err := u.flags.Parse(args)
 	if err != nil {
@@ -407,33 +407,45 @@ func (u *UploadCmd) Flags(args ...string) error {
 	return u.flags.validateAllFlags()
 }
 
-// takes parameter with name for worker
+// `iron worker upload [--zip [ZIPFILE]] [IMAGE] [[COMMAND]...]`
+//
+// old deprecated: `iron worker upload [ZIPFILE] [COMMAND]`
 func (u *UploadCmd) Args() error {
 	if u.flags.NArg() < 1 {
-		return errors.New("error: upload takes one argument, the name of the zip to upload")
-	}
-	u.zip = u.flags.Arg(0)
-	// make sure it exists
-	if !strings.HasSuffix(u.zip, ".zip") {
-		return errors.New("file extension must be .zip, got: " + u.zip)
-	}
-	if _, err := os.Stat(u.zip); err != nil {
-		return err
+		return errors.New("upload takes at least one argument, the name of the image to use.")
 	}
 
-	if *u.name != "" {
-		u.codes.Name = *u.name
+	u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
+	if *u.stack != "" {
+		// deprecated
+		u.codes.Stack = *u.stack
+		*u.zip = u.flags.Arg(0)
 	} else {
-		u.codes.Name = strings.TrimSuffix(filepath.Base(u.zip), ".zip")
+		u.codes.Image = u.flags.Arg(0)
+		// command also optional, filled in above
+		// zip filled in from flag, optional
 	}
 
-	// TODO move "command" field into "worker.Code"
-	u.cmd = strings.Join(u.flags.Args()[1:], " ")
+	if *u.name == "" {
+		return errors.New("must specify -name for your worker")
+	} else {
+		u.codes.Name = *u.name
+	}
+
+	if *u.zip != "" {
+		if u.codes.Command == "" { // must have command if using zip
+			return errors.New("uploading a zip file requires a command, see -help")
+		}
+		// make sure it exists and it's a zip
+		if !strings.HasSuffix(*u.zip, ".zip") {
+			return errors.New("file extension must be .zip, got: " + *u.zip)
+		}
+		if _, err := os.Stat(*u.zip); err != nil {
+			return err
+		}
+	}
 	if *u.maxConc > 0 {
 		u.codes.MaxConcurrency = *u.maxConc
-	}
-	if *u.stack != "" {
-		u.codes.Stack = *u.stack
 	}
 	if *u.retries > 0 {
 		u.codes.Retries = *u.retries
@@ -441,8 +453,7 @@ func (u *UploadCmd) Args() error {
 	if *u.retriesDelay > 0 {
 		u.codes.RetriesDelay = time.Duration(*u.retriesDelay) * time.Second
 	}
-	config := *u.config
-	if config != "" {
+	if *u.config != "" {
 		u.codes.Config = *u.config
 	}
 
@@ -466,7 +477,7 @@ func (u *UploadCmd) Usage() func() {
 
 func (u *UploadCmd) Run() {
 	fmt.Println(LINES, `Uploading worker '`+u.codes.Name+`'`)
-	id, err := pushCodes(u.zip, u.cmd, &u.wrkr, u.codes)
+	id, err := pushCodes(*u.zip, &u.wrkr, u.codes)
 
 	if err != nil {
 		fmt.Println(err)

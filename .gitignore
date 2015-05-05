@@ -29,3 +29,5 @@ _testmain.go
 .idea/
 ironcli_linux
 ironcli_mac
+ironcli
+iron.json
