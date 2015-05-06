@@ -118,6 +118,7 @@ type QueueCmd struct {
 	timeout     *int
 	delay       *int
 	wait        *bool
+	cluster     *string
 
 	// payload
 	task worker.Task
@@ -246,6 +247,7 @@ func (q *QueueCmd) Flags(args ...string) error {
 	q.timeout = q.flags.timeout()
 	q.delay = q.flags.delay()
 	q.wait = q.flags.wait()
+	q.cluster = q.flags.cluster()
 
 	err := q.flags.Parse(args)
 	if err != nil {
@@ -275,13 +277,11 @@ func (q *QueueCmd) Args() error {
 
 	q.task = worker.Task{
 		CodeName: q.flags.Arg(0),
-		Delay:    &delay,
-		Timeout:  &timeout,
+		Payload:  payload,
 		Priority: *q.priority,
-	}
-
-	if payload != "" {
-		q.task.Payload = payload
+		Timeout:  &timeout,
+		Delay:    &delay,
+		Cluster:  *q.cluster,
 	}
 
 	return nil

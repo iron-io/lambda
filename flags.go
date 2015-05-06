@@ -90,6 +90,10 @@ func (wf *WorkerFlags) zip() *string {
 	return wf.String("zip", "", "optional: name of zip file where code resides")
 }
 
+func (wf *WorkerFlags) cluster() *string {
+	return wf.String("cluster", "", "optional: specify cluster to queue task on")
+}
+
 // TODO(reed): pretty sure there's a better way to get types from flags...
 func (wf *WorkerFlags) validateAllFlags() error {
 	if timeout := wf.Lookup("timeout"); timeout != nil {
