@@ -470,7 +470,11 @@ func (u *UploadCmd) Args() error {
 
 func (u *UploadCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron_worker upload [OPTIONS] worker`)
+		fmt.Fprintln(os.Stderr, `usage: iron_worker upload -name myworker [OPTIONS] worker.zip command...`)
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(os.Stderr, `or`)
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(os.Stderr, `usage: iron_worker upload -name myworker [-zip my.zip] [OPTIONS] some/image [command...]`)
 		u.flags.PrintDefaults()
 	}
 }
