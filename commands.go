@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -427,7 +428,11 @@ func (u *UploadCmd) Args() error {
 	}
 
 	if *u.name == "" {
-		return errors.New("must specify -name for your worker")
+		if *u.stack != "" {
+			u.codes.Name = strings.TrimSuffix(filepath.Base(*u.zip), ".zip")
+		} else {
+			return errors.New("must specify -name for your worker")
+		}
 	} else {
 		u.codes.Name = *u.name
 	}
