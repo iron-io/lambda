@@ -13,7 +13,7 @@ bin/windows$ GOOS=windows GOARCH=amd64 go build -o iron.exe ../../*.go
 ### 2\. Update IronCLI_README.pdf
 
 ```sh
-bin/windows$ curl 'https://gitprint.com/iron-io/ironcli/blob/master/README.md?download' -H 'referer: https://gitprint.com/iron-io/ironcli/blob/master/README.md' > IronCLI_README.pdf
+bin/windows$ curl 'https://gitprint.com/iron-io/ironcli/blob/master/README.md?download' > IronCLI_README.pdf
 ```
 
 ### 3\. Build MSI file
