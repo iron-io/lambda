@@ -9,6 +9,8 @@ $ cd $GOROOT/src
 $ ./make.bash
 ```
 
+### 2\. Build go compilers and linkers
+
 Next you need to build the rest of go compilers and linkers. There is a small program to do that:
 
 ```
@@ -22,6 +24,8 @@ for arch in 8 6; do
 done
 exit 0
 ```
+
+### 3\. Build windows versions of standard commands and libraries
 
 Last step is to build windows versions of standard commands and libraries. And small script for that too:
 
@@ -45,6 +49,8 @@ cd $GOROOT/src
 go tool dist install -v pkg/runtime
 go install -v -a std
 ```
+
+### 4\. Build
 
 You can run it like that:
 
