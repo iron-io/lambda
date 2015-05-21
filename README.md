@@ -67,10 +67,9 @@ __WARNING:__ not working without a -payload for reasons yet to be hunted down
 
 ### Upload a worker:
 
-<!-- `iron worker upload --zip hello.zip [IMAGE] [COMMAND]`-->
-`iron worker upload --stack [STACK] [ZIP] [COMMAND]`
+`iron worker upload [--zip hello.zip] NAME DOCKER_IMAGE [COMMAND]`
 
 For eg:
 
-`iron worker upload --stack ruby-2.1 hello.zip ruby hello.rb`
+`iron worker upload --zip myworker.zip myworker google/ruby ruby hello.rb`
 
