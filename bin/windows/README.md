@@ -23,7 +23,7 @@ bin/windows$ curl 'https://gitprint.com/iron-io/ironcli/blob/master/README.md?do
 Update version of the installation. 
 
 * Replace 2 GUIDs in `<Product />` section with a couple of new
-* Increase `Version` attribute inside `<Product />`. And don't forget about `Product.Name`, `Package.Description`
+* Increase `Version` attribute inside `<Product />`
 
 After it perform 2 easy steps on Windows machine (or anything else + Wine):
 
