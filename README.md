@@ -73,3 +73,10 @@ For eg:
 
 `iron worker upload --zip myworker.zip myworker google/ruby ruby hello.rb`
 
+### [DEPRECATED] Upload a worker using stacks:
+
+`iron worker upload --stack STACK ZIP COMMAND`
+
+example:
+
+`iron worker upload --stack ruby-2.1 hello.zip ruby hello.rb`
