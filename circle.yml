@@ -5,17 +5,13 @@ machine:
   services:
     - docker
 
-checkout:
-  post:
-    - mkdir -p "$GH_IRON"
-
 dependencies:
   pre:
     - sudo apt-get install -y s3cmd
 
 deployment:
   ironcli-windows:
-    branch: win-autobuild #TODO: replace with production-windows
+    branch: production-windows
     commands:
       - mkdir ./out
       - docker run -v "$PWD/out":/home/out iron/ironcli_builder
