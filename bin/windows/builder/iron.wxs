@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='windows-1252'?>
 <?define ProductName = "IronCLI" ?>
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Product Name='$(var.ProductName)' Id='53671762-b852-4555-be9d-8131673c6704' UpgradeCode='5c887621-52d7-4c6e-8cc4-c60f669fd310'
-    Language='1033' Codepage='1252' Version='0.1.1' Manufacturer='Iron.io'>
+  <Product Name='$(var.ProductName)' Id='*' UpgradeCode='5c887621-52d7-4c6e-8cc4-c60f669fd310'
+    Language='1033' Codepage='1252' Version='$(var.CliVersion)' Manufacturer='Iron.io'>
 
     <Package Id='*' Keywords='Installer'
-      Description='$(var.ProductName) Installer' Platform='x64'
+      Description='$(var.ProductName) $(var.CliVersion) Installer' Platform='x64'
       Comments='IronCLI is a CLI tool for IronWorker' Manufacturer='Iron.io'
       InstallerVersion='200' Languages='1033' Compressed='yes' SummaryCodepage='1252'
       />
