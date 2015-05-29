@@ -20,6 +20,6 @@ deployment:
       - mkdir ./out
       - docker run -v "$PWD/out":/home/out iron/ironcli_builder
       - sudo chmod 644 ./out/*
-      - sed -i -- 's/\$S3_ACCESS_KEY/'"$S3_ACCESS_KEY"'/g' ./.s3cfg
-      - sed -i -- 's/\$S3_SECRET_KEY/'"$S3_SECRET_KEY"'/g' ./.s3cfg
-      - s3cmd -c ./.s3cfg put ./out/* s3://ironcli-releases/
+      - sed -i -- 's/\$S3_ACCESS_KEY/'"$S3_ACCESS_KEY"'/g' ./bin/windows/builder/.s3cfg
+      - sed -i -- 's/\$S3_SECRET_KEY/'"$S3_SECRET_KEY"'/g' ./bin/windows/builder/.s3cfg
+      - s3cmd -c ./bin/windows/builder/.s3cfg put ./out/* s3://ironcli-releases/
