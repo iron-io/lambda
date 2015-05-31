@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<?define ProductName = "IronCLI" ?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Product Name='$(var.ProductName)' Id='*' UpgradeCode='5c887621-52d7-4c6e-8cc4-c60f669fd310'
+    Language='1033' Codepage='1252' Version='$(var.CliVersion)' Manufacturer='Iron.io'>
+
+    <Package Id='*' Keywords='Installer'
+      Description='$(var.ProductName) $(var.CliVersion) Installer' Platform='x64'
+      Comments='IronCLI is a CLI tool for IronWorker' Manufacturer='Iron.io'
+      InstallerVersion='200' Languages='1033' Compressed='yes' SummaryCodepage='1252'
+      />
+
+    <MajorUpgrade DowngradeErrorMessage='A later version of $(var.ProductName) is already installed. Setup will now exit.' />
+
+    <Media Id='1' Cabinet='Sample.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1' />
+    <Property Id='DiskPrompt' Value='$(var.ProductName) Installation [1]' />
+
+    <Property Id='INSTALLDIR'>
+      <IniFileSearch Id='IronCLIIniFile' Type='directory' Name='IronCLI.ini' Section='Sample' Key='InstallDir' Field='1' />
+    </Property>
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='ProgramFilesFolder' Name='PFiles'>
+        <Directory Id='Iron' Name='Iron'>
+          <Directory Id='INSTALLDIR' Name='IronCLI'>
+
+            <Component Id='MainExecutable' Guid='db411856-768a-456b-80c1-ce3ab67333b3'>
+              <File Id='IronCLIexe' Name='iron.exe' DiskId='1' Source='iron.exe' KeyPath='yes' />
+              <Environment Id='UpdatePath' Name='PATH' Action='set' Permanent='yes' System='yes' Part='last' Value='[INSTALLDIR]' />
+            </Component>
+
+            <Component Id='Manual' Guid='da1223cf-0466-488b-b1f2-9df34cbe52c2'>
+              <File Id='Manual' Name='IronCLI_README.pdf' DiskId='1' Source='IronCLI_README.pdf' KeyPath='yes'>
+                <Shortcut Id='startmenuManual' Directory='ProgramMenuDir' Name='Instruction Manual' Advertise='yes' />
+              </File>
+            </Component>
+
+          </Directory>
+        </Directory>
+      </Directory>
+
+      <Directory Id='ProgramMenuFolder' Name='Programs'>
+        <Directory Id='ProgramMenuDir' Name='Iron.io'>
+          <Component Id='ProgramMenuDir' Guid='c28582b0-b788-4868-aa2d-4362a4dc241b'>
+            <RemoveFolder Id='ProgramMenuDir' On='uninstall'/>
+            <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
+          </Component>
+        </Directory>
+      </Directory>
+
+      <Directory Id='DesktopFolder' Name='Desktop' />
+    </Directory>
+
+    <Feature Id='Complete' Level='1'>
+      <ComponentRef Id='MainExecutable' />
+      <ComponentRef Id='Manual' />
+      <ComponentRef Id='ProgramMenuDir' />
+    </Feature>
+
+    <Icon Id="iron.ico" SourceFile="iron.ico" />
+    <Property Id="ARPPRODUCTICON" Value="iron.ico" />
+
+  </Product>
+</Wix>
