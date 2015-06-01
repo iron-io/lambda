@@ -71,6 +71,10 @@ __WARNING:__ not working without a -payload for reasons yet to be hunted down
 
 For eg:
 
+`iron worker upload --zip myworker.zip myworker iron/images:ruby-2.1 ruby hello.rb`
+
+For custom images (if you have this enabled on your account): 
+
 `iron worker upload --zip myworker.zip myworker google/ruby ruby hello.rb`
 
 ### [DEPRECATED] Upload a worker using stacks:
