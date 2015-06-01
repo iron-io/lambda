@@ -421,8 +421,10 @@ func (u *UploadCmd) Args() error {
 		// deprecated
 		u.codes.Stack = *u.stack
 		*u.zip = u.flags.Arg(0)
+		u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
 	} else {
 		u.codes.Image = u.flags.Arg(1)
+		u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[2:], " "))
 		// command also optional, filled in above
 		// zip filled in from flag, optional
 	}
