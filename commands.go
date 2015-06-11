@@ -408,33 +408,27 @@ func (u *UploadCmd) Flags(args ...string) error {
 	return u.flags.validateAllFlags()
 }
 
-// `iron worker upload [--zip [ZIPFILE]] [IMAGE] [[COMMAND]...]`
+// `iron worker upload [--zip ZIPFILE] --name NAME IMAGE COMMAND`
 //
 // old deprecated: `iron worker upload [ZIPFILE] [COMMAND]`
 func (u *UploadCmd) Args() error {
 	if u.flags.NArg() < 2 {
-		return errors.New("upload takes at least two arguments, the name of the worker and the name of the Docker image. eg: iron worker upload [--zip WORKER_ZIP] WORKER_NAME DOCKER_IMAGE [COMMAND]")
+		return errors.New("upload takes at least two arguments, the name of the worker and the name of the Docker image. eg: iron worker upload [--zip WORKER_ZIP] --name WORKER_NAME DOCKER_IMAGE [COMMAND]")
 	}
 
-	u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[2:], " "))
+	u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
 	if *u.stack != "" {
 		// deprecated
 		u.codes.Stack = *u.stack
 		*u.zip = u.flags.Arg(0)
-		u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
 	} else {
-		u.codes.Image = u.flags.Arg(1)
-		u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[2:], " "))
+		u.codes.Image = u.flags.Arg(0)
 		// command also optional, filled in above
 		// zip filled in from flag, optional
 	}
 
 	if *u.name == "" {
-		if *u.stack != "" {
-			u.codes.Name = strings.TrimSuffix(filepath.Base(*u.zip), ".zip")
-		} else {
-			u.codes.Name = u.flags.Arg(0)
-		}
+		return errors.New("must specify -name for your worker")
 	} else {
 		u.codes.Name = *u.name
 	}
