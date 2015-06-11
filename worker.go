@@ -27,15 +27,10 @@ func pushCodes(zipName string, w *worker.Worker, args worker.Code) (id string, e
 		"max_concurrency": args.MaxConcurrency,
 		"retries":         args.Retries,
 		"retries_delay":   args.RetriesDelay.Seconds(),
+		"image":           args.Image,
 	}
 	if args.Command != "" {
 		reqMap["command"] = args.Command
-	}
-	if args.Stack != "" {
-		reqMap["stack"] = args.Stack
-	}
-	if args.Image != "" {
-		reqMap["image"] = args.Image
 	}
 
 	jEncoder := json.NewEncoder(mMetaWriter)

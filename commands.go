@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -100,7 +99,6 @@ type UploadCmd struct {
 	name         *string
 	config       *string
 	configFile   *string
-	stack        *string // deprecated
 	maxConc      *int
 	retries      *int
 	retriesDelay *int
@@ -220,7 +218,7 @@ func (s *SchedCmd) Args() error {
 
 func (s *SchedCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron_worker schedule [OPTIONS] CODE_PACKAGE_NAME`)
+		fmt.Fprintln(os.Stderr, `usage: iron worker schedule [OPTIONS] CODE_PACKAGE_NAME`)
 		s.flags.PrintDefaults()
 	}
 }
@@ -290,7 +288,7 @@ func (q *QueueCmd) Args() error {
 
 func (q *QueueCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron_worker queue [OPTIONS] CODE_PACKAGE_NAME`)
+		fmt.Fprintln(os.Stderr, `usage: iron worker queue [OPTIONS] CODE_PACKAGE_NAME`)
 		q.flags.PrintDefaults()
 	}
 }
@@ -341,7 +339,7 @@ func (s *StatusCmd) Args() error {
 
 func (s *StatusCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron_worker status [OPTIONS] task_id`)
+		fmt.Fprintln(os.Stderr, `usage: iron worker status [OPTIONS] task_id`)
 		s.flags.PrintDefaults()
 	}
 }
@@ -375,7 +373,7 @@ func (l *LogCmd) Args() error {
 
 func (l *LogCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron_worker log [OPTIONS] task_id`)
+		fmt.Fprintln(os.Stderr, `usage: iron worker log [OPTIONS] task_id`)
 		l.flags.PrintDefaults()
 	}
 }
@@ -393,7 +391,6 @@ func (l *LogCmd) Run() {
 func (u *UploadCmd) Flags(args ...string) error {
 	u.flags = NewWorkerFlagSet(u.Usage())
 	u.name = u.flags.name()
-	u.stack = u.flags.stack()
 	u.maxConc = u.flags.maxConc()
 	u.retries = u.flags.retries()
 	u.retriesDelay = u.flags.retriesDelay()
@@ -408,33 +405,19 @@ func (u *UploadCmd) Flags(args ...string) error {
 	return u.flags.validateAllFlags()
 }
 
-// `iron worker upload [--zip [ZIPFILE]] [IMAGE] [[COMMAND]...]`
+// `iron worker upload [--zip ZIPFILE] --name NAME IMAGE COMMAND`
 //
 // old deprecated: `iron worker upload [ZIPFILE] [COMMAND]`
 func (u *UploadCmd) Args() error {
 	if u.flags.NArg() < 2 {
-		return errors.New("upload takes at least two arguments, the name of the worker and the name of the Docker image. eg: iron worker upload [--zip WORKER_ZIP] WORKER_NAME DOCKER_IMAGE [COMMAND]")
+		return errors.New("upload takes at least two arguments, the name of the worker and the name of the Docker image. eg: iron worker upload [--zip WORKER_ZIP] --name WORKER_NAME DOCKER_IMAGE [COMMAND]")
 	}
 
-	u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[2:], " "))
-	if *u.stack != "" {
-		// deprecated
-		u.codes.Stack = *u.stack
-		*u.zip = u.flags.Arg(0)
-		u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
-	} else {
-		u.codes.Image = u.flags.Arg(1)
-		u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[2:], " "))
-		// command also optional, filled in above
-		// zip filled in from flag, optional
-	}
+	u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
+	u.codes.Image = u.flags.Arg(0)
 
 	if *u.name == "" {
-		if *u.stack != "" {
-			u.codes.Name = strings.TrimSuffix(filepath.Base(*u.zip), ".zip")
-		} else {
-			u.codes.Name = u.flags.Arg(0)
-		}
+		return errors.New("must specify -name for your worker")
 	} else {
 		u.codes.Name = *u.name
 	}
@@ -477,11 +460,7 @@ func (u *UploadCmd) Args() error {
 
 func (u *UploadCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron_worker upload -name myworker [OPTIONS] worker.zip command...`)
-		fmt.Fprintln(os.Stderr)
-		fmt.Fprintln(os.Stderr, `or`)
-		fmt.Fprintln(os.Stderr)
-		fmt.Fprintln(os.Stderr, `usage: iron_worker upload -name myworker [-zip my.zip] [OPTIONS] some/image [command...]`)
+		fmt.Fprintln(os.Stderr, `usage: iron worker upload [-zip my.zip] -name NAME [OPTIONS] some/image:tag [command...]`)
 		u.flags.PrintDefaults()
 	}
 }

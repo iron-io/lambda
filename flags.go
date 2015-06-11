@@ -82,10 +82,6 @@ func (wf *WorkerFlags) config() *string {
 	return wf.String("config", "", "provide config string (re: JSON/YAML) that will be available in file on upload")
 }
 
-func (wf *WorkerFlags) stack() *string {
-	return wf.String("stack", "", "DEPRECATED: pass in image instead.")
-}
-
 func (wf *WorkerFlags) zip() *string {
 	return wf.String("zip", "", "optional: name of zip file where code resides")
 }

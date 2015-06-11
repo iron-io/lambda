@@ -67,20 +67,13 @@ __WARNING:__ not working without a -payload for reasons yet to be hunted down
 
 ### Upload a worker:
 
-`iron worker upload [--zip hello.zip] NAME DOCKER_IMAGE [COMMAND]`
+`iron worker upload [--zip hello.zip] --name NAME DOCKER_IMAGE [COMMAND]`
 
 For eg:
 
-`iron worker upload --zip myworker.zip myworker iron/images:ruby-2.1 ruby hello.rb`
+`iron worker upload --zip myworker.zip --name myworker iron/images:ruby-2.1 ruby hello.rb`
 
 For custom images (if you have this enabled on your account): 
 
-`iron worker upload --zip myworker.zip myworker google/ruby ruby hello.rb`
+`iron worker upload --zip myworker.zip --name myworker google/ruby ruby hello.rb`
 
-### [DEPRECATED] Upload a worker using stacks:
-
-`iron worker upload --stack STACK ZIP COMMAND`
-
-example:
-
-`iron worker upload --stack ruby-2.1 hello.zip ruby hello.rb`
