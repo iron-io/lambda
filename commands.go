@@ -218,7 +218,7 @@ func (s *SchedCmd) Args() error {
 
 func (s *SchedCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron_worker schedule [OPTIONS] CODE_PACKAGE_NAME`)
+		fmt.Fprintln(os.Stderr, `usage: iron worker schedule [OPTIONS] CODE_PACKAGE_NAME`)
 		s.flags.PrintDefaults()
 	}
 }
@@ -288,7 +288,7 @@ func (q *QueueCmd) Args() error {
 
 func (q *QueueCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron_worker queue [OPTIONS] CODE_PACKAGE_NAME`)
+		fmt.Fprintln(os.Stderr, `usage: iron worker queue [OPTIONS] CODE_PACKAGE_NAME`)
 		q.flags.PrintDefaults()
 	}
 }
@@ -339,7 +339,7 @@ func (s *StatusCmd) Args() error {
 
 func (s *StatusCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron_worker status [OPTIONS] task_id`)
+		fmt.Fprintln(os.Stderr, `usage: iron worker status [OPTIONS] task_id`)
 		s.flags.PrintDefaults()
 	}
 }
@@ -373,7 +373,7 @@ func (l *LogCmd) Args() error {
 
 func (l *LogCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron_worker log [OPTIONS] task_id`)
+		fmt.Fprintln(os.Stderr, `usage: iron worker log [OPTIONS] task_id`)
 		l.flags.PrintDefaults()
 	}
 }
@@ -460,11 +460,7 @@ func (u *UploadCmd) Args() error {
 
 func (u *UploadCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron_worker upload -name myworker [OPTIONS] worker.zip command...`)
-		fmt.Fprintln(os.Stderr)
-		fmt.Fprintln(os.Stderr, `or`)
-		fmt.Fprintln(os.Stderr)
-		fmt.Fprintln(os.Stderr, `usage: iron_worker upload -name myworker [-zip my.zip] [OPTIONS] some/image [command...]`)
+		fmt.Fprintln(os.Stderr, `usage: iron worker upload [-zip my.zip] -name NAME [OPTIONS] some/image:tag [command...]`)
 		u.flags.PrintDefaults()
 	}
 }
