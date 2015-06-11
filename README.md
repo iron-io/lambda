@@ -77,10 +77,3 @@ For custom images (if you have this enabled on your account):
 
 `iron worker upload --zip myworker.zip --name myworker google/ruby ruby hello.rb`
 
-### [DEPRECATED] Upload a worker using stacks:
-
-`iron worker upload --stack STACK ZIP COMMAND`
-
-example:
-
-`iron worker upload --stack ruby-2.1 hello.zip ruby hello.rb`

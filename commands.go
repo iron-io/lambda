@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -100,7 +99,6 @@ type UploadCmd struct {
 	name         *string
 	config       *string
 	configFile   *string
-	stack        *string // deprecated
 	maxConc      *int
 	retries      *int
 	retriesDelay *int
@@ -393,7 +391,6 @@ func (l *LogCmd) Run() {
 func (u *UploadCmd) Flags(args ...string) error {
 	u.flags = NewWorkerFlagSet(u.Usage())
 	u.name = u.flags.name()
-	u.stack = u.flags.stack()
 	u.maxConc = u.flags.maxConc()
 	u.retries = u.flags.retries()
 	u.retriesDelay = u.flags.retriesDelay()
@@ -417,15 +414,7 @@ func (u *UploadCmd) Args() error {
 	}
 
 	u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
-	if *u.stack != "" {
-		// deprecated
-		u.codes.Stack = *u.stack
-		*u.zip = u.flags.Arg(0)
-	} else {
-		u.codes.Image = u.flags.Arg(0)
-		// command also optional, filled in above
-		// zip filled in from flag, optional
-	}
+	u.codes.Image = u.flags.Arg(0)
 
 	if *u.name == "" {
 		return errors.New("must specify -name for your worker")
