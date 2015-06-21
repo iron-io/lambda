@@ -307,12 +307,12 @@ func (q *QueueCmd) Run() {
 	fmt.Println(BLANKS, q.hud_URL_str+"jobs/"+id+INFO)
 
 	if *q.wait {
-		fmt.Println(LINES, "Waiting for task", id)
+		fmt.Println(LINES, yellow("Waiting for task", id))
 
 		out := q.wrkr.WaitForTaskLog(id)
 
 		log := <-out
-		fmt.Println(LINES, "Done")
+		fmt.Println(LINES, green("Done"))
 		fmt.Println(LINES, "Printing Log:")
 		fmt.Printf("%s", string(log))
 	}
@@ -474,6 +474,6 @@ func (u *UploadCmd) Run() {
 		return
 	}
 	id = string(id)
-	fmt.Println(BLANKS, `Uploaded code package with id='`+id+`'`)
-	fmt.Println(BLANKS, u.hud_URL_str+"code/"+id+INFO)
+	fmt.Println(BLANKS, green(`Uploaded code package with id='`+id+`'`))
+	fmt.Println(BLANKS, green(u.hud_URL_str+"code/"+id+INFO))
 }
