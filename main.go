@@ -5,7 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 var (
@@ -13,12 +16,14 @@ var (
 	// TODO(reed): kind of awkward, since there are 2 different flag sets now:
 	//  e.g.
 	//    ironcli -token=123456789 upload -max-concurrency=10 my_worker
-	versionFlag   = flag.Bool("version", false, "what year is it")
+	versionFlag   = flag.Bool("version", false, "print then version number")
 	helpFlag      = flag.Bool("help", false, "show this")
 	hFlag         = flag.Bool("h", false, "show this")
 	tokenFlag     = flag.String("token", "", "provide OAuth token")
 	projectIDFlag = flag.String("project-id", "", "provide project ID")
 	envFlag       = flag.String("env", "", "provide specific dev environment")
+
+	red, yellow, green func(a ...interface{}) string
 
 	// i.e. worker: { commands... }
 	//			mq:			{ commands... }
@@ -34,9 +39,7 @@ const (
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage of", os.Args[0]+`:
-
- `, os.Args[0], `[product] [command] [flags] [args]
+	fmt.Fprintln(os.Stderr, "usage: ", os.Args[0], `[product] [command] [flags] [args]
 
 where [product] is one of:
 
@@ -63,7 +66,7 @@ func pusage(p string) {
 		fmt.Fprintln(os.Stderr, "not yet")
 		os.Exit(1)
 	default:
-		fmt.Fprintln(os.Stderr, "invalid product", `"`+p+`",`, "see -help")
+		fmt.Fprintln(os.Stderr, red("invalid product ", `"`+p+`", `, "see -help"))
 		os.Exit(1)
 	}
 }
@@ -82,6 +85,16 @@ func init() {
 }
 
 func main() {
+	if runtime.GOOS == "windows" {
+		red = fmt.Sprint
+		yellow = fmt.Sprint
+		green = fmt.Sprint
+	} else {
+		red = color.New(color.FgRed).SprintFunc()
+		yellow = color.New(color.FgYellow).SprintFunc()
+		green = color.New(color.FgGreen).SprintFunc()
+	}
+
 	flag.Parse()
 
 	if *helpFlag || *hFlag {
@@ -113,7 +126,7 @@ func main() {
 		case "-h", "help", "--help", "-help":
 			pusage(product)
 		default:
-			fmt.Fprintln(os.Stderr, cmdName, "not a command, see -h")
+			fmt.Fprintln(os.Stderr, red(cmdName, " not a command, see -h"))
 		}
 		os.Exit(1)
 	}
@@ -121,19 +134,19 @@ func main() {
 	// each command defines its flags, err is either ErrHelp or bad flag value
 	if err := cmd.Flags(flag.Args()[2:]...); err != nil {
 		if err != flag.ErrHelp {
-			fmt.Println(err)
+			fmt.Println(red(err))
 		}
 		os.Exit(2)
 	}
 
 	if err := cmd.Args(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, red(err))
 		os.Exit(2)
 	}
 
 	err := cmd.Config()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(red(err))
 		os.Exit(2)
 	}
 
