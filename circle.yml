@@ -1,21 +1,35 @@
 machine:
   environment:
     GOPATH: $HOME
+    CHECKOUT_DIR: $HOME/$CIRCLE_PROJECT_REPONAME
     GH_IRON: $HOME/src/github.com/iron-io
+    GO_PROJECT: ../src/github.com/iron-io
   services:
     - docker
 
-dependencies:
-  pre:
-    - sudo apt-get install -y s3cmd
+checkout:
+  post:
+    - mkdir -p "$GH_IRON"
+    - cp -R "$CHECKOUT_DIR" "$GH_IRON/$CIRCLE_PROJECT_REPONAME":
+        pwd: $HOME
 
-deployment:
-  ironcli-windows:
-    branch: production-windows
-    commands:
-      - mkdir ./out
-      - docker run -v "$PWD/out":/home/out iron/ironcli_builder
-      - sudo chmod 644 ./out/*
-      - sed -i -- 's/\$S3_ACCESS_KEY/'"$S3_ACCESS_KEY"'/g' ./bin/windows/builder/.s3cfg
-      - sed -i -- 's/\$S3_SECRET_KEY/'"$S3_SECRET_KEY"'/g' ./bin/windows/builder/.s3cfg
-      - s3cmd -c ./bin/windows/builder/.s3cfg put ./out/* s3://ironcli-releases/
+test:
+  override:
+    - go build .:
+        pwd: $GO_PROJECT/$CIRCLE_PROJECT_REPONAME
+
+# TODO do we need this anymore? can we have this run build-release.sh?
+#dependencies:
+  #pre:
+    #- sudo apt-get install -y s3cmd
+
+#deployment:
+  #ironcli-windows:
+    #branch: production-windows
+    #commands:
+      #- mkdir ./out
+      #- docker run -v "$PWD/out":/home/out iron/ironcli_builder
+      #- sudo chmod 644 ./out/*
+      #- sed -i -- 's/\$S3_ACCESS_KEY/'"$S3_ACCESS_KEY"'/g' ./bin/windows/builder/.s3cfg
+      #- sed -i -- 's/\$S3_SECRET_KEY/'"$S3_SECRET_KEY"'/g' ./bin/windows/builder/.s3cfg
+      #- s3cmd -c ./bin/windows/builder/.s3cfg put ./out/* s3://ironcli-releases/
