@@ -127,7 +127,7 @@ func (wf *WorkerFlags) validateAllFlags() error {
 	if endat := wf.Lookup("end-at"); endat != nil {
 		endat := endat.Value.String()
 		if endat != "" {
-			_, err := time.Parse(time.RubyDate, endat)
+			_, err := time.Parse(time.RFC3339, endat)
 			if err != nil {
 				return err
 			}
@@ -137,7 +137,7 @@ func (wf *WorkerFlags) validateAllFlags() error {
 	if startat := wf.Lookup("start-at"); startat != nil {
 		startat := startat.Value.String()
 		if startat != "" {
-			_, err := time.Parse(time.RubyDate, startat)
+			_, err := time.Parse(time.RFC3339, startat)
 			if err != nil {
 				return err
 			}

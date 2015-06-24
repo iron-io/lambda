@@ -199,11 +199,11 @@ func (s *SchedCmd) Args() error {
 	}
 
 	if *s.endAt != "" {
-		t, _ := time.Parse(time.RubyDate, *s.endAt) // checked in validateFlags()
+		t, _ := time.Parse(time.RFC3339, *s.endAt) // checked in validateFlags()
 		s.sched.EndAt = &t
 	}
 	if *s.startAt != "" {
-		t, _ := time.Parse(time.RubyDate, *s.startAt)
+		t, _ := time.Parse(time.RFC3339, *s.startAt)
 		s.sched.StartAt = &t
 	}
 	if *s.maxConc > 0 {
