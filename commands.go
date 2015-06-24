@@ -196,6 +196,8 @@ func (s *SchedCmd) Args() error {
 
 	if payload != "" {
 		s.sched.Payload = payload
+	} else {
+		s.sched.Payload = "{}" // if we don't set this, it gets a 400 from API.
 	}
 
 	if *s.endAt != "" {

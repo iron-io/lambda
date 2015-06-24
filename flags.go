@@ -59,7 +59,7 @@ func (wf *WorkerFlags) runEvery() *int {
 }
 
 func (wf *WorkerFlags) runTimes() *int {
-	return wf.Int("run-times", 1, "number of times a task will run")
+	return wf.Int("run-times", 0, "number of times a task will run")
 }
 
 func (wf *WorkerFlags) endAt() *string {
