@@ -63,11 +63,11 @@ func (wf *WorkerFlags) runTimes() *int {
 }
 
 func (wf *WorkerFlags) endAt() *string {
-	return wf.String("end-at", "", "time or datetime in RFC3339 format: '"2006-01-02T15:04:05Z07:00"'")
+	return wf.String("end-at", "", "time or datetime in RFC3339 format: '2006-01-02T15:04:05Z07:00'")
 }
 
 func (wf *WorkerFlags) startAt() *string {
-	return wf.String("start-at", "", "time or datetime in RFC3339 format: '"2006-01-02T15:04:05Z07:00"'")
+	return wf.String("start-at", "", "time or datetime in RFC3339 format: '2006-01-02T15:04:05Z07:00'")
 }
 
 func (wf *WorkerFlags) retries() *int {
