@@ -19,7 +19,6 @@ import (
 )
 
 // TODO(reed): default flags for everybody
-//--config CONFIG              config file
 
 // The idea is:
 //     parse flags -- if help, Usage() && quit

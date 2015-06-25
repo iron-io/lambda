@@ -80,6 +80,9 @@ func init() {
 			"status":   new(StatusCmd),
 			"log":      new(LogCmd),
 		},
+		"mq": map[string]Command{
+			"list": new(ListCommand),
+		},
 		// TODO mq
 	}
 }

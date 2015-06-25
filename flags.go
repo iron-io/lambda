@@ -150,3 +150,35 @@ func (wf *WorkerFlags) validateAllFlags() error {
 
 	return nil
 }
+
+type MqFlags struct {
+	*flag.FlagSet
+}
+
+func NewMqFlagSet(usage func()) *MqFlags {
+	flags := flag.NewFlagSet("command", flag.ContinueOnError)
+	flags.Usage = usage
+	return &MqFlags{flags}
+}
+func (mf *MqFlags) validateAllFlags() error {
+	if payloadFile := mf.Lookup("payload-file"); payloadFile != nil {
+		payloadFile := payloadFile.Value.String()
+		if payloadFile != "" {
+			if _, err := os.Stat(payloadFile); os.IsNotExist(err) {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (mf *MqFlags) payloadFile() *string {
+	return mf.String("payload-file", "", "optional: provide a json file of messages to be posted")
+}
+
+func (mf *MqFlags) perPage() *int {
+	return mf.Int("perPage", 25, "optional: amount of queues shown per page (default: 25)")
+}
+func (mf *MqFlags) page() *int {
+	return mf.Int("page", 0, "optional: starting page (default: 1)")
+}
