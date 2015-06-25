@@ -5,10 +5,6 @@ set -e
 # make an access token first here: https://github.com/settings/tokens
 # and save it somewhere.
 
-./build.sh
-cp bin/ironcli_windows bin/ironcli.exe
-cp bin/ironcli_darwin bin/ironcli_mac
-
 old=$(grep -E "release.*=.*'.*'" install.sh | grep -Eo "'.*'")
 
 # TODO taking ideas for automating this, can we make a bot+token and stick it in CircleCI?
@@ -29,6 +25,9 @@ sed -Ei "s/release.*=.*'.*'/release='$version'/"        install.sh
 sed -Ei "s/Version.*=.*\".*\"/Version = \"$version\"/"  main.go
 
 # NOTE: do the builds after the version has been bumped in main.go
+./build.sh
+cp bin/ironcli_windows bin/ironcli.exe
+cp bin/ironcli_darwin bin/ironcli_mac
 
 echo "uploading exe..."
 curl --progress-bar --data-binary "@bin/ironcli.exe"    -H "Content-Type: application/octet-stream" -u $name:$tok $upload_url\?name\=ironcli.exe >/dev/null
