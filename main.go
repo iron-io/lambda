@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/fatih/color"
+	"github.com/iron-io/ironcli/Godeps/_workspace/src/github.com/fatih/color"
 )
 
 var (
@@ -35,7 +35,7 @@ const (
 	BLANKS = "       "
 	INFO   = " for more info"
 
-	Version = "0.0.10"
+	Version = "v0.0.13"
 )
 
 func usage() {

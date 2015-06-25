@@ -27,7 +27,8 @@ _testmain.go
 
 
 .idea/
-ironcli_linux
-ironcli_mac
+ironcli_*
 ironcli
 iron.json
+ironcli-*
+mytoken.txt
