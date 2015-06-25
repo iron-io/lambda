@@ -91,3 +91,90 @@ func (l *ListCommand) Run() {
 		fmt.Println(q.Name)
 	}
 }
+
+type CreateCommand struct {
+	mqCommand
+
+	name string
+}
+
+func (c *CreateCommand) Flags(args ...string) error {
+	c.flags = NewMqFlagSet(c.Usage())
+	err := c.flags.Parse(args)
+	if err != nil {
+		return err
+	}
+
+	return c.flags.validateAllFlags()
+}
+
+func (c *CreateCommand) Args() error {
+	if c.flags.NArg() < 1 {
+		return errors.New("create requires at least one argument\nusage: iron mq create QUEUE_NAME")
+	}
+	c.name = c.flags.Args()[0]
+	return nil
+}
+
+func (c *CreateCommand) Usage() func() {
+	return func() {
+		fmt.Println(`usage: iron mq create QUEUE_NAME`)
+	}
+}
+
+func (c *CreateCommand) Run() {
+	q := mq.ConfigNew(c.name, &c.settings)
+	_, err := q.PushStrings("init")
+	if err != nil {
+		fmt.Println(red("create error\n", err))
+	}
+	err = q.Clear()
+	if err != nil {
+		fmt.Println(red("create error\n", err))
+	}
+
+	fmt.Println(green("queue ", q.Name, " created!"))
+}
+
+type RmCommand struct {
+	mqCommand
+
+	name string
+}
+
+func (r *RmCommand) Usage() func() {
+	return func() {
+		fmt.Println(`usage: iron mq remove QUEUE_NAME
+
+    Delete a queue from a project
+    `)
+	}
+}
+
+func (r *RmCommand) Flags(args ...string) error {
+	r.flags = NewMqFlagSet(r.Usage())
+	if err := r.flags.Parse(args); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *RmCommand) Args() error {
+	if r.flags.NArg() < 1 {
+		return errors.New("rm requires a queue name")
+	}
+
+	r.name = r.flags.Args()[0]
+	return nil
+}
+
+func (r *RmCommand) Run() {
+	queue := mq.ConfigNew(r.name, &r.settings)
+
+	_, err := queue.Delete()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(green("queue sucessfully deleted."))
+}

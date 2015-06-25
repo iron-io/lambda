@@ -81,7 +81,9 @@ func init() {
 			"log":      new(LogCmd),
 		},
 		"mq": map[string]Command{
-			"list": new(ListCommand),
+			"list":   new(ListCommand),
+			"create": new(CreateCommand),
+			"rm":     new(RmCommand),
 		},
 		// TODO mq
 	}
