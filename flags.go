@@ -59,15 +59,15 @@ func (wf *WorkerFlags) runEvery() *int {
 }
 
 func (wf *WorkerFlags) runTimes() *int {
-	return wf.Int("run-times", 1, "number of times a task will run")
+	return wf.Int("run-times", 0, "number of times a task will run")
 }
 
 func (wf *WorkerFlags) endAt() *string {
-	return wf.String("end-at", "", "time or datetime of form 'Mon Jan 2 15:04:05 -0700 2006'")
+	return wf.String("end-at", "", "time or datetime in RFC3339 format: '2006-01-02T15:04:05Z07:00'")
 }
 
 func (wf *WorkerFlags) startAt() *string {
-	return wf.String("start-at", "", "time or datetime of form 'Mon Jan 2 15:04:05 -0700 2006'")
+	return wf.String("start-at", "", "time or datetime in RFC3339 format: '2006-01-02T15:04:05Z07:00'")
 }
 
 func (wf *WorkerFlags) retries() *int {
@@ -127,7 +127,7 @@ func (wf *WorkerFlags) validateAllFlags() error {
 	if endat := wf.Lookup("end-at"); endat != nil {
 		endat := endat.Value.String()
 		if endat != "" {
-			_, err := time.Parse(time.RubyDate, endat)
+			_, err := time.Parse(time.RFC3339, endat)
 			if err != nil {
 				return err
 			}
@@ -137,7 +137,7 @@ func (wf *WorkerFlags) validateAllFlags() error {
 	if startat := wf.Lookup("start-at"); startat != nil {
 		startat := startat.Value.String()
 		if startat != "" {
-			_, err := time.Parse(time.RubyDate, startat)
+			_, err := time.Parse(time.RFC3339, startat)
 			if err != nil {
 				return err
 			}
