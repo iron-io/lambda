@@ -77,3 +77,13 @@ For custom images (if you have this enabled on your account):
 
 `iron worker upload --zip myworker.zip --name myworker google/ruby ruby hello.rb`
 
+## Contributing
+
+Give us a pull request!
+
+Updated dependencies:
+
+* `go get -u yourlib`
+* `godep update yourlib`
+* `godep save -r`
+

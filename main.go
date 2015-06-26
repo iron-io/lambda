@@ -35,7 +35,7 @@ const (
 	BLANKS = "       "
 	INFO   = " for more info"
 
-	Version = "v0.0.13"
+	Version = "v0.0.14"
 )
 
 func usage() {
