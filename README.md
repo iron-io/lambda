@@ -83,7 +83,7 @@ Give us a pull request!
 
 Updated dependencies:
 
-* `go get -u yourlib`
-* `godep update yourlib`
-* `godep save -r`
+Until the go team standardizes on a vendoring tool, we're using something
+analogous to their proposed plan for 1.5, to update a dependency, see:
 
+[vendoring](vendored/README.md)
