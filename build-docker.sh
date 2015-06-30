@@ -4,13 +4,6 @@ set -e
 # builds for each OS and then uploads to a fresh github release.
 # make an access token first here: https://github.com/settings/tokens
 # and save it somewhere.
-#
-# must have go compiler boot strapped for all OS for go <= 1.4 -- try this:
-#   % git clone git://github.com/davecheney/golang-crosscompile.git
-#   % source golang-crosscompile/crosscompile.bash
-#   % go-crosscompile-build-all
-#
-# also must have python, curl installed
 
 old=$(grep -E "release.*=.*'.*'" install.sh | grep -Eo "'.*'")
 
@@ -32,14 +25,21 @@ sed -Ei "s/release.*=.*'.*'/release='$version'/"        install.sh
 sed -Ei "s/Version.*=.*\".*\"/Version = \"$version\"/"  main.go
 
 # NOTE: do the builds after the version has been bumped in main.go
+docker run --rm -it -v "$GOPATH":/go -w /go/src/github.com/iron-io/ironcli golang:1.3-cross sh -c '
+for GOOS in darwin linux windows; do
+#  for GOARCH in 386 amd64; do
+    go build -o bin/ironcli_$GOOS
+#  done
+done
+'
+cp bin/ironcli_windows bin/ironcli.exe
+cp bin/ironcli_darwin bin/ironcli_mac
+
 echo "uploading exe..."
-GOOS=windows  GOARCH=amd64 go build -o bin/ironcli.exe
 curl --progress-bar --data-binary "@bin/ironcli.exe"    -H "Content-Type: application/octet-stream" -u $name:$tok $upload_url\?name\=ironcli.exe >/dev/null
 echo "uploading elf..."
-GOOS=linux    GOARCH=amd64 go build -o bin/ironcli_linux
 curl --progress-bar --data-binary "@bin/ironcli_linux"  -H "Content-Type: application/octet-stream" -u $name:$tok $upload_url\?name\=ironcli_linux >/dev/null
 echo "uploading mach-o..."
-GOOS=darwin   GOARCH=amd64 go build -o bin/ironcli_mac
 curl --progress-bar --data-binary "@bin/ironcli_mac"    -H "Content-Type: application/octet-stream" -u $name:$tok $upload_url\?name\=ironcli_mac >/dev/null
 
 echo "Done! Go edit the description: $html_url"
