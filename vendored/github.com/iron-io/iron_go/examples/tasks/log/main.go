@@ -7,8 +7,8 @@
 package main
 
 import (
-	"github.com/iron-io/iron_go/api"
-	"github.com/iron-io/iron_go/config"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/api"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/config"
 	"io/ioutil"
 	"log"
 	"time"

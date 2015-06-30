@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iron-io/iron_go/config"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/config"
 )
 
 type URL struct {
