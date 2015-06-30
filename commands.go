@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iron-io/ironcli/Godeps/_workspace/src/github.com/iron-io/iron_go/config"
-	"github.com/iron-io/ironcli/Godeps/_workspace/src/github.com/iron-io/iron_go/worker"
+	"github.com/iron-io/ironcli/vendor/github.com/iron-io/iron_go/config"
+	"github.com/iron-io/ironcli/vendor/github.com/iron-io/iron_go/worker"
 )
 
 // TODO(reed): default flags for everybody
