@@ -102,6 +102,7 @@ type UploadCmd struct {
 	maxConc      *int
 	retries      *int
 	retriesDelay *int
+	host         *string
 	zip          *string
 	codes        worker.Code // for fields, not code
 	cmd          string
@@ -399,6 +400,7 @@ func (u *UploadCmd) Flags(args ...string) error {
 	u.config = u.flags.config()
 	u.configFile = u.flags.configFile()
 	u.zip = u.flags.zip()
+	u.host = u.flags.host()
 
 	err := u.flags.Parse(args)
 	if err != nil {
@@ -469,7 +471,7 @@ func (u *UploadCmd) Usage() func() {
 
 func (u *UploadCmd) Run() {
 	fmt.Println(LINES, `Uploading worker '`+u.codes.Name+`'`)
-	id, err := pushCodes(*u.zip, &u.wrkr, u.codes)
+	id, err := pushCodes(*u.zip, *u.host, &u.wrkr, u.codes)
 
 	if err != nil {
 		fmt.Println(err)

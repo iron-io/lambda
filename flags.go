@@ -22,6 +22,10 @@ func (wf *WorkerFlags) name() *string {
 	return wf.String("name", "", "override code package name")
 }
 
+func (wf *WorkerFlags) host() *string {
+	return wf.String("host", "", "paas host")
+}
+
 func (wf *WorkerFlags) payload() *string {
 	return wf.String("payload", "", "give worker payload")
 }
