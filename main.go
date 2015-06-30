@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/iron-io/ironcli/vendor/github.com/fatih/color"
+	"github.com/iron-io/ironcli/vendored/github.com/fatih/color"
 )
 
 var (
