@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
-	"strings"
 
 	"github.com/iron-io/iron_go3/config"
 	"github.com/iron-io/iron_go3/mq"
@@ -164,9 +164,11 @@ func (l *ListCmd) Run() {
 		}
 	} else {
 		fmt.Println("Queues for project", l.settings.ProjectId)
-		fmt.Printf("To view in hud, go to hud-e.iron.io/mq/%s/projects/%s/queues\n",
-			stripHost(l.settings.Host),
-			l.settings.ProjectId)
+		if tag, err := getHudTag(l.settings); err == nil {
+			fmt.Printf("To view in hud, go to hud-e.iron.io/mq/%s/projects/%s/queues\n",
+				tag,
+				l.settings.ProjectId)
+		}
 		for _, q := range queues {
 			fmt.Println(BLANKS, "*", q.Name)
 		}
@@ -216,12 +218,14 @@ func (c *CreateCmd) Run() {
 	}
 
 	fmt.Println(green("\n", BLANKS, "Queue ", q.Name, " has been successfully created."))
-	fmt.Printf("%sVisit hud-e.iron.io/mq/%s/projects/%s/queues/%s to see your queue.\n", BLANKS,
-		stripHost(q.Settings.Host),
-		q.Settings.ProjectId,
-		q.Name)
-}
+	if tag, err := getHudTag(q.Settings); err == nil {
+		fmt.Printf("%sVisit hud-e.iron.io/mq/%s/projects/%s/queues/%s to see your queue.\n", BLANKS,
+			tag,
+			q.Settings.ProjectId,
+			q.Name)
 
+	}
+}
 func (r *RmCmd) Usage() func() {
 	return func() {
 		fmt.Fprintln(os.Stderr, `usage: iron mq remove QUEUE_NAME
@@ -389,7 +393,7 @@ func (p *PushCmd) Args() error {
 		}
 
 		messageStruct := struct {
-			Messages []string `json:messages`
+			Messages []string `json:"messages"`
 		}{}
 		err = json.Unmarshal(b, &messageStruct)
 		if err != nil {
@@ -425,7 +429,10 @@ func (p *PushCmd) Run() {
 		}
 	} else {
 		fmt.Println(green("Message succesfully pushed!"))
-		fmt.Printf("To see your queue in hud, go to hud-e.iron.io/mq/%s/projects/%s/queues/%s\n", stripHost(q.Settings.Host), q.Settings.ProjectId, q.Name)
+		if tag, err := getHudTag(q.Settings); err == nil {
+			fmt.Printf("To see your queue in hud, go to hud-e.iron.io/mq/%s/projects/%s/queues/%s\n",
+				tag, q.Settings.ProjectId, q.Name)
+		}
 		fmt.Println(BLANKS, "Message IDs:")
 		fmt.Printf("%s ", BLANKS)
 		for _, id := range ids {
@@ -701,7 +708,9 @@ func (i *InfoCmd) Run() {
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
-	fmt.Printf("To view your queue in hud, go to hud-e.iron.io/mq/%s/projects/%s/queues/%s\n", stripHost(q.Settings.Host), q.Settings.ProjectId, info.Name)
+	if tag, err := getHudTag(q.Settings); err == nil {
+		fmt.Printf("To view your queue in hud, go to hud-e.iron.io/mq/%s/projects/%s/queues/%s\n", tag, q.Settings.ProjectId, info.Name)
+	}
 	fmt.Println(BLANKS, "Name:", info.Name)
 	fmt.Println(BLANKS, "Current Size:", info.Size)
 	fmt.Println(BLANKS, "Total messages:", info.TotalMessages)
@@ -719,6 +728,32 @@ func (i *InfoCmd) Run() {
 // seriously though
 // this is super duper hacky
 // it only works with the public cluster mq-aws-us-east-1-1
-func stripHost(s string) string {
-	return strings.Split(s, ".")[0][3:]
+func getHudTag(settings config.Settings) (string, error) {
+	res, err := http.Get("https://auth.iron.io/1/clusters?oauth=" + settings.Token)
+	if err != nil {
+		return "", err
+	}
+
+	clusters := struct {
+		Clusters []struct {
+			Tag string `json:"tag"`
+			URL string `json:"url"`
+		} `json:"clusters"`
+	}{}
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	err = json.Unmarshal(b, &clusters)
+	if err != nil {
+		return "", err
+	}
+	queueHost := settings.Host
+	for _, cluster := range clusters.Clusters {
+		if cluster.URL == queueHost {
+			return cluster.Tag, err
+		}
+	}
+	return "", fmt.Errorf("no hud tags found")
 }
