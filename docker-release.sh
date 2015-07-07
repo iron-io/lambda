@@ -25,21 +25,13 @@ sed -Ei "s/release.*=.*'.*'/release='$version'/"        install.sh
 sed -Ei "s/Version.*=.*\".*\"/Version = \"$version\"/"  main.go
 
 # NOTE: do the builds after the version has been bumped in main.go
-docker run --rm -it -v "$GOPATH":/go -w /go/src/github.com/iron-io/ironcli golang:1.3-cross sh -c '
-for GOOS in darwin linux windows; do
-#  for GOARCH in 386 amd64; do
-    go build -o bin/ironcli_$GOOS
-#  done
-done
-'
-cp bin/ironcli_windows bin/ironcli.exe
-cp bin/ironcli_darwin bin/ironcli_mac
+build.sh
 
 echo "uploading exe..."
-curl --progress-bar --data-binary "@bin/ironcli.exe"    -H "Content-Type: application/octet-stream" -u $name:$tok $upload_url\?name\=ironcli.exe >/dev/null
+curl --progress-bar --data-binary "@bin/ironcli-windows-amd64"    -H "Content-Type: application/octet-stream" -u $name:$tok $upload_url\?name\=ironcli.exe >/dev/null
 echo "uploading elf..."
-curl --progress-bar --data-binary "@bin/ironcli_linux"  -H "Content-Type: application/octet-stream" -u $name:$tok $upload_url\?name\=ironcli_linux >/dev/null
+curl --progress-bar --data-binary "@bin/ironcli-linux-amd64"  -H "Content-Type: application/octet-stream" -u $name:$tok $upload_url\?name\=ironcli_linux >/dev/null
 echo "uploading mach-o..."
-curl --progress-bar --data-binary "@bin/ironcli_mac"    -H "Content-Type: application/octet-stream" -u $name:$tok $upload_url\?name\=ironcli_mac >/dev/null
+curl --progress-bar --data-binary "@bin/ironcli-darwin-amd64"    -H "Content-Type: application/octet-stream" -u $name:$tok $upload_url\?name\=ironcli_mac >/dev/null
 
 echo "Done! Go edit the description: $html_url"
