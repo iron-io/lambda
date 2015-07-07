@@ -42,4 +42,8 @@ echo "uploading mach-o..."
 GOOS=darwin   GOARCH=amd64 go build -o bin/ironcli_mac
 curl --progress-bar --data-binary "@bin/ironcli_mac"    -H "Content-Type: application/octet-stream" -u $name:$tok $upload_url\?name\=ironcli_mac >/dev/null
 
+git add -u
+git ci -m "$version"
+git push origin master
+
 echo "Done! Go edit the description: $html_url"

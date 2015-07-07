@@ -9,7 +9,7 @@ set -e
 
 # UPDATE RELEASE HERE AFTER A NEW VERSION IS RELEASED
 # TODO latest ?
-release='v0.0.14'
+release='v0.0.15'
 
 command_exists() {
   command -v "$@" > /dev/null 2>&1
