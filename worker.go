@@ -13,7 +13,7 @@ import (
 )
 
 // create code package (zip) from parsed .worker info
-func pushCodes(zipName, host string, w *worker.Worker, args worker.Code) (id string, err error) {
+func pushCodes(zipName string, w *worker.Worker, args worker.Code) (id string, err error) {
 	// TODO i don't get why i can't write from disk to wire, but I give up
 	var body bytes.Buffer
 	mWriter := multipart.NewWriter(&body)
@@ -21,23 +21,9 @@ func pushCodes(zipName, host string, w *worker.Worker, args worker.Code) (id str
 	if err != nil {
 		return "", err
 	}
-	reqMap := map[string]interface{}{
-		"name":            args.Name,
-		"config":          args.Config,
-		"max_concurrency": args.MaxConcurrency,
-		"retries":         args.Retries,
-		"retries_delay":   args.RetriesDelay.Seconds(),
-		"image":           args.Image,
-	}
-	if host != "" {
-		reqMap["host"] = host
-	}
-	if args.Command != "" {
-		reqMap["command"] = args.Command
-	}
 
 	jEncoder := json.NewEncoder(mMetaWriter)
-	if err := jEncoder.Encode(reqMap); err != nil {
+	if err := jEncoder.Encode(args); err != nil {
 		return "", err
 	}
 

@@ -445,10 +445,13 @@ func (u *UploadCmd) Args() error {
 		u.codes.Retries = *u.retries
 	}
 	if *u.retriesDelay > 0 {
-		u.codes.RetriesDelay = time.Duration(*u.retriesDelay) * time.Second
+		u.codes.RetriesDelay = *u.retriesDelay
 	}
 	if *u.config != "" {
 		u.codes.Config = *u.config
+	}
+	if *u.host != "" {
+		u.codes.Host = *u.host
 	}
 
 	if *u.configFile != "" {
@@ -471,7 +474,7 @@ func (u *UploadCmd) Usage() func() {
 
 func (u *UploadCmd) Run() {
 	fmt.Println(LINES, `Uploading worker '`+u.codes.Name+`'`)
-	id, err := pushCodes(*u.zip, *u.host, &u.wrkr, u.codes)
+	id, err := pushCodes(*u.zip, &u.wrkr, u.codes)
 
 	if err != nil {
 		fmt.Println(err)
