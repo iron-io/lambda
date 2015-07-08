@@ -5,7 +5,6 @@ for GOOS in darwin linux windows; do
     echo "Building $GOOS-$GOARCH"
     export GOOS=$GOOS
     export GOARCH=$GOARCH
-    env
     go build -o bin/ironcli-$GOOS-$GOARCH
   done
 done
