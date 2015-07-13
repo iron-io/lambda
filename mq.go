@@ -114,8 +114,10 @@ func readIds() ([]string, error) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		message := scanner.Text()
-		id := message[:19] // We want the first 19 characters of the line, since an id is 19 characters long
-		ids = append(ids, id)
+		if len(message) > 19 {
+			id := message[:19] // We want the first 19 characters of the line, since an id is 19 characters long
+			ids = append(ids, id)
+		}
 	}
 	return ids, scanner.Err()
 }
