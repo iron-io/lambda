@@ -121,8 +121,13 @@ func readIds() ([]string, error) {
 }
 
 // Check if stdout is being piped
-func isPiped() bool {
+func isPipedOut() bool {
 	fi, _ := os.Stdout.Stat()
+	return (fi.Mode() & os.ModeNamedPipe) == os.ModeNamedPipe
+}
+
+func isPipedIn() bool {
+	fi, _ := os.Stdin.Stat()
 	return (fi.Mode() & os.ModeNamedPipe) == os.ModeNamedPipe
 }
 
@@ -158,7 +163,7 @@ func (l *ListCmd) Run() {
 		fmt.Println(BLANKS, err)
 		return
 	}
-	if isPiped() {
+	if isPipedOut() {
 		for _, q := range queues {
 			fmt.Println(q.Name)
 		}
@@ -251,12 +256,10 @@ func (r *RmCmd) Args() error {
 	r.queue_name = r.flags.Arg(0)
 	return nil
 }
-
 func (r *RmCmd) Run() {
 	var queues []mq.Queue
 
-	fi, _ := os.Stdin.Stat()
-	if (fi.Mode() & os.ModeNamedPipe) == os.ModeNamedPipe {
+	if isPipedIn() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			name := scanner.Text()
@@ -351,7 +354,7 @@ func (p *PeekCmd) Run() {
 		return
 	}
 
-	if !isPiped() {
+	if !isPipedOut() {
 		fmt.Println("-------- ID ------ | Body")
 	}
 	printMessages(msgs)
@@ -423,7 +426,7 @@ func (p *PushCmd) Run() {
 		fmt.Fprintln(os.Stderr, red(err))
 	}
 
-	if isPiped() {
+	if isPipedOut() {
 		for _, id := range ids {
 			fmt.Println(id)
 		}
@@ -504,7 +507,7 @@ func (p *PopCmd) Run() {
 		}
 	}
 
-	if isPiped() {
+	if isPipedOut() {
 		printMessages(messages)
 	} else {
 		fmt.Println(green("messages successfully popped off the queue"))
@@ -577,7 +580,7 @@ func (r *ReserveCmd) Run() {
 		}
 	}
 
-	if isPiped() {
+	if isPipedOut() {
 		printMessages(messages)
 	} else {
 		fmt.Println(green("messages successfully reserved"))
@@ -624,8 +627,7 @@ func (d *DeleteCmd) Args() error {
 	d.queue_name = d.flags.Arg(0)
 
 	// Read and parse piped info
-	fi, _ := os.Stdin.Stat()
-	if (fi.Mode() & os.ModeNamedPipe) == os.ModeNamedPipe {
+	if isPipedIn() {
 		ids, err := readIds()
 		if err != nil {
 			return err
