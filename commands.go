@@ -409,12 +409,10 @@ func (u *UploadCmd) Flags(args ...string) error {
 	return u.flags.validateAllFlags()
 }
 
-// `iron worker upload [--zip ZIPFILE] --name NAME IMAGE COMMAND`
-//
-// old deprecated: `iron worker upload [ZIPFILE] [COMMAND]`
+// `iron worker upload [--zip ZIPFILE] --name NAME IMAGE [COMMAND]`
 func (u *UploadCmd) Args() error {
-	if u.flags.NArg() < 2 {
-		return errors.New("upload takes at least two arguments, the name of the worker and the name of the Docker image. eg: iron worker upload [--zip WORKER_ZIP] --name WORKER_NAME DOCKER_IMAGE [COMMAND]")
+	if u.flags.NArg() < 1 {
+		return errors.New("upload takes at least one argument. see iron worker upload -h")
 	}
 
 	u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
@@ -427,9 +425,6 @@ func (u *UploadCmd) Args() error {
 	}
 
 	if *u.zip != "" {
-		if u.codes.Command == "" { // must have command if using zip
-			return errors.New("uploading a zip file requires a command, see -help")
-		}
 		// make sure it exists and it's a zip
 		if !strings.HasSuffix(*u.zip, ".zip") {
 			return errors.New("file extension must be .zip, got: " + *u.zip)
@@ -467,7 +462,7 @@ func (u *UploadCmd) Args() error {
 
 func (u *UploadCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron worker upload [-zip my.zip] -name NAME [OPTIONS] some/image:tag [command...]`)
+		fmt.Fprintln(os.Stderr, `usage: iron worker upload [-zip my.zip] -name NAME [OPTIONS] some/image[:tag] [command...]`)
 		u.flags.PrintDefaults()
 	}
 }
