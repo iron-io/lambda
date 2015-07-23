@@ -36,6 +36,7 @@ func (mc *mqCmd) Config() error {
 	if *projectIDFlag != "" {
 		mc.settings.ProjectId = *projectIDFlag
 	}
+
 	if *tokenFlag != "" {
 		mc.settings.Token = *tokenFlag
 	}
@@ -46,6 +47,16 @@ func (mc *mqCmd) Config() error {
 	if mc.settings.Token == "" {
 		return errors.New("did not find token in any config files or env variables")
 	}
+
+	if !isPipedOut() {
+		fmt.Printf("%sConfiguring client\n", LINES)
+	}
+	// pName, err := mqProjectname(mc.settings)
+	// if err != nil {
+	// 	return err
+	// }
+	// fmt.Printf(`%s Project '%s' with id='%s'`, BLANKS, pName, mc.settings.ProjectId)
+	// fmt.Println()
 
 	return nil
 }
@@ -170,15 +181,18 @@ func (l *ListCmd) Run() {
 			fmt.Println(q.Name)
 		}
 	} else {
-		fmt.Println("Queues for project", l.settings.ProjectId)
-		if tag, err := getHudTag(l.settings); err == nil {
-			fmt.Printf("To view in hud, go to hud-e.iron.io/mq/%s/projects/%s/queues\n",
-				tag,
-				l.settings.ProjectId)
-		}
+		fmt.Println(LINES, "Listing queues")
 		for _, q := range queues {
 			fmt.Println(BLANKS, "*", q.Name)
 		}
+		// TODO: This can probably be put in its own function
+		if tag, err := getHudTag(l.settings); err == nil {
+			fmt.Printf("%s Go to hud-e.iron.io/mq/%s/projects/%s/queues for more info",
+				BLANKS,
+				tag,
+				l.settings.ProjectId)
+		}
+		fmt.Println()
 	}
 }
 
@@ -213,6 +227,7 @@ func (c *CreateCmd) Usage() func() {
 }
 
 func (c *CreateCmd) Run() {
+	fmt.Printf("%sCreating queue \"%s\"\n", LINES, c.queue_name)
 	q := mq.ConfigNew(c.queue_name, &c.settings)
 	_, err := q.PushStrings("")
 	if err != nil {
@@ -224,13 +239,12 @@ func (c *CreateCmd) Run() {
 		fmt.Fprintln(os.Stderr, red(BLANKS, "create error: ", err))
 	}
 
-	fmt.Println(green("\n", BLANKS, "Queue ", q.Name, " has been successfully created."))
+	fmt.Println(green(BLANKS, "Queue ", q.Name, " has been successfully created."))
 	if tag, err := getHudTag(q.Settings); err == nil {
 		fmt.Printf("%sVisit hud-e.iron.io/mq/%s/projects/%s/queues/%s to see your queue.\n", BLANKS,
 			tag,
 			q.Settings.ProjectId,
 			q.Name)
-
 	}
 }
 func (r *RmCmd) Usage() func() {
@@ -251,8 +265,8 @@ func (r *RmCmd) Flags(args ...string) error {
 }
 
 func (r *RmCmd) Args() error {
-	if r.flags.NArg() < 1 {
-		return errors.New("rm requires a queue name")
+	if r.flags.NArg() < 1 && !isPipedIn() {
+		return errors.New("rm requires a queue name.")
 	}
 
 	r.queue_name = r.flags.Arg(0)
@@ -277,11 +291,11 @@ func (r *RmCmd) Run() {
 	for _, q := range queues {
 		err := q.Delete()
 		if err != nil {
-			fmt.Println(err)
-			return
+			fmt.Println(red(BLANKS, "Error deleting queue", q.Name, ":", err))
+		} else {
+			fmt.Println(green(BLANKS, q.Name, " has been sucessfully deleted."))
 		}
 	}
-	fmt.Fprintln(os.Stderr, "\n", green(BLANKS, "Queue has been sucessfully deleted."))
 }
 
 func (c *ClearCmd) Usage() func() {
@@ -312,7 +326,7 @@ func (c *ClearCmd) Args() error {
 func (c *ClearCmd) Run() {
 	q := mq.ConfigNew(c.queue_name, &c.settings)
 	if err := q.Clear(); err != nil {
-		fmt.Fprintln(os.Stderr, red("clear error ", err))
+		fmt.Println(red(BLANKS, "Error clearing queue:", err))
 		return
 	}
 	fmt.Fprintln(os.Stderr, green(BLANKS, "Queue", q.Name, "has been successfully cleared"))
@@ -383,7 +397,7 @@ func (p *PushCmd) Flags(args ...string) error {
 }
 
 func (p *PushCmd) Args() error {
-	if p.flags.NArg() < 1 {
+	if p.flags.NArg() < 1 && !isPipedIn() {
 		return errors.New(`push requires the queue name
 
     usage: iron mq push [-f file] QUEUE_NAME "MESSAGE"...`)
@@ -433,17 +447,17 @@ func (p *PushCmd) Run() {
 			fmt.Println(id)
 		}
 	} else {
-		fmt.Println(green("Message succesfully pushed!"))
-		if tag, err := getHudTag(q.Settings); err == nil {
-			fmt.Printf("To see your queue in hud, go to hud-e.iron.io/mq/%s/projects/%s/queues/%s\n",
-				tag, q.Settings.ProjectId, q.Name)
-		}
-		fmt.Println(BLANKS, "Message IDs:")
-		fmt.Printf("%s ", BLANKS)
+		fmt.Println(green(LINES, "Message succesfully pushed!"))
+		fmt.Printf("%sMessage IDs:\n", BLANKS)
+		fmt.Printf("%s", BLANKS)
 		for _, id := range ids {
-			fmt.Printf("%s, ", id)
+			fmt.Printf("%s ", id)
 		}
 		fmt.Println()
+		if tag, err := getHudTag(q.Settings); err == nil {
+			fmt.Printf("%sGo to hud-e.iron.io/mq/%s/projects/%s/queues/%s for more info\n", BLANKS,
+				tag, q.Settings.ProjectId, q.Name)
+		}
 	}
 }
 
@@ -713,7 +727,7 @@ func (i *InfoCmd) Run() {
 		return
 	}
 	if tag, err := getHudTag(q.Settings); err == nil {
-		fmt.Printf("To view your queue in hud, go to hud-e.iron.io/mq/%s/projects/%s/queues/%s\n", tag, q.Settings.ProjectId, info.Name)
+		fmt.Printf("Go to hud-e.iron.io/mq/%s/projects/%s/queues/%s for more info.\n", tag, q.Settings.ProjectId, info.Name)
 	}
 	fmt.Println(BLANKS, "Name:", info.Name)
 	fmt.Println(BLANKS, "Current Size:", info.Size)
