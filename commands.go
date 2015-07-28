@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"encoding/base64"
 
 	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/config"
 	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/worker"
@@ -93,6 +94,14 @@ func projectName(config config.Settings) (string, error) {
 	return reply.Name, err
 }
 
+type DockerCredentials struct {
+	auth  *string
+	email *string
+	name  *string
+	pass  *string
+	url   *string
+}
+
 type UploadCmd struct {
 	command
 
@@ -106,6 +115,7 @@ type UploadCmd struct {
 	zip          *string
 	codes        worker.Code // for fields, not code
 	cmd          string
+	credentials  DockerCredentials
 }
 
 type QueueCmd struct {
@@ -393,6 +403,12 @@ func (l *LogCmd) Run() {
 
 func (u *UploadCmd) Flags(args ...string) error {
 	u.flags = NewWorkerFlagSet(u.Usage())
+	u.credentials = DockerCredentials{}
+	u.credentials.email = u.flags.dockerRepoEmail()
+	u.credentials.auth = u.flags.dockerRepoAuth()
+	u.credentials.url = u.flags.dockerRepoUrl()
+	u.credentials.name = u.flags.dockerRepoName()
+	u.credentials.pass = u.flags.dockerRepoPass()
 	u.name = u.flags.name()
 	u.maxConc = u.flags.maxConc()
 	u.retries = u.flags.retries()
@@ -417,6 +433,12 @@ func (u *UploadCmd) Args() error {
 
 	u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
 	u.codes.Image = u.flags.Arg(0)
+
+	if *u.credentials.email != "" || *u.credentials.auth != "" || *u.credentials.url != "" || *u.credentials.name != "" || *u.credentials.pass != "" {
+		if *u.credentials.email == "" || (*u.credentials.auth == "" && (*u.credentials.pass == "" || *u.credentials.name == "")) {
+			return errors.New("if you set docker repo credentials, you should set both email and auth or email and pass/username")
+		}
+	}
 
 	if *u.name == "" {
 		return errors.New("must specify -name for your worker")
@@ -455,6 +477,18 @@ func (u *UploadCmd) Args() error {
 			return err
 		}
 		u.codes.Config = string(pload)
+	}
+	if *u.credentials.email != "" {
+		u.codes.DockerRepoEmail = *u.credentials.email
+		if *u.credentials.auth != "" {
+			u.codes.DockerRepoAuth = *u.credentials.auth
+		} else {
+			u.codes.DockerRepoAuth = base64.StdEncoding.EncodeToString([]byte(*u.credentials.name + ":" + *u.credentials.name))
+		}
+
+		if *u.credentials.url != "" {
+			u.codes.DockerRepoUrl = *u.credentials.url
+		}
 	}
 
 	return nil
