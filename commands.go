@@ -134,6 +134,7 @@ type SchedCmd struct {
 	maxConc     *int
 	runEvery    *int
 	runTimes    *int
+	cluster     *string
 	endAt       *string // time.RubyTime
 	startAt     *string // time.RubyTime
 
@@ -163,6 +164,7 @@ func (s *SchedCmd) Flags(args ...string) error {
 	s.runTimes = s.flags.runTimes()
 	s.endAt = s.flags.endAt()
 	s.startAt = s.flags.startAt()
+	s.cluster = s.flags.cluster()
 
 	err := s.flags.Parse(args)
 	if err != nil {
@@ -184,6 +186,7 @@ func (s *SchedCmd) Args() error {
 		Delay:    &delay,
 		Priority: s.priority,
 		RunTimes: s.runTimes,
+		Cluster:  *s.cluster,
 	}
 
 	payload := *s.payload
