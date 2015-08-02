@@ -479,7 +479,6 @@ func (u *UploadCmd) Flags(args ...string) error {
 	u.config = u.flags.config()
 	u.configFile = u.flags.configFile()
 	u.zip = u.flags.zip()
-	u.host = u.flags.host()
 
 	err := u.flags.Parse(args)
 	if err != nil {
@@ -524,7 +523,8 @@ func (u *UploadCmd) Args() error {
 	if *u.config != "" {
 		u.codes.Config = *u.config
 	}
-	if *u.host != "" {
+
+	if u.host != nil && *u.host != "" {
 		u.codes.Host = *u.host
 	}
 
@@ -547,13 +547,15 @@ func (u *UploadCmd) Usage() func() {
 
 func (u *UploadCmd) Run() {
 	fmt.Println(LINES, `Uploading worker '`+u.codes.Name+`'`)
-	id, err := pushCodes(*u.zip, &u.wrkr, u.codes)
+	code, err := pushCodes(*u.zip, &u.wrkr, u.codes)
 
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	id = string(id)
-	fmt.Println(BLANKS, green(`Uploaded code package with id='`+id+`'`))
-	fmt.Println(BLANKS, green(u.hud_URL_str+"code/"+id+INFO))
+	fmt.Println(BLANKS, green(`Uploaded code package with id='`+code.Id+`'`))
+	if code != nil && code.Host != "" {
+		fmt.Println(BLANKS, green(`Hosted at: '`+code.Host+`'`))
+	}
+	fmt.Println(BLANKS, green(u.hud_URL_str+"code/"+code.Id+INFO))
 }

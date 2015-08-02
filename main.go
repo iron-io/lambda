@@ -35,7 +35,7 @@ const (
 	BLANKS = "       "
 	INFO   = " for more info"
 
-	Version = "v0.0.15"
+	Version = "v0.0.19"
 )
 
 func usage() {
@@ -124,31 +124,43 @@ func main() {
 		usage()
 	}
 
-	product := flag.Arg(0)
-	cmds, ok := commands[product]
-	if !ok {
-		pusage(product)
-	}
+	var cmd Command
+	flagStart := 2
+	if flag.Arg(0) == "run" {
+		// special
+		cmd2 := UploadCmd{}
+		// this is lame:
+		t := "true"
+		cmd2.host = &t
+		cmd = &cmd2
+		flagStart = 1
+	} else {
 
-	if flag.NArg() < 2 {
-		pusage(product)
-	}
-
-	cmdName := flag.Arg(1)
-	cmd, ok := cmds[cmdName]
-
-	if !ok {
-		switch strings.TrimSpace(cmdName) {
-		case "-h", "help", "--help", "-help":
+		product := flag.Arg(0)
+		cmds, ok := commands[product]
+		if !ok {
 			pusage(product)
-		default:
-			fmt.Fprintln(os.Stderr, red(cmdName, " not a command, see -h"))
 		}
-		os.Exit(1)
+
+		if flag.NArg() < 2 {
+			pusage(product)
+		}
+
+		cmdName := flag.Arg(1)
+		cmd, ok = cmds[cmdName]
+		if !ok {
+			switch strings.TrimSpace(cmdName) {
+			case "-h", "help", "--help", "-help":
+				pusage(product)
+			default:
+				fmt.Fprintln(os.Stderr, red(cmdName, " not a command, see -h"))
+			}
+			os.Exit(1)
+		}
 	}
 
 	// each command defines its flags, err is either ErrHelp or bad flag value
-	if err := cmd.Flags(flag.Args()[2:]...); err != nil {
+	if err := cmd.Flags(flag.Args()[flagStart:]...); err != nil {
 		if err != flag.ErrHelp {
 			fmt.Println(red(err))
 		}
