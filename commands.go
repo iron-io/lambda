@@ -5,6 +5,7 @@ package main
 // TODO(reed): fix: empty schedule payload not working ?
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,7 +14,6 @@ import (
 	"os"
 	"strings"
 	"time"
-	"encoding/base64"
 
 	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/config"
 	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/worker"
@@ -94,12 +94,13 @@ func projectName(config config.Settings) (string, error) {
 	return reply.Name, err
 }
 
-type DockerCredentials struct {
-	auth  *string
-	email *string
-	name  *string
-	pass  *string
-	url   *string
+type DockerLoginCmd struct {
+	command
+	Auth     *string `json:"auth"`
+	Email    *string `json:"email"`
+	username *string `json:"-"`
+	pass     *string `json:"-"`
+	Url      *string `json:"url"`
 }
 
 type UploadCmd struct {
@@ -115,7 +116,6 @@ type UploadCmd struct {
 	zip          *string
 	codes        worker.Code // for fields, not code
 	cmd          string
-	credentials  DockerCredentials
 }
 
 type QueueCmd struct {
@@ -400,15 +400,76 @@ func (l *LogCmd) Run() {
 	}
 	fmt.Println(string(out))
 }
+func (l *DockerLoginCmd) Flags(args ...string) error {
+	l.flags = NewWorkerFlagSet(l.Usage())
+
+	l.Auth = l.flags.dockerRepoAuth()
+	l.Email = l.flags.dockerRepoEmail()
+	l.pass = l.flags.dockerRepoPass()
+	l.Url = l.flags.dockerRepoUrl()
+	l.username = l.flags.dockerRepoUserName()
+
+	err := l.flags.Parse(args)
+	if err != nil {
+		return err
+	}
+	return l.flags.validateAllFlags()
+}
+
+// Takes one parameter, the task_id to log
+func (l *DockerLoginCmd) Args() error {
+
+	if *l.Email != "" || *l.Auth != "" || *l.Url != "" || *l.username != "" || *l.pass != "" {
+		if *l.Email == "" || (*l.Auth == "" && (*l.pass == "" || *l.username == "")) {
+			return errors.New("you should set both repo-email and repo-auth or repo-email and repo-pass/repo-username")
+		}
+	}
+	if *l.username != "" && *l.pass != "" {
+		*l.Auth = base64.StdEncoding.EncodeToString([]byte(*l.username + ":" + *l.pass))
+	}
+
+	if *l.Url == "" || l.Url == nil{
+		defaultUrl := "https://index.docker.io/v1/" //default dockerhub url
+		l.Url = &defaultUrl
+	}
+
+	req, err := http.NewRequest("GET", *l.Url+"users/", nil)
+	if err != nil {
+		return errors.New("Cannot make auth request")
+	}
+
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept-Encoding", "gzip/deflate")
+	req.Header.Set("Authorization", "Basic "+*l.Auth)
+	req.Header.Set("Content-Type", "application/json")
+
+	_, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.New("Docker repo auth failed")
+	}
+
+	return nil
+}
+
+func (l *DockerLoginCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, `usage: iron worker login --username --password --email --auth --repo-url`)
+		l.flags.PrintDefaults()
+	}
+}
+
+func (l *DockerLoginCmd) Run() {
+	fmt.Println(LINES, "Storing docker repo credentials")
+	msg, err := dockerLogin(&l.wrkr, l)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(BLANKS, green(`Added docker repo credentials: `+msg))
+}
 
 func (u *UploadCmd) Flags(args ...string) error {
 	u.flags = NewWorkerFlagSet(u.Usage())
-	u.credentials = DockerCredentials{}
-	u.credentials.email = u.flags.dockerRepoEmail()
-	u.credentials.auth = u.flags.dockerRepoAuth()
-	u.credentials.url = u.flags.dockerRepoUrl()
-	u.credentials.name = u.flags.dockerRepoName()
-	u.credentials.pass = u.flags.dockerRepoPass()
 	u.name = u.flags.name()
 	u.maxConc = u.flags.maxConc()
 	u.retries = u.flags.retries()
@@ -433,12 +494,6 @@ func (u *UploadCmd) Args() error {
 
 	u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
 	u.codes.Image = u.flags.Arg(0)
-
-	if *u.credentials.email != "" || *u.credentials.auth != "" || *u.credentials.url != "" || *u.credentials.name != "" || *u.credentials.pass != "" {
-		if *u.credentials.email == "" || (*u.credentials.auth == "" && (*u.credentials.pass == "" || *u.credentials.name == "")) {
-			return errors.New("if you set docker repo credentials, you should set both email and auth or email and pass/username")
-		}
-	}
 
 	if *u.name == "" {
 		return errors.New("must specify -name for your worker")
@@ -478,19 +533,6 @@ func (u *UploadCmd) Args() error {
 		}
 		u.codes.Config = string(pload)
 	}
-	if *u.credentials.email != "" {
-		u.codes.DockerRepoEmail = *u.credentials.email
-		if *u.credentials.auth != "" {
-			u.codes.DockerRepoAuth = *u.credentials.auth
-		} else {
-			u.codes.DockerRepoAuth = base64.StdEncoding.EncodeToString([]byte(*u.credentials.name + ":" + *u.credentials.name))
-		}
-
-		if *u.credentials.url != "" {
-			u.codes.DockerRepoUrl = *u.credentials.url
-		}
-	}
-
 	return nil
 }
 
