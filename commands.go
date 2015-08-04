@@ -428,7 +428,7 @@ func (l *DockerLoginCmd) Args() error {
 		*l.Auth = base64.StdEncoding.EncodeToString([]byte(*l.username + ":" + *l.pass))
 	}
 
-	if *l.Url == "" || l.Url == nil{
+	if *l.Url == "" || l.Url == nil {
 		defaultUrl := "https://index.docker.io/v1/" //default dockerhub url
 		l.Url = &defaultUrl
 	}

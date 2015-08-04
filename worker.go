@@ -38,12 +38,11 @@ func dockerLogin(w *worker.Worker, args *DockerLoginCmd) (msg string, err error)
 	}
 
 	var res struct {
-			Msg string `json:"msg"`
-		}
+		Msg string `json:"msg"`
+	}
 
 	err = json.NewDecoder(response.Body).Decode(&res)
 	return res.Msg, err
-
 
 }
 

@@ -78,9 +78,9 @@ For custom images (if you have this enabled on your account):
 `iron worker upload --zip myworker.zip --name myworker google/ruby ruby hello.rb`
 
 For private images you should use 
-`iron worker login --repo-username USERNAME --repo-pass PASS  --repo-email EMAIL`
+`iron worker docker-login --repo-username USERNAME --repo-pass PASS  --repo-email EMAIL`
 Or
-`iron worker login --repo-auth AUTH --repo-email EMAIL`
+`iron worker docker-login --repo-auth AUTH --repo-email EMAIL`
 
 ## Contributing
 
