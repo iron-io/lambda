@@ -12,6 +12,40 @@ import (
 	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/worker"
 )
 
+func dockerLogin(w *worker.Worker, args *DockerLoginCmd) (msg string, err error) {
+
+	data, err := json.Marshal(args)
+	reader := bytes.NewReader(data)
+
+	req, err := http.NewRequest("POST", api.Action(w.Settings, "credentials").URL.String(), reader)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept-Encoding", "gzip/deflate")
+	req.Header.Set("Authorization", "OAuth "+w.Settings.Token)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", w.Settings.UserAgent)
+
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	if err = api.ResponseAsError(response); err != nil {
+		return "", err
+	}
+
+	var res struct {
+		Msg string `json:"msg"`
+	}
+
+	err = json.NewDecoder(response.Body).Decode(&res)
+	return res.Msg, err
+
+}
+
 // create code package (zip) from parsed .worker info
 func pushCodes(zipName string, w *worker.Worker, args worker.Code) (id string, err error) {
 	// TODO i don't get why i can't write from disk to wire, but I give up

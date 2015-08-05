@@ -78,18 +78,21 @@ type TaskInfo struct {
 type CodeSource map[string][]byte // map[pathInZip]code
 
 type Code struct {
-	Name           string     `json:"name"`
-	Runtime        string     `json:"runtime,omitempty"`
-	FileName       string     `json:"file_name,omitempty"`
-	Config         string     `json:"config,omitempty"`
-	MaxConcurrency int        `json:"max_concurrency,omitempty"`
-	Retries        int        `json:"retries,omitempty"`
-	Stack          string     `json:"stack,omitempty"`
-	Image          string     `json:"image,omitempty"`
-	Command        string     `json:"command,omitempty"`
-	RetriesDelay   int        `json:"retries_delay,omitempty"` // seconds
-	Host           string     `json:"host,omitempty"`          // PaaS router thing
-	Source         CodeSource `json:"-"`
+	Name            string     `json:"name"`
+	Runtime         string     `json:"runtime,omitempty"`
+	FileName        string     `json:"file_name,omitempty"`
+	Config          string     `json:"config,omitempty"`
+	MaxConcurrency  int        `json:"max_concurrency,omitempty"`
+	Retries         int        `json:"retries,omitempty"`
+	Stack           string     `json:"stack,omitempty"`
+	Image           string     `json:"image,omitempty"`
+	Command         string     `json:"command,omitempty"`
+	RetriesDelay    int        `json:"retries_delay,omitempty"` // seconds
+	Host            string     `json:"host,omitempty"`          // PaaS router thing
+	Source          CodeSource `json:"-"`
+	DockerRepoUrl   string     `json:"docker_repo_url,omitempty"`
+	DockerRepoEmail string     `json:"docker_repo_email,omitempty"`
+	DockerRepoAuth  string     `json:"docker_repo_auth,omitempty"`
 }
 
 type CodeInfo struct {
@@ -140,13 +143,16 @@ func (w *Worker) CodePackageUpload(code Code) (id string, err error) {
 	}
 	jEncoder := json.NewEncoder(mMetaWriter)
 	err = jEncoder.Encode(map[string]interface{}{
-		"name":            code.Name,
-		"runtime":         code.Runtime,
-		"file_name":       code.FileName,
-		"config":          code.Config,
-		"max_concurrency": code.MaxConcurrency,
-		"retries":         code.Retries,
-		"retries_delay":   code.RetriesDelay,
+		"name":              code.Name,
+		"runtime":           code.Runtime,
+		"file_name":         code.FileName,
+		"config":            code.Config,
+		"max_concurrency":   code.MaxConcurrency,
+		"retries":           code.Retries,
+		"retries_delay":     code.RetriesDelay,
+		"docker_repo_url":   code.DockerRepoUrl,
+		"docker_repo_email": code.DockerRepoEmail,
+		"docker_repo_auth":  code.DockerRepoAuth,
 	})
 	if err != nil {
 		return

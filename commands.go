@@ -5,6 +5,7 @@ package main
 // TODO(reed): fix: empty schedule payload not working ?
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -91,6 +92,15 @@ func projectName(config config.Settings) (string, error) {
 	}
 	err = json.NewDecoder(resp.Body).Decode(&reply)
 	return reply.Name, err
+}
+
+type DockerLoginCmd struct {
+	command
+	Auth     *string `json:"auth"`
+	Email    *string `json:"email"`
+	username *string `json:"-"`
+	pass     *string `json:"-"`
+	Url      *string `json:"url"`
 }
 
 type UploadCmd struct {
@@ -393,6 +403,73 @@ func (l *LogCmd) Run() {
 	}
 	fmt.Println(string(out))
 }
+func (l *DockerLoginCmd) Flags(args ...string) error {
+	l.flags = NewWorkerFlagSet(l.Usage())
+
+	l.Auth = l.flags.dockerRepoAuth()
+	l.Email = l.flags.dockerRepoEmail()
+	l.pass = l.flags.dockerRepoPass()
+	l.Url = l.flags.dockerRepoUrl()
+	l.username = l.flags.dockerRepoUserName()
+
+	err := l.flags.Parse(args)
+	if err != nil {
+		return err
+	}
+	return l.flags.validateAllFlags()
+}
+
+// Takes one parameter, the task_id to log
+func (l *DockerLoginCmd) Args() error {
+
+	if *l.Email != "" || *l.Auth != "" || *l.Url != "" || *l.username != "" || *l.pass != "" {
+		if *l.Email == "" || (*l.Auth == "" && (*l.pass == "" || *l.username == "")) {
+			return errors.New("you should set both repo-email and repo-auth or repo-email and repo-pass/repo-username")
+		}
+	}
+	if *l.username != "" && *l.pass != "" {
+		*l.Auth = base64.StdEncoding.EncodeToString([]byte(*l.username + ":" + *l.pass))
+	}
+
+	if *l.Url == "" || l.Url == nil {
+		defaultUrl := "https://index.docker.io/v1/" //default dockerhub url
+		l.Url = &defaultUrl
+	}
+
+	req, err := http.NewRequest("GET", *l.Url+"users/", nil)
+	if err != nil {
+		return errors.New("Cannot make auth request")
+	}
+
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept-Encoding", "gzip/deflate")
+	req.Header.Set("Authorization", "Basic "+*l.Auth)
+	req.Header.Set("Content-Type", "application/json")
+
+	_, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.New("Docker repo auth failed")
+	}
+
+	return nil
+}
+
+func (l *DockerLoginCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, `usage: iron worker login --username --password --email --auth --repo-url`)
+		l.flags.PrintDefaults()
+	}
+}
+
+func (l *DockerLoginCmd) Run() {
+	fmt.Println(LINES, "Storing docker repo credentials")
+	msg, err := dockerLogin(&l.wrkr, l)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(BLANKS, green(`Added docker repo credentials: `+msg))
+}
 
 func (u *UploadCmd) Flags(args ...string) error {
 	u.flags = NewWorkerFlagSet(u.Usage())
@@ -459,7 +536,6 @@ func (u *UploadCmd) Args() error {
 		}
 		u.codes.Config = string(pload)
 	}
-
 	return nil
 }
 

@@ -74,11 +74,12 @@ func pusage(p string) {
 func init() {
 	commands = map[string]map[string]Command{
 		"worker": map[string]Command{
-			"upload":   new(UploadCmd),
-			"queue":    new(QueueCmd),
-			"schedule": new(SchedCmd),
-			"status":   new(StatusCmd),
-			"log":      new(LogCmd),
+			"docker-login": new(DockerLoginCmd),
+			"upload":       new(UploadCmd),
+			"queue":        new(QueueCmd),
+			"schedule":     new(SchedCmd),
+			"status":       new(StatusCmd),
+			"log":          new(LogCmd),
 		},
 		// TODO mq
 	}
