@@ -183,8 +183,12 @@ func (mf *MqFlags) outputfile() *string {
 func (mf *MqFlags) perPage() *int {
 	return mf.Int("perPage", 30, "optional: amount of queues shown per page (default: 30)")
 }
-func (mf *MqFlags) page() *int {
-	return mf.Int("page", 0, "optional: starting page (default: 0)")
+func (mf *MqFlags) page() *string {
+	return mf.String("page", "0", "optional: starting page (default: 0)")
+}
+
+func (mf *MqFlags) filter() *string {
+	return mf.String("filter", "", "optional: prefix filter (default: \"\")")
 }
 
 func (mf *MqFlags) n() *int {

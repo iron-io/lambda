@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 
 	"github.com/iron-io/iron_go3/config"
@@ -61,138 +60,51 @@ func (mc *mqCmd) Config() error {
 	return nil
 }
 
-type RmCmd struct {
-	mqCmd
-
-	queue_name string
-}
-
-type ListCmd struct {
-	mqCmd
-
-	//flags
-	page    *int
-	perPage *int
-}
-
 type ClearCmd struct {
 	mqCmd
 
 	queue_name string
 }
 
-type PeekCmd struct {
-	mqCmd
-
-	n          *int
-	queue_name string
-}
-
-type PushCmd struct {
-	mqCmd
-	filename   *string
-	messages   []string
-	queue_name string
-}
-
-type PopCmd struct {
-	mqCmd
-
-	queue_name string
-	n          *int
-	outputfile *string
-	file       *os.File
-}
-
-type ReserveCmd struct {
-	mqCmd
-	queue_name string
-	n          *int
-	timeout    *int
-	outputfile *string
-	file       *os.File
-}
-
-func printMessages(msgs []mq.Message) {
-	for _, msg := range msgs {
-		fmt.Printf("%s %q\n", msg.Id, msg.Body)
+func (c *ClearCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, "usage: iron mq clear QUEUE_NAME")
 	}
 }
 
-// This is based on the format of func printMessages([]*mq.Message)
-func readIds() ([]string, error) {
-	var ids []string
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		message := scanner.Text()
-		if len(message) > 19 {
-			id := message[:19] // We want the first 19 characters of the line, since an id is 19 characters long
-			ids = append(ids, id)
-		}
-	}
-	return ids, scanner.Err()
-}
+func (c *ClearCmd) Flags(args ...string) error {
+	c.flags = NewMqFlagSet(c.Usage())
 
-// Check if stdout is being piped
-func isPipedOut() bool {
-	fi, _ := os.Stdout.Stat()
-	return (fi.Mode() & os.ModeNamedPipe) == os.ModeNamedPipe
-}
-
-func isPipedIn() bool {
-	fi, _ := os.Stdin.Stat()
-	return (fi.Mode() & os.ModeNamedPipe) == os.ModeNamedPipe
-}
-
-func (l *ListCmd) Flags(args ...string) error {
-	l.flags = NewMqFlagSet(l.Usage())
-
-	l.page = l.flags.page()
-	l.perPage = l.flags.perPage()
-
-	err := l.flags.Parse(args)
-	if err != nil {
+	if err := c.flags.Parse(args); err != nil {
 		return err
 	}
-	return l.flags.validateAllFlags()
-}
-
-func (l *ListCmd) Args() error {
 	return nil
 }
 
-func (l *ListCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq list [--perPage perPpage] [--page page]
-    -perPage perPage: Amount of queues showed per page
-    -page page: starting page number`)
-		return
+func (c *ClearCmd) Args() error {
+	if c.flags.NArg() < 1 {
+		return errors.New(`clear requires one arg
+
+    usage: iron mq clear QUEUE_NAME`)
 	}
+	c.queue_name = c.flags.Arg(0)
+	return nil
 }
 
-func (l *ListCmd) Run() {
-	queues, err := mq.List()
-	if err != nil {
-		fmt.Println(BLANKS, err)
+func (c *ClearCmd) Run() {
+	q := mq.ConfigNew(c.queue_name, &c.settings)
+	if err := q.Clear(); err != nil {
+		fmt.Println(red(BLANKS, "Error clearing queue:", err))
 		return
 	}
-	if isPipedOut() {
-		for _, q := range queues {
-			fmt.Println(q.Name)
-		}
-	} else {
-		fmt.Println(LINES, "Listing queues")
-		for _, q := range queues {
-			fmt.Println(BLANKS, "*", q.Name)
-		}
-		// TODO: This can probably be put in its own function
-		if tag, err := getHudTag(l.settings); err == nil {
-			fmt.Printf("%s Go to hud-e.iron.io/mq/%s/projects/%s/queues for more info",
-				BLANKS,
-				tag,
-				l.settings.ProjectId)
-		}
-		fmt.Println()
+	fmt.Fprintln(os.Stderr, green(BLANKS, "Queue ", q.Name, "has been successfully cleared"))
+}
+
+func (p *PeekCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, `usage: iron mq peek [--n number] QUEUE_NAME
+
+    n: peek n numbers of messages(default: 1, max: 100)`)
 	}
 }
 
@@ -240,104 +152,212 @@ func (c *CreateCmd) Run() {
 	}
 
 	fmt.Println(green(BLANKS, "Queue ", q.Name, " has been successfully created."))
-	if tag, err := getHudTag(q.Settings); err == nil {
-		fmt.Printf("%sVisit hud-e.iron.io/mq/%s/projects/%s/queues/%s to see your queue.\n", BLANKS,
-			tag,
-			q.Settings.ProjectId,
-			q.Name)
-	}
+	printQueueHudURL(BLANKS, q)
 }
-func (r *RmCmd) Usage() func() {
+
+type DeleteCmd struct {
+	mqCmd
+
+	filequeue_name *string
+	queue_name     string
+	ids            []string
+}
+
+func (d *DeleteCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq remove QUEUE_NAME
+		fmt.Fprintln(os.Stderr, `usage: iron mq delete [-i file] QUEUE_NAME "MSG_ID" "MSG_ID"...
 
-    Delete a queue from a project
-    `)
+    Delete a message of a queue
+    -i: json file with a set of ids to be deleted. Format should be {"ids": ["123", "456", ...]}`)
 	}
 }
 
-func (r *RmCmd) Flags(args ...string) error {
-	r.flags = NewMqFlagSet(r.Usage())
-	if err := r.flags.Parse(args); err != nil {
+func (d *DeleteCmd) Flags(args ...string) error {
+	d.flags = NewMqFlagSet(d.Usage())
+
+	d.filequeue_name = d.flags.filename()
+
+	if err := d.flags.Parse(args); err != nil {
 		return err
 	}
-	return nil
+	return d.flags.validateAllFlags()
 }
 
-func (r *RmCmd) Args() error {
-	if r.flags.NArg() < 1 && !isPipedIn() {
-		return errors.New("rm requires a queue name.")
+func (d *DeleteCmd) Args() error {
+	if d.flags.NArg() < 1 {
+		usage := d.Usage()
+		usage()
+		return errors.New(`delete requires a queue name`)
 	}
+	d.queue_name = d.flags.Arg(0)
 
-	r.queue_name = r.flags.Arg(0)
-	return nil
-}
-func (r *RmCmd) Run() {
-	var queues []mq.Queue
-
+	// Read and parse piped info
 	if isPipedIn() {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			name := scanner.Text()
-			queues = append(queues, mq.ConfigNew(name, &r.settings))
-		}
-		if err := scanner.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		}
-	} else {
-		queues = append(queues, mq.ConfigNew(r.queue_name, &r.settings))
-	}
-
-	for _, q := range queues {
-		err := q.Delete()
+		ids, err := readIds()
 		if err != nil {
-			fmt.Println(red(BLANKS, "Error deleting queue", q.Name, ":", err))
-		} else {
-			fmt.Println(green(BLANKS, q.Name, " has been sucessfully deleted."))
+			return err
+		}
+		d.ids = append(d.ids, ids...)
+	}
+
+	if *d.filequeue_name != "" {
+		b, err := ioutil.ReadFile(*d.filequeue_name)
+		if err != nil {
+			return err
+		}
+
+		// Use the message struct so its compatible with output files from reserve
+		var msgs []mq.Message
+		err = json.Unmarshal(b, &msgs)
+		if err != nil {
+			return err
+		}
+		for _, msg := range msgs {
+			d.ids = append(d.ids, msg.Id)
 		}
 	}
+
+	if d.flags.NArg() > 1 {
+		d.ids = append(d.ids, d.flags.Args()[1:]...)
+	}
+
+	if len(d.ids) < 1 {
+		return errors.New("delete requires at least one message id")
+	}
+	return nil
 }
 
-func (c *ClearCmd) Usage() func() {
+// This doesn't work with reserved messages
+func (d *DeleteCmd) Run() {
+	q := mq.ConfigNew(d.queue_name, &d.settings)
+
+	err := q.DeleteMessages(d.ids)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, red("Error deleting message", err))
+	}
+	fmt.Println(green("done deleting messages"))
+}
+
+type InfoCmd struct {
+	mqCmd
+
+	queue_name string
+}
+
+func (i *InfoCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, "usage: iron mq clear QUEUE_NAME")
+		fmt.Fprintln(os.Stderr, `usage: iron mq info QUEUE_NAME`)
 	}
 }
 
-func (c *ClearCmd) Flags(args ...string) error {
-	c.flags = NewMqFlagSet(c.Usage())
+func (i *InfoCmd) Flags(args ...string) error {
+	i.flags = NewMqFlagSet(i.Usage())
 
-	if err := c.flags.Parse(args); err != nil {
+	if err := i.flags.Parse(args); err != nil {
 		return err
 	}
-	return nil
+
+	return i.flags.validateAllFlags()
 }
 
-func (c *ClearCmd) Args() error {
-	if c.flags.NArg() < 1 {
-		return errors.New(`clear requires one arg
-
-    usage: iron mq clear QUEUE_NAME`)
+func (i *InfoCmd) Args() error {
+	if i.flags.NArg() < 1 {
+		return errors.New(`info requires a queue name`)
 	}
-	c.queue_name = c.flags.Arg(0)
+
+	i.queue_name = i.flags.Arg(0)
 	return nil
 }
 
-func (c *ClearCmd) Run() {
-	q := mq.ConfigNew(c.queue_name, &c.settings)
-	if err := q.Clear(); err != nil {
-		fmt.Println(red(BLANKS, "Error clearing queue:", err))
+func (i *InfoCmd) Run() {
+	q := mq.ConfigNew(i.queue_name, &i.settings)
+	info, err := q.Info()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return
 	}
-	fmt.Fprintln(os.Stderr, green(BLANKS, "Queue", q.Name, "has been successfully cleared"))
+	fmt.Println(BLANKS, "Name:", info.Name)
+	fmt.Println(BLANKS, "Current Size:", info.Size)
+	fmt.Println(BLANKS, "Total messages:", info.TotalMessages)
+	fmt.Println(BLANKS, "Message expiration:", info.MessageExpiration)
+	fmt.Println(BLANKS, "Message timeout:", info.MessageTimeout)
+	if info.Push != nil {
+		fmt.Println(BLANKS, "type:", *info.Type)
+		fmt.Println(BLANKS, "subscribers:", len(info.Push.Subscribers))
+		fmt.Println(BLANKS, "retries:", info.Push.Retries)
+		fmt.Println(BLANKS, "retries delay:", info.Push.RetriesDelay)
+	}
+	printQueueHudURL(BLANKS, q)
 }
 
-func (p *PeekCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq peek [--n number] QUEUE_NAME
+type ListCmd struct {
+	mqCmd
 
-    n: peek n numbers of messages(default: 1, max: 100)`)
+	//flags
+	page    *string
+	perPage *int
+	filter  *string
+}
+
+func (l *ListCmd) Flags(args ...string) error {
+	l.flags = NewMqFlagSet(l.Usage())
+
+	l.page = l.flags.page()
+	l.perPage = l.flags.perPage()
+	l.filter = l.flags.filter()
+
+	err := l.flags.Parse(args)
+	if err != nil {
+		return err
 	}
+	return l.flags.validateAllFlags()
+}
+
+func (l *ListCmd) Args() error {
+	return nil
+}
+
+func (l *ListCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, `usage: iron mq list [--perPage perPpage] [--page page]
+    --perPage perPage: Amount of queues showed per page
+    --page page: starting page number
+    --filter filter: filter using a specified prefix`)
+		return
+	}
+}
+
+func (l *ListCmd) Run() {
+	queues, err := mq.FilterPage(*l.filter, *l.page, *l.perPage)
+	if err != nil {
+		fmt.Println(BLANKS, err)
+		return
+	}
+	if isPipedOut() {
+		for _, q := range queues {
+			fmt.Println(q.Name)
+		}
+	} else {
+		fmt.Println(LINES, "Listing queues")
+		for _, q := range queues {
+			fmt.Println(BLANKS, "*", q.Name)
+		}
+		// TODO: This can probably be put in its own function
+		if tag, err := getHudTag(l.settings); err == nil {
+			fmt.Printf("%s Go to hud-e.iron.io/mq/%s/projects/%s/queues for more info",
+				BLANKS,
+				tag,
+				l.settings.ProjectId)
+		}
+		fmt.Println()
+	}
+}
+
+type PeekCmd struct {
+	mqCmd
+
+	n          *int
+	queue_name string
 }
 
 func (p *PeekCmd) Flags(args ...string) error {
@@ -374,6 +394,93 @@ func (p *PeekCmd) Run() {
 		fmt.Println("-------- ID ------ | Body")
 	}
 	printMessages(msgs)
+}
+
+type PopCmd struct {
+	mqCmd
+
+	queue_name string
+	n          *int
+	outputfile *string
+	file       *os.File
+}
+
+func (p *PopCmd) Usage() func() {
+	return func() {
+		fmt.Fprintln(os.Stderr, `usage: iron mq pop [-n int] [-o file] QUEUE_NAME
+
+    pop reserves then deletes a message from the queue
+    n: number of messages to pop off the queue, default: 1
+    o: write results in json to a file`)
+	}
+}
+
+func (p *PopCmd) Flags(args ...string) error {
+	p.flags = NewMqFlagSet(p.Usage())
+
+	p.n = p.flags.n()
+	p.outputfile = p.flags.outputfile()
+
+	if err := p.flags.Parse(args); err != nil {
+		return err
+	}
+	return p.flags.validateAllFlags()
+}
+
+func (p *PopCmd) Args() error {
+	if p.flags.NArg() < 1 {
+		return errors.New(`pop requires a queue name
+
+    usage: iron mq pop [-n n] [-o file] QUEUE_NAME`)
+	}
+	if *p.outputfile != "" {
+		f, err := os.Create(*p.outputfile)
+		if err != nil {
+			return err
+		}
+		p.file = f
+	}
+
+	p.queue_name = p.flags.Arg(0)
+	return nil
+}
+
+func (p *PopCmd) Run() {
+	q := mq.ConfigNew(p.queue_name, &p.settings)
+
+	messages, err := q.PopN(*p.n)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, red(err))
+	}
+
+	// If anything here fails, we still want to print out what was deleted before exiting
+	if p.file != nil {
+		b, err := json.Marshal(messages)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, red(err))
+			printMessages(messages)
+		}
+		_, err = p.file.Write(b)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, red(err))
+			printMessages(messages)
+		}
+	}
+
+	if isPipedOut() {
+		printMessages(messages)
+	} else {
+		fmt.Println(green("Messages successfully popped off", q.Name))
+		fmt.Println("-------- ID ------ | Body")
+		printMessages(messages)
+	}
+}
+
+type PushCmd struct {
+	mqCmd
+	filename   *string
+	messages   []string
+	queue_name string
 }
 
 func (p *PushCmd) Usage() func() {
@@ -454,82 +561,17 @@ func (p *PushCmd) Run() {
 			fmt.Printf("%s ", id)
 		}
 		fmt.Println()
-		if tag, err := getHudTag(q.Settings); err == nil {
-			fmt.Printf("%sGo to hud-e.iron.io/mq/%s/projects/%s/queues/%s for more info\n", BLANKS,
-				tag, q.Settings.ProjectId, q.Name)
-		}
+		printQueueHudURL(BLANKS, q)
 	}
 }
 
-func (p *PopCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq pop [-n int] [-o file] QUEUE_NAME
-
-    pop reserves then deletes a message from the queue
-    n: number of messages to pop off the queue, default: 1
-    o: write results in json to a file`)
-	}
-}
-
-func (p *PopCmd) Flags(args ...string) error {
-	p.flags = NewMqFlagSet(p.Usage())
-
-	p.n = p.flags.n()
-	p.outputfile = p.flags.outputfile()
-
-	if err := p.flags.Parse(args); err != nil {
-		return err
-	}
-	return p.flags.validateAllFlags()
-}
-
-func (p *PopCmd) Args() error {
-	if p.flags.NArg() < 1 {
-		return errors.New(`pop requires a queue name
-
-    usage: iron mq pop [-n n] [-o file] QUEUE_NAME`)
-	}
-	if *p.outputfile != "" {
-		f, err := os.Create(*p.outputfile)
-		if err != nil {
-			return err
-		}
-		p.file = f
-	}
-
-	p.queue_name = p.flags.Arg(0)
-	return nil
-}
-
-func (p *PopCmd) Run() {
-	q := mq.ConfigNew(p.queue_name, &p.settings)
-
-	messages, err := q.PopN(*p.n)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, red(err))
-	}
-
-	// If anything here fails, we still want to print out what was deleted before exiting
-	if p.file != nil {
-		b, err := json.Marshal(messages)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, red(err))
-			printMessages(messages)
-		}
-		_, err = p.file.Write(b)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, red(err))
-			printMessages(messages)
-		}
-	}
-
-	if isPipedOut() {
-		printMessages(messages)
-	} else {
-		fmt.Println(green("messages successfully popped off the queue"))
-		fmt.Println("-------- ID ------ | Body")
-		printMessages(messages)
-	}
+type ReserveCmd struct {
+	mqCmd
+	queue_name string
+	n          *int
+	timeout    *int
+	outputfile *string
+	file       *os.File
 }
 
 func (r *ReserveCmd) Usage() func() {
@@ -580,198 +622,92 @@ func (r *ReserveCmd) Run() {
 		fmt.Fprintln(os.Stderr, red(err))
 	}
 
-	// If anything here fails, we still want to print out what was deleted before exiting
+	// If anything here fails, we still want to print out what was reserved before exiting
 	if r.file != nil {
 		b, err := json.Marshal(messages)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, red(err))
-			printMessages(messages)
+			printReservedMessages(messages)
 			return
 		}
 		_, err = r.file.Write(b)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, red(err))
-			printMessages(messages)
+			printReservedMessages(messages)
 			return
 		}
 	}
 
 	if isPipedOut() {
-		printMessages(messages)
+		printReservedMessages(messages)
 	} else {
-		fmt.Println(green("messages successfully reserved"))
-		fmt.Println("-------- ID ------ | Body")
-		printMessages(messages)
-	}
-
-}
-
-type DeleteCmd struct {
-	mqCmd
-
-	filequeue_name *string
-	queue_name     string
-	ids            []string
-}
-
-func (d *DeleteCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq delete [-i file] QUEUE_NAME "MSG_ID" "MSG_ID"...
-
-    Delete a message of a queue
-    -i: json file with a set of ids to be deleted. Format should be {"ids": ["123", "456", ...]}`)
+		fmt.Println(green(LINES, "Messages successfully reserved"))
+		fmt.Println("--------- ID ------|------- Reservation ID -------- | Body")
+		printReservedMessages(messages)
+		printQueueHudURL(LINES, q)
 	}
 }
 
-func (d *DeleteCmd) Flags(args ...string) error {
-	d.flags = NewMqFlagSet(d.Usage())
-
-	d.filequeue_name = d.flags.filename()
-
-	if err := d.flags.Parse(args); err != nil {
-		return err
-	}
-	return d.flags.validateAllFlags()
-}
-
-func (d *DeleteCmd) Args() error {
-	if d.flags.NArg() < 1 {
-		usage := d.Usage()
-		usage()
-		return errors.New(`delete requires a queue name`)
-	}
-	d.queue_name = d.flags.Arg(0)
-
-	// Read and parse piped info
-	if isPipedIn() {
-		ids, err := readIds()
-		if err != nil {
-			return err
-		}
-		d.ids = append(d.ids, ids...)
-	}
-
-	if *d.filequeue_name != "" {
-		b, err := ioutil.ReadFile(*d.filequeue_name)
-		if err != nil {
-			return err
-		}
-
-		// Use the message struct so its compatible with output files from reserve
-		var msgs []mq.Message
-		err = json.Unmarshal(b, &msgs)
-		if err != nil {
-			return err
-		}
-		for _, msg := range msgs {
-			d.ids = append(d.ids, msg.Id)
-		}
-	}
-
-	if d.flags.NArg() > 1 {
-		d.ids = append(d.ids, d.flags.Args()[1:]...)
-	}
-
-	if len(d.ids) < 1 {
-		return errors.New("delete requires at least one message id")
-	}
-	return nil
-}
-
-func (d *DeleteCmd) Run() {
-	q := mq.ConfigNew(d.queue_name, &d.settings)
-
-	err := q.DeleteMessages(d.ids)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, red("Error deleting message", err))
-	}
-	fmt.Println(green("done deleting messages"))
-}
-
-type InfoCmd struct {
+type RmCmd struct {
 	mqCmd
 
 	queue_name string
 }
 
-func (i *InfoCmd) Usage() func() {
+func (r *RmCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq info QUEUE_NAME`)
+		fmt.Fprintln(os.Stderr, `usage: iron mq remove QUEUE_NAME
+
+    Delete a queue from a project
+    `)
 	}
 }
 
-func (i *InfoCmd) Flags(args ...string) error {
-	i.flags = NewMqFlagSet(i.Usage())
-
-	if err := i.flags.Parse(args); err != nil {
+func (r *RmCmd) Flags(args ...string) error {
+	r.flags = NewMqFlagSet(r.Usage())
+	if err := r.flags.Parse(args); err != nil {
 		return err
 	}
-
-	return i.flags.validateAllFlags()
-}
-
-func (i *InfoCmd) Args() error {
-	if i.flags.NArg() < 1 {
-		return errors.New(`info requires a queue name`)
-	}
-
-	i.queue_name = i.flags.Arg(0)
 	return nil
 }
 
-func (i *InfoCmd) Run() {
-	q := mq.ConfigNew(i.queue_name, &i.settings)
-	info, err := q.Info()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
+func (r *RmCmd) Args() error {
+	if r.flags.NArg() < 1 && !isPipedIn() {
+		return errors.New("rm requires a queue name.")
 	}
-	if tag, err := getHudTag(q.Settings); err == nil {
-		fmt.Printf("Go to hud-e.iron.io/mq/%s/projects/%s/queues/%s for more info.\n", tag, q.Settings.ProjectId, info.Name)
-	}
-	fmt.Println(BLANKS, "Name:", info.Name)
-	fmt.Println(BLANKS, "Current Size:", info.Size)
-	fmt.Println(BLANKS, "Total messages:", info.TotalMessages)
-	fmt.Println(BLANKS, "Message expiration:", info.MessageExpiration)
-	fmt.Println(BLANKS, "Message timeout:", info.MessageTimeout)
-	if info.Push != nil {
-		fmt.Println(BLANKS, "type:", *info.Type)
-		fmt.Println(BLANKS, "subscribers:", len(info.Push.Subscribers))
-		fmt.Println(BLANKS, "retries:", info.Push.Retries)
-		fmt.Println(BLANKS, "retries delay:", info.Push.RetriesDelay)
-	}
+
+	r.queue_name = r.flags.Arg(0)
+	return nil
 }
+func (r *RmCmd) Run() {
+	var queues []mq.Queue
 
-// TODO: Figure out the region for the hud url
-// seriously though
-// this is super duper hacky
-// it only works with the public cluster mq-aws-us-east-1-1
-func getHudTag(settings config.Settings) (string, error) {
-	res, err := http.Get("https://auth.iron.io/1/clusters?oauth=" + settings.Token)
-	if err != nil {
-		return "", err
+	if isPipedIn() {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			name := scanner.Text()
+			queues = append(queues, mq.ConfigNew(name, &r.settings))
+		}
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+	} else {
+		queues = append(queues, mq.ConfigNew(r.queue_name, &r.settings))
 	}
 
-	clusters := struct {
-		Clusters []struct {
-			Tag string `json:"tag"`
-			URL string `json:"url"`
-		} `json:"clusters"`
-	}{}
-	b, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-		return "", err
-	}
-	err = json.Unmarshal(b, &clusters)
-	if err != nil {
-		return "", err
-	}
-	queueHost := settings.Host
-	for _, cluster := range clusters.Clusters {
-		if cluster.URL == queueHost {
-			return cluster.Tag, err
+	for _, q := range queues {
+		err := q.Delete()
+		if err != nil {
+			fmt.Println(red(BLANKS, "Error deleting queue ", q.Name, ": ", err))
+		} else {
+			fmt.Println(green(BLANKS, q.Name, " has been sucessfully deleted."))
 		}
 	}
-	return "", fmt.Errorf("no hud tags found")
+	q := queues[0]
+	if tag, err := getHudTag(q.Settings); err == nil {
+		fmt.Printf("%sVisit hud-e.iron.io/mq/%s/projects/%s/queues for more info.\n",
+			BLANKS,
+			tag,
+			q.Settings.ProjectId)
+	}
 }
