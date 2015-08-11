@@ -136,7 +136,7 @@ func (c *CreateCmd) Usage() func() {
 }
 
 func (c *CreateCmd) Run() {
-	fmt.Printf("%sCreating queue \"%s\"\n", LINES, c.queue_name)
+	fmt.Printf("%sCreating queue \"%s\"\n", BLANKS, c.queue_name)
 	q := mq.ConfigNew(c.queue_name, &c.settings)
 	_, err := q.PushStrings("")
 	if err != nil {
@@ -148,7 +148,7 @@ func (c *CreateCmd) Run() {
 		fmt.Fprintln(os.Stderr, red(BLANKS, "create error: ", err))
 	}
 
-	fmt.Println(green(BLANKS, "Queue ", q.Name, " has been successfully created."))
+	fmt.Println(green(LINES, "Queue ", q.Name, " has been successfully created."))
 	printQueueHudURL(BLANKS, q)
 }
 
@@ -232,7 +232,8 @@ func (d *DeleteCmd) Run() {
 
 	err := q.DeleteMessages(d.ids)
 	if err != nil {
-		fmt.Println(red(BLANKS, "Error: ", err))
+		fmt.Println(red(BLANKS, err))
+		return
 	}
 
 	plural := ""
@@ -731,7 +732,7 @@ func (r *RmCmd) Run() {
 		if err != nil {
 			fmt.Println(red("Error deleting queue ", q.Name, ": ", err))
 		} else {
-			fmt.Println(green(BLANKS, q.Name, " has been sucessfully deleted."))
+			fmt.Println(green(LINES, q.Name, " has been sucessfully deleted."))
 		}
 	}
 }
