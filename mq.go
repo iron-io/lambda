@@ -407,6 +407,11 @@ func (p *PeekCmd) Run() {
 		return
 	}
 
+	if len(msgs) < 1 {
+		fmt.Fprintln(os.Stderr, red("Queue is empty."))
+		return
+	}
+
 	if !isPipedOut() {
 		plural := ""
 		if *p.n > 1 {
@@ -666,6 +671,11 @@ func (r *ReserveCmd) Run() {
 			printReservedMessages(messages)
 			return
 		}
+	}
+
+	if len(messages) < 1 {
+		fmt.Fprintln(os.Stderr, red("Queue is empty"))
+		return
 	}
 
 	if isPipedOut() {
