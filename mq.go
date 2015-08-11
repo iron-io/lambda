@@ -244,7 +244,6 @@ func (d *DeleteCmd) Run() {
 	}
 	fmt.Println(green(BLANKS, "Done deleting message", plural))
 
-	printQueueHudURL(BLANKS, q)
 }
 
 type InfoCmd struct {
@@ -359,7 +358,6 @@ func (l *ListCmd) Run() {
 		for _, q := range queues {
 			fmt.Println(BLANKS, "*", q.Name)
 		}
-		// TODO: This can probably be put in its own function
 		if tag, err := getHudTag(l.settings); err == nil {
 			fmt.Printf("%s Go to hud-e.iron.io/mq/%s/projects/%s/queues for more info",
 				BLANKS,
@@ -418,7 +416,6 @@ func (p *PeekCmd) Run() {
 			plural = "s"
 		}
 		fmt.Println(green(BLANKS, "Message", plural, " successfully peeked"))
-		printQueueHudURL(BLANKS, q)
 		fmt.Println()
 		fmt.Println("-------- ID ------ | Body")
 	}
@@ -504,7 +501,6 @@ func (p *PopCmd) Run() {
 			plural = "s"
 		}
 		fmt.Println(green(BLANKS, "Message", plural, " successfully popped off ", q.Name))
-		printQueueHudURL(BLANKS, q)
 		fmt.Println()
 		fmt.Println("-------- ID ------ | Body")
 		printMessages(messages)
@@ -596,7 +592,6 @@ func (p *PushCmd) Run() {
 			fmt.Printf("%s ", id)
 		}
 		fmt.Println()
-		printQueueHudURL(BLANKS, q)
 	}
 }
 
@@ -684,7 +679,6 @@ func (r *ReserveCmd) Run() {
 		fmt.Println(green(LINES, "Messages successfully reserved"))
 		fmt.Println("--------- ID ------|------- Reservation ID -------- | Body")
 		printReservedMessages(messages)
-		printQueueHudURL(LINES, q)
 	}
 }
 
