@@ -98,3 +98,20 @@ func printQueueHudURL(prefix string, q mq.Queue) {
 			q.Name)
 	}
 }
+
+func mqProjectName(settings config.Settings) (string, error) {
+	res, err := http.Get("https://auth.iron.io/1/projects/" + settings.ProjectId + "?oauth=" + settings.Token)
+	if err != nil {
+		return "", err
+	}
+	projects := struct {
+		Project struct {
+			Name string `json:"name"`
+		} `json:"project"`
+	}{}
+	err = json.NewDecoder(res.Body).Decode(&projects)
+	if err != nil {
+		return "", err
+	}
+	return projects.Project.Name, nil
+}

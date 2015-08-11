@@ -20,8 +20,6 @@ import (
 // 	Run()                  // cmd specific
 // }
 
-// It'd be better to abstract this out into two files, worker_command and mq_commands
-
 type mqCmd struct {
 	settings  config.Settings
 	flags     *MqFlags
@@ -49,14 +47,13 @@ func (mc *mqCmd) Config() error {
 
 	if !isPipedOut() {
 		fmt.Printf("%sConfiguring client\n", LINES)
+		pName, err := mqProjectName(mc.settings)
+		if err != nil {
+			return err
+		}
+		fmt.Printf(`%sProject '%s' with id='%s'`, BLANKS, pName, mc.settings.ProjectId)
+		fmt.Println()
 	}
-	// pName, err := mqProjectname(mc.settings)
-	// if err != nil {
-	// 	return err
-	// }
-	// fmt.Printf(`%s Project '%s' with id='%s'`, BLANKS, pName, mc.settings.ProjectId)
-	// fmt.Println()
-
 	return nil
 }
 
@@ -94,10 +91,10 @@ func (c *ClearCmd) Args() error {
 func (c *ClearCmd) Run() {
 	q := mq.ConfigNew(c.queue_name, &c.settings)
 	if err := q.Clear(); err != nil {
-		fmt.Println(red(BLANKS, "Error clearing queue:", err))
+		fmt.Println(red("Error clearing queue:", err))
 		return
 	}
-	fmt.Fprintln(os.Stderr, green(BLANKS, "Queue ", q.Name, " has been successfully cleared"))
+	fmt.Fprintln(os.Stderr, green(LINES, "Queue ", q.Name, " has been successfully cleared"))
 }
 
 func (p *PeekCmd) Usage() func() {
@@ -415,7 +412,7 @@ func (p *PeekCmd) Run() {
 		if *p.n > 1 {
 			plural = "s"
 		}
-		fmt.Println(green(BLANKS, "Message", plural, " successfully peeked"))
+		fmt.Println(green(LINES, "Message", plural, " successfully peeked"))
 		fmt.Println()
 		fmt.Println("-------- ID ------ | Body")
 	}
@@ -500,7 +497,7 @@ func (p *PopCmd) Run() {
 		if *p.n > 1 {
 			plural = "s"
 		}
-		fmt.Println(green(BLANKS, "Message", plural, " successfully popped off ", q.Name))
+		fmt.Println(green(LINES, "Message", plural, " successfully popped off ", q.Name))
 		fmt.Println()
 		fmt.Println("-------- ID ------ | Body")
 		printMessages(messages)
@@ -732,16 +729,9 @@ func (r *RmCmd) Run() {
 	for _, q := range queues {
 		err := q.Delete()
 		if err != nil {
-			fmt.Println(red(BLANKS, "Error deleting queue ", q.Name, ": ", err))
+			fmt.Println(red("Error deleting queue ", q.Name, ": ", err))
 		} else {
 			fmt.Println(green(BLANKS, q.Name, " has been sucessfully deleted."))
 		}
-	}
-	q := queues[0]
-	if tag, err := getHudTag(q.Settings); err == nil {
-		fmt.Printf("%sVisit hud-e.iron.io/mq/%s/projects/%s/queues for more info.\n",
-			BLANKS,
-			tag,
-			q.Settings.ProjectId)
 	}
 }
