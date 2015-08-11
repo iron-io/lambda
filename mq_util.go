@@ -17,9 +17,17 @@ func printMessages(msgs []mq.Message) {
 		fmt.Printf("%s %q\n", msg.Id, msg.Body)
 	}
 }
+
 func printReservedMessages(msgs []mq.Message) {
 	for _, msg := range msgs {
 		fmt.Printf("%s %s %q\n", msg.Id, msg.ReservationId, msg.Body)
+	}
+}
+
+// BLANKS name: url.com/endpoint
+func printSubscribers(info mq.QueueInfo) {
+	for _, subscriber := range info.Push.Subscribers {
+		fmt.Printf("%s%s\n", BLANKS, subscriber.URL)
 	}
 }
 
@@ -81,6 +89,7 @@ func getHudTag(settings config.Settings) (string, error) {
 	}
 	return "", fmt.Errorf("no hud tags found")
 }
+
 func printQueueHudURL(prefix string, q mq.Queue) {
 	if tag, err := getHudTag(q.Settings); err == nil {
 		fmt.Printf("%sVisit hud-e.iron.io/mq/%s/projects/%s/queues/%s for more info.\n", prefix,

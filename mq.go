@@ -97,7 +97,7 @@ func (c *ClearCmd) Run() {
 		fmt.Println(red(BLANKS, "Error clearing queue:", err))
 		return
 	}
-	fmt.Fprintln(os.Stderr, green(BLANKS, "Queue ", q.Name, "has been successfully cleared"))
+	fmt.Fprintln(os.Stderr, green(BLANKS, "Queue ", q.Name, " has been successfully cleared"))
 }
 
 func (p *PeekCmd) Usage() func() {
@@ -228,31 +228,43 @@ func (d *DeleteCmd) Args() error {
 }
 
 // This doesn't work with reserved messages
+// TODO: add --reserved flag to work with reserved messages
+// TODO: Make the message not found error more descriptive.
 func (d *DeleteCmd) Run() {
 	q := mq.ConfigNew(d.queue_name, &d.settings)
 
 	err := q.DeleteMessages(d.ids)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, red("Error deleting message", err))
+		fmt.Println(red(BLANKS, "Error: ", err))
 	}
-	fmt.Println(green("done deleting messages"))
+
+	plural := ""
+	if len(d.ids) > 1 {
+		plural = "s"
+	}
+	fmt.Println(green(BLANKS, "Done deleting message", plural))
+
+	printQueueHudURL(BLANKS, q)
 }
 
 type InfoCmd struct {
 	mqCmd
 
-	queue_name string
+	queue_name     string
+	subscriberList *bool
 }
 
 func (i *InfoCmd) Usage() func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq info QUEUE_NAME`)
+		fmt.Fprintln(os.Stderr, `usage: iron mq info [--subscriber-list] QUEUE_NAME
+
+    --subscriber-list: Prints out the list of current subscribers. This is only available on push queues.`)
 	}
 }
 
 func (i *InfoCmd) Flags(args ...string) error {
 	i.flags = NewMqFlagSet(i.Usage())
-
+	i.subscriberList = i.flags.subscriberList()
 	if err := i.flags.Parse(args); err != nil {
 		return err
 	}
@@ -273,19 +285,24 @@ func (i *InfoCmd) Run() {
 	q := mq.ConfigNew(i.queue_name, &i.settings)
 	info, err := q.Info()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, red(err))
 		return
 	}
-	fmt.Println(BLANKS, "Name:", info.Name)
-	fmt.Println(BLANKS, "Current Size:", info.Size)
-	fmt.Println(BLANKS, "Total messages:", info.TotalMessages)
-	fmt.Println(BLANKS, "Message expiration:", info.MessageExpiration)
-	fmt.Println(BLANKS, "Message timeout:", info.MessageTimeout)
+	fmt.Printf("%sName: %s\n", BLANKS, info.Name)
+	fmt.Printf("%sCurrent Size: %d\n", BLANKS, info.Size)
+	fmt.Printf("%sTotal messages: %d\n", BLANKS, info.TotalMessages)
+	fmt.Printf("%sMessage expiration: %d\n", BLANKS, info.MessageExpiration)
+	fmt.Printf("%sMessage timeout: %d\n", BLANKS, info.MessageTimeout)
 	if info.Push != nil {
-		fmt.Println(BLANKS, "type:", *info.Type)
-		fmt.Println(BLANKS, "subscribers:", len(info.Push.Subscribers))
-		fmt.Println(BLANKS, "retries:", info.Push.Retries)
-		fmt.Println(BLANKS, "retries delay:", info.Push.RetriesDelay)
+		fmt.Printf("%sType: %s\n", BLANKS, *info.Type)
+		fmt.Printf("%sSubscribers: %d\n", BLANKS, len(info.Push.Subscribers))
+		fmt.Printf("%sRetries: %d\n", BLANKS, info.Push.Retries)
+		fmt.Printf("%sRetries delay: %d\n", BLANKS, info.Push.RetriesDelay)
+		if *i.subscriberList {
+			fmt.Printf("%sSubscriber list\n", LINES)
+			printSubscribers(info)
+			fmt.Println()
+		}
 	}
 	printQueueHudURL(BLANKS, q)
 }
@@ -386,11 +403,18 @@ func (p *PeekCmd) Run() {
 
 	msgs, err := q.PeekN(*p.n)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, red(BLANKS, "Clear error:", err))
+		fmt.Fprintln(os.Stderr, red(err))
 		return
 	}
 
 	if !isPipedOut() {
+		plural := ""
+		if *p.n > 1 {
+			plural = "s"
+		}
+		fmt.Println(green(BLANKS, "Message", plural, " successfully peeked"))
+		printQueueHudURL(BLANKS, q)
+		fmt.Println()
 		fmt.Println("-------- ID ------ | Body")
 	}
 	printMessages(msgs)
@@ -470,7 +494,13 @@ func (p *PopCmd) Run() {
 	if isPipedOut() {
 		printMessages(messages)
 	} else {
-		fmt.Println(green("Messages successfully popped off", q.Name))
+		plural := ""
+		if *p.n > 1 {
+			plural = "s"
+		}
+		fmt.Println(green(BLANKS, "Message", plural, " successfully popped off ", q.Name))
+		printQueueHudURL(BLANKS, q)
+		fmt.Println()
 		fmt.Println("-------- ID ------ | Body")
 		printMessages(messages)
 	}

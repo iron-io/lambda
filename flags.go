@@ -198,3 +198,6 @@ func (mf *MqFlags) n() *int {
 func (mf *MqFlags) timeout() *int {
 	return mf.Int("t", 60, "optional: timeout until message is put back on queue")
 }
+func (mf *MqFlags) subscriberList() *bool {
+	return mf.Bool("subscriber-list", false, "optional: printout all subscriber names and URLs")
+}
