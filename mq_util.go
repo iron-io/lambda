@@ -65,6 +65,7 @@ func getHudTag(settings config.Settings) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer res.Body.Close()
 
 	clusters := struct {
 		Clusters []struct {
@@ -104,6 +105,7 @@ func mqProjectName(settings config.Settings) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer res.Body.Close()
 	projects := struct {
 		Project struct {
 			Name string `json:"name"`
