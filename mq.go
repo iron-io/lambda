@@ -28,7 +28,7 @@ type mqCmd struct {
 }
 
 func (mc *mqCmd) Config() error {
-	mc.settings = config.Config("iron_mq")
+	mc.settings = config.ConfigWithEnv("iron_mq", *envFlag)
 
 	if *projectIDFlag != "" {
 		mc.settings.ProjectId = *projectIDFlag
@@ -51,7 +51,11 @@ func (mc *mqCmd) Config() error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf(`%sProject '%s' with id='%s'`, BLANKS, pName, mc.settings.ProjectId)
+		if pName == "" {
+			fmt.Printf("%sCould not find project name.", BLANKS)
+		} else {
+			fmt.Printf(`%sProject '%s' with id='%s'`, BLANKS, pName, mc.settings.ProjectId)
+		}
 		fmt.Println()
 	}
 	return nil
