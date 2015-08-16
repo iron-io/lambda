@@ -43,6 +43,7 @@ func usage() {
 
 where [product] is one of:
 
+  mq
   worker
 
 run '`+os.Args[0], `[product] -help for a list of commands.
@@ -63,8 +64,11 @@ func pusage(p string) {
 		}
 		os.Exit(0)
 	case "mq":
-		fmt.Fprintln(os.Stderr, "not yet")
-		os.Exit(1)
+		fmt.Fprintln(os.Stderr, p, "commands:")
+		for cmd := range commands["mq"] {
+			fmt.Fprintln(os.Stderr, "\t", cmd)
+		}
+		os.Exit(0)
 	default:
 		fmt.Fprintln(os.Stderr, red("invalid product ", `"`+p+`", `, "see -help"))
 		os.Exit(1)
@@ -81,7 +85,18 @@ func init() {
 			"status":       new(StatusCmd),
 			"log":          new(LogCmd),
 		},
-		// TODO mq
+		"mq": map[string]Command{
+			"push":    new(PushCmd),
+			"pop":     new(PopCmd),
+			"reserve": new(ReserveCmd),
+			"delete":  new(DeleteCmd),
+			"peek":    new(PeekCmd),
+			"clear":   new(ClearCmd),
+			"list":    new(ListCmd),
+			"create":  new(CreateCmd),
+			"rm":      new(RmCmd),
+			"info":    new(InfoCmd),
+		},
 	}
 }
 

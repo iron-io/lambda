@@ -8,8 +8,8 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/api"
-	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/worker"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/api"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/worker"
 )
 
 func dockerLogin(w *worker.Worker, args *DockerLoginCmd) (msg string, err error) {
