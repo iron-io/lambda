@@ -2,7 +2,7 @@ package mq
 
 import (
 	"fmt"
-	"github.com/iron-io/iron_go3/api"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/api"
 	"testing"
 	"time"
 

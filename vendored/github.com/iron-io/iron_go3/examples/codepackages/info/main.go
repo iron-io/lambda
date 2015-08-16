@@ -9,8 +9,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/iron-io/iron_go3/api"
-	"github.com/iron-io/iron_go3/config"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/api"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/config"
 	"io/ioutil"
 	"log"
 	"text/template"

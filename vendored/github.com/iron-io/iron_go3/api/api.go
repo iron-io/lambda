@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iron-io/iron_go3/config"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/config"
 )
 
 type DefaultResponseBody struct {

@@ -3,7 +3,7 @@ package mq_test
 import (
 	"errors"
 
-	"github.com/iron-io/iron_go3/mq"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/mq"
 )
 
 func ExampleQueue() {
