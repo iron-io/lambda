@@ -15,12 +15,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/config"
-	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go/worker"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/config"
+	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/worker"
 )
 
 // TODO(reed): default flags for everybody
-//--config CONFIG              config file
 
 // The idea is:
 //     parse flags -- if help, Usage() && quit

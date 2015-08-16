@@ -1,7 +1,7 @@
 ironcli
 =======
 
-Go version of the Iron.io command line tools.  
+Go version of the Iron.io command line tools.
 
 # Install
 
@@ -11,9 +11,9 @@ Go version of the Iron.io command line tools.
 
 ## Download Yourself
 
-Grab the latest version for your system on the [Releases](https://github.com/iron-io/ironcli/releases) page. 
+Grab the latest version for your system on the [Releases](https://github.com/iron-io/ironcli/releases) page.
 
-You can either run the binary directly or add somewhere in your $PATH. 
+You can either run the binary directly or add somewhere in your $PATH.
 
 ## Coming soon...
 
@@ -39,11 +39,11 @@ you've done that, then you can continue.
 
 __WARNING:__ still in progress (only upload problematic), if running into issues: use `github.com/iron-io/iron_worker_ruby_ng`
 
-### Queue a task: 
+### Queue a task:
 
 `iron worker queue CODENAME`
 
-### Wait for queued task and print log: 
+### Wait for queued task and print log:
 
 `iron worker queue --wait CODENAME`
 
@@ -73,9 +73,50 @@ For eg:
 
 `iron worker upload --zip myworker.zip --name myworker iron/images:ruby-2.1 ruby hello.rb`
 
-For custom images (if you have this enabled on your account): 
+For custom images (if you have this enabled on your account):
 
 `iron worker upload --zip myworker.zip --name myworker google/ruby ruby hello.rb`
+## IronMQ
+
+### List the queues in a project
+
+`iron mq list`
+
+### Create a new queue
+`iron mq create QUEUE_NAME`
+
+### Delete an existing queue
+`iron mq rm QUEUE_NAME`
+
+### Display a queue's details
+
+`iron mq info QUEUE_NAME`
+
+### Clear all message on a queue
+
+`iron mq clear QUEUE_NAME`
+
+### Push a message to a queue
+
+`iron mq push [-f file] QUEUE_NAME "MESSAGE"`
+
+You can provide a json file with a set of messages to be pushed onto the queue. The format is as follows:
+```json
+{
+  "messages": ["msg1", "msg2",...]
+}
+```
+### Peek n message from a queue
+`iron mq peek [-n n] QUEUE_NAME`
+
+### Pop (get and delete) a set of messages from the queue
+`iron mq pop [-o output_file] [-n n] QUEUE_NAME`
+
+### Reserve a set of messages from a queue
+`iron mq reserve [-o output_file] [-n n] [-t timeout] QUEUE_NAME`
+
+### Delete a set of reserved message
+`iron mq delete [-f file] QUEUE_NAME "MESSAGE_ID" "MESSAGE_ID2"...`
 
 For private images you should use 
 `iron worker docker-login --repo-username USERNAME --repo-pass PASS  --repo-email EMAIL`
