@@ -71,17 +71,18 @@ type TaskInfo struct {
 type CodeSource map[string][]byte // map[pathInZip]code
 
 type Code struct {
-	Name           string        `json:"name"`
-	Runtime        string        `json:"runtime"`
-	FileName       string        `json:"file_name"`
-	Config         string        `json:"config,omitempty"`
-	MaxConcurrency int           `json:"max_concurrency,omitempty"`
-	Retries        int           `json:"retries,omitempty"`
-	Stack          string        `json:"stack"`
-	Image          string        `json:"image"`
-	Command        string        `json:"command"`
-	RetriesDelay   time.Duration `json:"-"`
-	Source         CodeSource    `json:"-"`
+	Name           string     `json:"name"`
+	Runtime        string     `json:"runtime"`
+	FileName       string     `json:"file_name"`
+	Config         string     `json:"config,omitempty"`
+	MaxConcurrency int        `json:"max_concurrency,omitempty"`
+	Retries        int        `json:"retries,omitempty"`
+	Stack          string     `json:"stack"`
+	Image          string     `json:"image"`
+	Command        string     `json:"command"`
+	RetriesDelay   int        `json:"retries_delay,omitempty"` // seconds
+	Host           string     `json:"host,omitempty"`          // PaaS router thing
+	Source         CodeSource `json:"-"`
 }
 
 type CodeInfo struct {
