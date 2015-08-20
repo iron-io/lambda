@@ -21,9 +21,6 @@ func NewWorkerFlagSet(usage func()) *WorkerFlags {
 func (wf *WorkerFlags) name() *string {
 	return wf.String("name", "", "override code package name")
 }
-func (wf *WorkerFlags) dockerRepoAuth() *string {
-	return wf.String("repo-auth", "", "docker repo user auth (base64 from name+password)")
-}
 func (wf *WorkerFlags) dockerRepoPass() *string {
 	return wf.String("repo-pass", "", "docker repo password")
 }
