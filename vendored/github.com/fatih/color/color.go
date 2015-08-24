@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/shiena/ansicolor"
+	"github.com/iron-io/ironcli/vendored/github.com/shiena/ansicolor"
 )
 
 // NoColor defines if the output is colorized or not. By default it's set to

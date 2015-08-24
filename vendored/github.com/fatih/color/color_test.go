@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/shiena/ansicolor"
+	"github.com/iron-io/ironcli/vendored/github.com/shiena/ansicolor"
 )
 
 // Testing colors is kinda different. First we test for given colors and their
