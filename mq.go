@@ -67,14 +67,13 @@ type ClearCmd struct {
 	queue_name string
 }
 
-func (c *ClearCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, "usage: iron mq clear QUEUE_NAME")
-	}
+func (c *ClearCmd) Usage() {
+	fmt.Fprintln(os.Stderr, "usage: iron mq clear QUEUE_NAME")
+	c.flags.PrintDefaults()
 }
 
 func (c *ClearCmd) Flags(args ...string) error {
-	c.flags = NewMqFlagSet(c.Usage())
+	c.flags = NewMqFlagSet()
 
 	if err := c.flags.Parse(args); err != nil {
 		return err
@@ -101,12 +100,11 @@ func (c *ClearCmd) Run() {
 	fmt.Fprintln(os.Stderr, green(LINES, "Queue ", q.Name, " has been successfully cleared"))
 }
 
-func (p *PeekCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq peek [--n number] QUEUE_NAME
+func (p *PeekCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron mq peek [--n number] QUEUE_NAME
 
     n: peek n numbers of messages(default: 1, max: 100)`)
-	}
+	p.flags.PrintDefaults()
 }
 
 type CreateCmd struct {
@@ -116,7 +114,7 @@ type CreateCmd struct {
 }
 
 func (c *CreateCmd) Flags(args ...string) error {
-	c.flags = NewMqFlagSet(c.Usage())
+	c.flags = NewMqFlagSet()
 	err := c.flags.Parse(args)
 	if err != nil {
 		return err
@@ -133,10 +131,9 @@ func (c *CreateCmd) Args() error {
 	return nil
 }
 
-func (c *CreateCmd) Usage() func() {
-	return func() {
-		fmt.Println(`usage: iron mq create QUEUE_NAME`)
-	}
+func (c *CreateCmd) Usage() {
+	fmt.Println(`usage: iron mq create QUEUE_NAME`)
+	c.flags.PrintDefaults()
 }
 
 func (c *CreateCmd) Run() {
@@ -164,17 +161,16 @@ type DeleteCmd struct {
 	ids            []string
 }
 
-func (d *DeleteCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq delete [-i file] QUEUE_NAME "MSG_ID" "MSG_ID"...
+func (d *DeleteCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron mq delete [-i file] QUEUE_NAME "MSG_ID" "MSG_ID"...
 
     Delete a message of a queue
     -i: json file with a set of ids to be deleted. Format should be {"ids": ["123", "456", ...]}`)
-	}
+	d.flags.PrintDefaults()
 }
 
 func (d *DeleteCmd) Flags(args ...string) error {
-	d.flags = NewMqFlagSet(d.Usage())
+	d.flags = NewMqFlagSet()
 
 	d.filequeue_name = d.flags.filename()
 
@@ -186,8 +182,6 @@ func (d *DeleteCmd) Flags(args ...string) error {
 
 func (d *DeleteCmd) Args() error {
 	if d.flags.NArg() < 1 {
-		usage := d.Usage()
-		usage()
 		return errors.New(`delete requires a queue name`)
 	}
 	d.queue_name = d.flags.Arg(0)
@@ -255,16 +249,15 @@ type InfoCmd struct {
 	subscriberList *bool
 }
 
-func (i *InfoCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq info [--subscriber-list] QUEUE_NAME
+func (i *InfoCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron mq info [--subscriber-list] QUEUE_NAME
 
     --subscriber-list: Prints out the list of current subscribers. This is only available on push queues.`)
-	}
+	i.flags.PrintDefaults()
 }
 
 func (i *InfoCmd) Flags(args ...string) error {
-	i.flags = NewMqFlagSet(i.Usage())
+	i.flags = NewMqFlagSet()
 	i.subscriberList = i.flags.subscriberList()
 	if err := i.flags.Parse(args); err != nil {
 		return err
@@ -318,7 +311,7 @@ type ListCmd struct {
 }
 
 func (l *ListCmd) Flags(args ...string) error {
-	l.flags = NewMqFlagSet(l.Usage())
+	l.flags = NewMqFlagSet()
 
 	l.page = l.flags.page()
 	l.perPage = l.flags.perPage()
@@ -335,14 +328,12 @@ func (l *ListCmd) Args() error {
 	return nil
 }
 
-func (l *ListCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq list [--perPage perPpage] [--page page]
+func (l *ListCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron mq list [--perPage perPpage] [--page page]
     --perPage perPage: Amount of queues showed per page
     --page page: starting page number
     --filter filter: filter using a specified prefix`)
-		return
-	}
+	l.flags.PrintDefaults()
 }
 
 func (l *ListCmd) Run() {
@@ -378,7 +369,7 @@ type PeekCmd struct {
 }
 
 func (p *PeekCmd) Flags(args ...string) error {
-	p.flags = NewMqFlagSet(p.Usage())
+	p.flags = NewMqFlagSet()
 	p.n = p.flags.n()
 
 	if err := p.flags.Parse(args); err != nil {
@@ -433,18 +424,17 @@ type PopCmd struct {
 	file       *os.File
 }
 
-func (p *PopCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq pop [-n int] [-o file] QUEUE_NAME
+func (p *PopCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron mq pop [-n int] [-o file] QUEUE_NAME
 
     pop reserves then deletes a message from the queue
     n: number of messages to pop off the queue, default: 1
     o: write results in json to a file`)
-	}
+	p.flags.PrintDefaults()
 }
 
 func (p *PopCmd) Flags(args ...string) error {
-	p.flags = NewMqFlagSet(p.Usage())
+	p.flags = NewMqFlagSet()
 
 	p.n = p.flags.n()
 	p.outputfile = p.flags.outputfile()
@@ -516,16 +506,15 @@ type PushCmd struct {
 	queue_name string
 }
 
-func (p *PushCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq push [-f file] QUEUE_NAME "MESSAGE" "MESSAGE"...
+func (p *PushCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron mq push [-f file] QUEUE_NAME "MESSAGE" "MESSAGE"...
 
     f: json file with message bodies to be used. Format should be '{"messages": ["1", "2", "3"...]}'`)
-	}
+	p.flags.PrintDefaults()
 }
 
 func (p *PushCmd) Flags(args ...string) error {
-	p.flags = NewMqFlagSet(p.Usage())
+	p.flags = NewMqFlagSet()
 
 	p.filename = p.flags.filename()
 
@@ -606,18 +595,17 @@ type ReserveCmd struct {
 	file       *os.File
 }
 
-func (r *ReserveCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq reserve [-t timeout] [-n n] [-o file] QUEUE_NAME
+func (r *ReserveCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron mq reserve [-t timeout] [-n n] [-o file] QUEUE_NAME
 
     t: timeout until message is put back on the queue, default: 60
     n: number of messages to reserve
     o: write results in json to a file`)
-	}
+	r.flags.PrintDefaults()
 }
 
 func (r *ReserveCmd) Flags(args ...string) error {
-	r.flags = NewMqFlagSet(r.Usage())
+	r.flags = NewMqFlagSet()
 
 	r.n = r.flags.n()
 	r.timeout = r.flags.timeout()
@@ -690,17 +678,15 @@ type RmCmd struct {
 	queue_name string
 }
 
-func (r *RmCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron mq remove QUEUE_NAME
+func (r *RmCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron mq remove QUEUE_NAME
 
-    Delete a queue from a project
-    `)
-	}
+    Delete a queue from a project`)
+	r.flags.PrintDefaults()
 }
 
 func (r *RmCmd) Flags(args ...string) error {
-	r.flags = NewMqFlagSet(r.Usage())
+	r.flags = NewMqFlagSet()
 	if err := r.flags.Parse(args); err != nil {
 		return err
 	}
