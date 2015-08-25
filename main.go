@@ -16,7 +16,7 @@ var (
 	// TODO(reed): kind of awkward, since there are 2 different flag sets now:
 	//  e.g.
 	//    ironcli -token=123456789 upload -max-concurrency=10 my_worker
-	versionFlag   = flag.Bool("version", false, "print then version number")
+	versionFlag   = flag.Bool("version", false, "print the version number")
 	helpFlag      = flag.Bool("help", false, "show this")
 	hFlag         = flag.Bool("h", false, "show this")
 	tokenFlag     = flag.String("token", "", "provide OAuth token")
@@ -116,7 +116,7 @@ func main() {
 	if *helpFlag || *hFlag {
 		usage()
 	} else if *versionFlag {
-		fmt.Fprintln(os.Stderr, Version)
+		fmt.Println(Version)
 		os.Exit(0)
 	}
 
@@ -162,7 +162,7 @@ func main() {
 
 	err := cmd.Config()
 	if err != nil {
-		fmt.Println(red(err))
+		fmt.Fprintln(os.Stderr, red(err))
 		os.Exit(2)
 	}
 
