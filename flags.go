@@ -11,10 +11,9 @@ type WorkerFlags struct {
 	*flag.FlagSet
 }
 
-// TODO(reed): -help here?
-func NewWorkerFlagSet(usage func()) *WorkerFlags {
+func NewWorkerFlagSet() *WorkerFlags {
 	flags := flag.NewFlagSet("command", flag.ContinueOnError)
-	flags.Usage = usage
+	flags.Usage = func() {}
 	return &WorkerFlags{flags}
 }
 
@@ -170,9 +169,9 @@ type MqFlags struct {
 	*flag.FlagSet
 }
 
-func NewMqFlagSet(usage func()) *MqFlags {
+func NewMqFlagSet() *MqFlags {
 	flags := flag.NewFlagSet("commands", flag.ContinueOnError)
-	flags.Usage = usage
+	flags.Usage = func() {}
 	return &MqFlags{flags}
 }
 
