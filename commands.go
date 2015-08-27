@@ -399,7 +399,6 @@ func (l *LogCmd) Run() {
 func (l *DockerLoginCmd) Flags(args ...string) error {
 	l.flags = NewWorkerFlagSet()
 
-	l.Auth = l.flags.dockerRepoAuth()
 	l.Email = l.flags.dockerRepoEmail()
 	l.Password = l.flags.dockerRepoPass()
 	l.Serveraddress = l.flags.dockerRepoUrl()
@@ -416,7 +415,7 @@ func (l *DockerLoginCmd) Flags(args ...string) error {
 func (l *DockerLoginCmd) Args() error {
 
 	if *l.Email == "" || *l.Username == "" || *l.Password == "" || l.Email == nil || l.Username == nil || l.Password == nil {
-		return errors.New("you should set repo-email, repo-pass, repo-username")
+		return errors.New("you should set email, password, username")
 	}
 
 	if *l.Serveraddress == "" || l.Serveraddress == nil {
