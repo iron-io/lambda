@@ -47,46 +47,46 @@ func dockerLogin(w *worker.Worker, args *map[string]string) (msg string, err err
 }
 
 // create code package (zip) from parsed .worker info
-func pushCodes(zipName string, w *worker.Worker, args worker.Code) (id string, err error) {
+func pushCodes(zipName string, w *worker.Worker, args worker.Code) (*worker.Code, error) {
 	// TODO i don't get why i can't write from disk to wire, but I give up
 	var body bytes.Buffer
 	mWriter := multipart.NewWriter(&body)
 	mMetaWriter, err := mWriter.CreateFormField("data")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	jEncoder := json.NewEncoder(mMetaWriter)
 	if err := jEncoder.Encode(args); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if zipName != "" {
 		r, err := zip.OpenReader(zipName)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		defer r.Close()
 
 		mFileWriter, err := mWriter.CreateFormFile("file", "worker.zip")
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		zWriter := zip.NewWriter(mFileWriter)
 
 		for _, f := range r.File {
 			fWriter, err := zWriter.Create(f.Name)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 			rc, err := f.Open()
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 			_, err = io.Copy(fWriter, rc)
 			rc.Close()
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 		}
 
@@ -96,7 +96,7 @@ func pushCodes(zipName string, w *worker.Worker, args worker.Code) (id string, e
 
 	req, err := http.NewRequest("POST", api.Action(w.Settings, "codes").URL.String(), &body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -107,16 +107,14 @@ func pushCodes(zipName string, w *worker.Worker, args worker.Code) (id string, e
 
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if err = api.ResponseAsError(response); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var data struct {
-		Id string `json:"id"`
-	}
+	var data worker.Code
 	err = json.NewDecoder(response.Body).Decode(&data)
-	return data.Id, err
+	return &data, err
 }

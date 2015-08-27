@@ -32,7 +32,7 @@ type Command interface {
 	Flags(...string) error // parse subcommand specific flags
 	Args() error           // validate arguments
 	Config() error         // configure env variables
-	Usage() func()         // custom command help TODO(reed): all local now?
+	Usage()                // custom command help TODO(reed): all local now?
 	Run()                  // cmd specific
 }
 
@@ -163,7 +163,7 @@ type LogCmd struct {
 }
 
 func (s *SchedCmd) Flags(args ...string) error {
-	s.flags = NewWorkerFlagSet(s.Usage())
+	s.flags = NewWorkerFlagSet()
 
 	s.payload = s.flags.payload()
 	s.payloadFile = s.flags.payloadFile()
@@ -233,11 +233,9 @@ func (s *SchedCmd) Args() error {
 	return nil
 }
 
-func (s *SchedCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron worker schedule [OPTIONS] CODE_PACKAGE_NAME`)
-		s.flags.PrintDefaults()
-	}
+func (s *SchedCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron worker schedule [OPTIONS] CODE_PACKAGE_NAME`)
+	s.flags.PrintDefaults()
 }
 
 func (s *SchedCmd) Run() {
@@ -255,7 +253,7 @@ func (s *SchedCmd) Run() {
 }
 
 func (q *QueueCmd) Flags(args ...string) error {
-	q.flags = NewWorkerFlagSet(q.Usage())
+	q.flags = NewWorkerFlagSet()
 
 	q.payload = q.flags.payload()
 	q.payloadFile = q.flags.payloadFile()
@@ -303,11 +301,9 @@ func (q *QueueCmd) Args() error {
 	return nil
 }
 
-func (q *QueueCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron worker queue [OPTIONS] CODE_PACKAGE_NAME`)
-		q.flags.PrintDefaults()
-	}
+func (q *QueueCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron worker queue [OPTIONS] CODE_PACKAGE_NAME`)
+	q.flags.PrintDefaults()
 }
 
 func (q *QueueCmd) Run() {
@@ -336,7 +332,7 @@ func (q *QueueCmd) Run() {
 }
 
 func (s *StatusCmd) Flags(args ...string) error {
-	s.flags = NewWorkerFlagSet(s.Usage())
+	s.flags = NewWorkerFlagSet()
 	err := s.flags.Parse(args)
 	if err != nil {
 		return err
@@ -354,11 +350,9 @@ func (s *StatusCmd) Args() error {
 	return nil
 }
 
-func (s *StatusCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron worker status [OPTIONS] task_id`)
-		s.flags.PrintDefaults()
-	}
+func (s *StatusCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron worker status [OPTIONS] task_id`)
+	s.flags.PrintDefaults()
 }
 
 func (s *StatusCmd) Run() {
@@ -371,7 +365,7 @@ func (s *StatusCmd) Run() {
 }
 
 func (l *LogCmd) Flags(args ...string) error {
-	l.flags = NewWorkerFlagSet(l.Usage())
+	l.flags = NewWorkerFlagSet()
 	err := l.flags.Parse(args)
 	if err != nil {
 		return err
@@ -388,11 +382,9 @@ func (l *LogCmd) Args() error {
 	return nil
 }
 
-func (l *LogCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron worker log [OPTIONS] task_id`)
-		l.flags.PrintDefaults()
-	}
+func (l *LogCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron worker log [OPTIONS] task_id`)
+	l.flags.PrintDefaults()
 }
 
 func (l *LogCmd) Run() {
@@ -405,7 +397,9 @@ func (l *LogCmd) Run() {
 	fmt.Println(string(out))
 }
 func (l *DockerLoginCmd) Flags(args ...string) error {
-	l.flags = NewWorkerFlagSet(l.Usage())
+	l.flags = NewWorkerFlagSet()
+
+	l.Auth = l.flags.dockerRepoAuth()
 	l.Email = l.flags.dockerRepoEmail()
 	l.Password = l.flags.dockerRepoPass()
 	l.Serveraddress = l.flags.dockerRepoUrl()
@@ -456,11 +450,9 @@ func (l *DockerLoginCmd) Args() error {
 	return nil
 }
 
-func (l *DockerLoginCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron worker docker-login --repo-username --repo-pass --repo-email --repo-url`)
-		l.flags.PrintDefaults()
-	}
+func (l *DockerLoginCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron worker docker-login --repo-username --repo-pass --repo-email --repo-url`)
+	l.flags.PrintDefaults()
 }
 
 func (l *DockerLoginCmd) Run() {
@@ -477,7 +469,7 @@ func (l *DockerLoginCmd) Run() {
 }
 
 func (u *UploadCmd) Flags(args ...string) error {
-	u.flags = NewWorkerFlagSet(u.Usage())
+	u.flags = NewWorkerFlagSet()
 	u.name = u.flags.name()
 	u.maxConc = u.flags.maxConc()
 	u.retries = u.flags.retries()
@@ -485,7 +477,6 @@ func (u *UploadCmd) Flags(args ...string) error {
 	u.config = u.flags.config()
 	u.configFile = u.flags.configFile()
 	u.zip = u.flags.zip()
-	u.host = u.flags.host()
 
 	err := u.flags.Parse(args)
 	if err != nil {
@@ -497,7 +488,7 @@ func (u *UploadCmd) Flags(args ...string) error {
 // `iron worker upload [--zip ZIPFILE] --name NAME IMAGE [COMMAND]`
 func (u *UploadCmd) Args() error {
 	if u.flags.NArg() < 1 {
-		return errors.New("upload takes at least one argument. see iron worker upload -h")
+		return errors.New("command takes at least one argument. see -help")
 	}
 
 	u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
@@ -530,7 +521,8 @@ func (u *UploadCmd) Args() error {
 	if *u.config != "" {
 		u.codes.Config = *u.config
 	}
-	if *u.host != "" {
+
+	if u.host != nil && *u.host != "" {
 		u.codes.Host = *u.host
 	}
 
@@ -544,22 +536,26 @@ func (u *UploadCmd) Args() error {
 	return nil
 }
 
-func (u *UploadCmd) Usage() func() {
-	return func() {
-		fmt.Fprintln(os.Stderr, `usage: iron worker upload [-zip my.zip] -name NAME [OPTIONS] some/image[:tag] [command...]`)
-		u.flags.PrintDefaults()
-	}
+func (u *UploadCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron worker upload [-zip my.zip] -name NAME [OPTIONS] some/image[:tag] [command...]`)
+	u.flags.PrintDefaults()
 }
 
 func (u *UploadCmd) Run() {
-	fmt.Println(LINES, `Uploading worker '`+u.codes.Name+`'`)
-	id, err := pushCodes(*u.zip, &u.wrkr, u.codes)
-
+	if u.codes.Host != "" {
+		fmt.Println(LINES, `Spinning up '`+u.codes.Name+`'`)
+	} else {
+		fmt.Println(LINES, `Uploading worker '`+u.codes.Name+`'`)
+	}
+	code, err := pushCodes(*u.zip, &u.wrkr, u.codes)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	id = string(id)
-	fmt.Println(BLANKS, green(`Uploaded code package with id='`+id+`'`))
-	fmt.Println(BLANKS, green(u.hud_URL_str+"code/"+id+INFO))
+	if code.Host != "" {
+		fmt.Println(BLANKS, green(`Hosted at: '`+code.Host+`'`))
+	} else {
+		fmt.Println(BLANKS, green(`Uploaded code package with id='`+code.Id+`'`))
+	}
+	fmt.Println(BLANKS, green(u.hud_URL_str+"code/"+code.Id+INFO))
 }
