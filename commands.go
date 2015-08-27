@@ -450,7 +450,7 @@ func (l *DockerLoginCmd) Args() error {
 }
 
 func (l *DockerLoginCmd) Usage() {
-	fmt.Fprintln(os.Stderr, `usage: iron worker docker-login --repo-username --repo-pass --repo-email --repo-url`)
+	fmt.Fprintln(os.Stderr, `usage: iron worker docker-login -u -p -email -url`)
 	l.flags.PrintDefaults()
 }
 
