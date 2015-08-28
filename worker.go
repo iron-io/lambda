@@ -12,7 +12,8 @@ import (
 	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/worker"
 )
 
-func dockerLogin(w *worker.Worker, args *DockerLoginCmd) (msg string, err error) {
+func dockerLogin(w *worker.Worker, args *map[string]string) (msg string, err error) {
+
 	data, err := json.Marshal(args)
 	reader := bytes.NewReader(data)
 

@@ -95,11 +95,13 @@ func projectName(config config.Settings) (string, error) {
 
 type DockerLoginCmd struct {
 	command
-	Auth     *string `json:"auth"`
-	Email    *string `json:"email"`
-	username *string `json:"-"`
-	pass     *string `json:"-"`
-	Url      *string `json:"url"`
+	Email         *string `json:"email"`
+	Username      *string `json:"username"`
+	Password      *string `json:"password"`
+	Serveraddress *string `json:"serveraddress"`
+	TestAuth      *string `json:"-"`    //
+	RemoteAuth    *string `json:"-"`    //
+	Auth          string  `json:"auth"` //Docker api require to use empty auth
 }
 
 type UploadCmd struct {
@@ -397,11 +399,10 @@ func (l *LogCmd) Run() {
 func (l *DockerLoginCmd) Flags(args ...string) error {
 	l.flags = NewWorkerFlagSet()
 
-	l.Auth = l.flags.dockerRepoAuth()
 	l.Email = l.flags.dockerRepoEmail()
-	l.pass = l.flags.dockerRepoPass()
-	l.Url = l.flags.dockerRepoUrl()
-	l.username = l.flags.dockerRepoUserName()
+	l.Password = l.flags.dockerRepoPass()
+	l.Serveraddress = l.flags.dockerRepoUrl()
+	l.Username = l.flags.dockerRepoUserName()
 
 	err := l.flags.Parse(args)
 	if err != nil {
@@ -413,28 +414,31 @@ func (l *DockerLoginCmd) Flags(args ...string) error {
 // Takes one parameter, the task_id to log
 func (l *DockerLoginCmd) Args() error {
 
-	if *l.Email != "" || *l.Auth != "" || *l.Url != "" || *l.username != "" || *l.pass != "" {
-		if *l.Email == "" || (*l.Auth == "" && (*l.pass == "" || *l.username == "")) {
-			return errors.New("you should set both repo-email and repo-auth or repo-email and repo-pass/repo-username")
-		}
-	}
-	if *l.username != "" && *l.pass != "" {
-		*l.Auth = base64.StdEncoding.EncodeToString([]byte(*l.username + ":" + *l.pass))
+	if *l.Email == "" || *l.Username == "" || *l.Password == "" || l.Email == nil || l.Username == nil || l.Password == nil {
+		return errors.New("you should set email, password, username")
 	}
 
-	if *l.Url == "" || l.Url == nil {
+	if *l.Serveraddress == "" || l.Serveraddress == nil {
 		defaultUrl := "https://index.docker.io/v1/" //default dockerhub url
-		l.Url = &defaultUrl
+		l.Serveraddress = &defaultUrl
 	}
 
-	req, err := http.NewRequest("GET", *l.Url+"users/", nil)
+	auth := base64.StdEncoding.EncodeToString([]byte(*l.Username + ":" + *l.Password))
+	l.TestAuth = &auth
+
+	//{"username": "string", "password": "string", "email": "string", "serveraddress" : "string", "auth": ""}
+	bytes, _ := json.Marshal(*l)
+	authString := base64.StdEncoding.EncodeToString(bytes)
+	l.RemoteAuth = &authString
+
+	req, err := http.NewRequest("GET", *l.Serveraddress+"users/", nil)
 	if err != nil {
-		return errors.New("Cannot make auth request")
+		return fmt.Errorf("error authenticating docker login: %v", err)
 	}
 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Encoding", "gzip/deflate")
-	req.Header.Set("Authorization", "Basic "+*l.Auth)
+	req.Header.Set("Authorization", "Basic "+*l.TestAuth)
 	req.Header.Set("Content-Type", "application/json")
 
 	_, err = http.DefaultClient.Do(req)
@@ -446,13 +450,16 @@ func (l *DockerLoginCmd) Args() error {
 }
 
 func (l *DockerLoginCmd) Usage() {
-	fmt.Fprintln(os.Stderr, `usage: iron worker login --username --password --email --auth --repo-url`)
+	fmt.Fprintln(os.Stderr, `usage: iron worker docker-login -u -p -email -url`)
 	l.flags.PrintDefaults()
 }
 
 func (l *DockerLoginCmd) Run() {
 	fmt.Println(LINES, "Storing docker repo credentials")
-	msg, err := dockerLogin(&l.wrkr, l)
+	auth := map[string]string{
+		"auth": *l.RemoteAuth,
+	}
+	msg, err := dockerLogin(&l.wrkr, &auth)
 	if err != nil {
 		fmt.Println(err)
 		return
