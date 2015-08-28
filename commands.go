@@ -433,7 +433,7 @@ func (l *DockerLoginCmd) Args() error {
 
 	req, err := http.NewRequest("GET", *l.Serveraddress+"users/", nil)
 	if err != nil {
-		return errors.New("Cannot make auth request")
+		return fmt.Errorf("error authenticating docker login: %v", err)
 	}
 
 	req.Header.Set("Accept", "application/json")
