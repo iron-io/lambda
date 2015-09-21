@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -103,6 +104,26 @@ func (wf *WorkerFlags) zip() *string {
 
 func (wf *WorkerFlags) cluster() *string {
 	return wf.String("cluster", "", "optional: specify cluster to queue task on")
+}
+
+// -- stringSlice Value
+type stringSlice []string
+
+func (s *stringSlice) Set(val string) error {
+	*s = append(*s, val)
+	return nil
+}
+
+func (s *stringSlice) Get() interface{} {
+	return *s
+}
+
+func (s *stringSlice) String() string { return fmt.Sprintf("%v", *s) }
+
+func (wf *WorkerFlags) envVars() *stringSlice {
+	var sameNamedFlags stringSlice
+	wf.Var(&sameNamedFlags, "e", "optional: specify environment variable for your code in format 'var=value'")
+	return &sameNamedFlags
 }
 
 // TODO(reed): pretty sure there's a better way to get types from flags...
