@@ -1,10 +1,14 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
+	"unicode"
 )
 
 type WorkerFlags struct {
@@ -103,6 +107,50 @@ func (wf *WorkerFlags) zip() *string {
 
 func (wf *WorkerFlags) cluster() *string {
 	return wf.String("cluster", "", "optional: specify cluster to queue task on")
+}
+
+func allowedSymbolsOnly(s string) error {
+	for _, runeValue := range s {
+		if !(runeValue == '/' || runeValue == '_' || runeValue == '-' || unicode.IsLetter(runeValue) || unicode.IsNumber(runeValue)) {
+			return errors.New("Only letters, numbers, underscores, slashes and hyphens allowed in environment variables")
+		}
+	}
+	return nil
+}
+
+// -- envSlice Value
+type envVariable struct {
+	Name  string
+	Value string
+}
+
+type envSlice []envVariable
+
+func (s *envSlice) Set(val string) error {
+	if !strings.Contains(val, "=") {
+		return errors.New("Environment variable format is 'ENVNAME=value'")
+	}
+	pair := strings.SplitN(val, "=", 2)
+	for _, item := range pair {
+		if err := allowedSymbolsOnly(item); err != nil {
+			return err
+		}
+	}
+	envVar := envVariable{Name: pair[0], Value: pair[1]}
+	*s = append(*s, envVar)
+	return nil
+}
+
+func (s *envSlice) Get() interface{} {
+	return *s
+}
+
+func (s *envSlice) String() string { return fmt.Sprintf("%v", *s) }
+
+func (wf *WorkerFlags) envVars() *envSlice {
+	var sameNamedFlags envSlice
+	wf.Var(&sameNamedFlags, "e", "optional: specify environment variable for your code in format 'ENVNAME=value'")
+	return &sameNamedFlags
 }
 
 // TODO(reed): pretty sure there's a better way to get types from flags...

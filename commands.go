@@ -117,6 +117,7 @@ type UploadCmd struct {
 	zip          *string
 	codes        worker.Code // for fields, not code
 	cmd          string
+	envVars      *envSlice
 }
 
 type QueueCmd struct {
@@ -476,6 +477,7 @@ func (u *UploadCmd) Flags(args ...string) error {
 	u.config = u.flags.config()
 	u.configFile = u.flags.configFile()
 	u.zip = u.flags.zip()
+	u.envVars = u.flags.envVars()
 
 	err := u.flags.Parse(args)
 	if err != nil {
@@ -532,6 +534,17 @@ func (u *UploadCmd) Args() error {
 		}
 		u.codes.Config = string(pload)
 	}
+
+	if *u.envVars != nil {
+		if envSlice, ok := u.envVars.Get().(envSlice); ok {
+			envVarsMap := make(map[string]string, len(envSlice))
+			for _, envItem := range envSlice {
+				envVarsMap[envItem.Name] = envItem.Value
+			}
+			u.codes.EnvVars = envVarsMap
+		}
+	}
+
 	return nil
 }
 
