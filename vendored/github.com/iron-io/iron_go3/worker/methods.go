@@ -40,7 +40,7 @@ type ScheduleInfo struct {
 type Task struct {
 	CodeName string         `json:"code_name"`
 	Payload  string         `json:"payload"`
-	Priority int            `json:"priority"`
+	Priority *int           `json:"priority"`
 	Timeout  *time.Duration `json:"timeout"`
 	Delay    *time.Duration `json:"delay"`
 	Cluster  string         `json:"cluster"`
@@ -71,19 +71,20 @@ type TaskInfo struct {
 type CodeSource map[string][]byte // map[pathInZip]code
 
 type Code struct {
-	Id             string            `json:"id,omitempty"`
-	Name           string            `json:"name"`
-	Runtime        string            `json:"runtime"`
-	FileName       string            `json:"file_name"`
-	Config         string            `json:"config,omitempty"`
-	MaxConcurrency int               `json:"max_concurrency,omitempty"`
-	Retries        int               `json:"retries,omitempty"`
-	Stack          string            `json:"stack"`
-	Image          string            `json:"image"`
-	Command        string            `json:"command"`
-	RetriesDelay   int               `json:"retries_delay,omitempty"` // seconds
-	Host           string            `json:"host,omitempty"`          // PaaS router thing
-	EnvVars        map[string]string `json:"env_vars"`
+	Id              string            `json:"id,omitempty"`
+	Name            string            `json:"name"`
+	Runtime         string            `json:"runtime"`
+	FileName        string            `json:"file_name"`
+	Config          string            `json:"config,omitempty"`
+	MaxConcurrency  int               `json:"max_concurrency,omitempty"`
+	Retries         int               `json:"retries,omitempty"`
+	Stack           string            `json:"stack"`
+	Image           string            `json:"image"`
+	Command         string            `json:"command"`
+	RetriesDelay    int               `json:"retries_delay,omitempty"` // seconds
+	Host            string            `json:"host,omitempty"`          // PaaS router thing
+	EnvVars         map[string]string `json:"env_vars"`
+	DefaultPriority int               `json:"default_priority,omitempty"`
 }
 
 type CodeInfo struct {
