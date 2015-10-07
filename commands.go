@@ -107,17 +107,18 @@ type DockerLoginCmd struct {
 type UploadCmd struct {
 	command
 
-	name         *string
-	config       *string
-	configFile   *string
-	maxConc      *int
-	retries      *int
-	retriesDelay *int
-	host         *string
-	zip          *string
-	codes        worker.Code // for fields, not code
-	cmd          string
-	envVars      *envSlice
+	name            *string
+	config          *string
+	configFile      *string
+	maxConc         *int
+	retries         *int
+	retriesDelay    *int
+	defaultPriority *int
+	host            *string
+	zip             *string
+	codes           worker.Code // for fields, not code
+	cmd             string
+	envVars         *envSlice
 }
 
 type QueueCmd struct {
@@ -193,10 +194,15 @@ func (s *SchedCmd) Args() error {
 
 	delay := time.Duration(*s.delay) * time.Second
 
+	var priority *int
+	if *s.priority > -3 && *s.priority < 3 {
+		priority = s.priority
+	}
+
 	s.sched = worker.Schedule{
 		CodeName: s.flags.Arg(0),
 		Delay:    &delay,
-		Priority: s.priority,
+		Priority: priority,
 		RunTimes: s.runTimes,
 		Cluster:  *s.cluster,
 	}
@@ -290,10 +296,15 @@ func (q *QueueCmd) Args() error {
 	delay := time.Duration(*q.delay) * time.Second
 	timeout := time.Duration(*q.timeout) * time.Second
 
+	var priority *int
+	if *q.priority > -3 && *q.priority < 3 {
+		priority = q.priority
+	}
+
 	q.task = worker.Task{
 		CodeName: q.flags.Arg(0),
 		Payload:  payload,
-		Priority: *q.priority,
+		Priority: priority,
 		Timeout:  &timeout,
 		Delay:    &delay,
 		Cluster:  *q.cluster,
@@ -474,6 +485,7 @@ func (u *UploadCmd) Flags(args ...string) error {
 	u.maxConc = u.flags.maxConc()
 	u.retries = u.flags.retries()
 	u.retriesDelay = u.flags.retriesDelay()
+	u.defaultPriority = u.flags.defaultPriority()
 	u.config = u.flags.config()
 	u.configFile = u.flags.configFile()
 	u.zip = u.flags.zip()
@@ -510,18 +522,11 @@ func (u *UploadCmd) Args() error {
 			return err
 		}
 	}
-	if *u.maxConc > 0 {
-		u.codes.MaxConcurrency = *u.maxConc
-	}
-	if *u.retries > 0 {
-		u.codes.Retries = *u.retries
-	}
-	if *u.retriesDelay > 0 {
-		u.codes.RetriesDelay = *u.retriesDelay
-	}
-	if *u.config != "" {
-		u.codes.Config = *u.config
-	}
+	u.codes.MaxConcurrency = *u.maxConc
+	u.codes.Retries = *u.retries
+	u.codes.RetriesDelay = *u.retriesDelay
+	u.codes.Config = *u.config
+	u.codes.DefaultPriority = *u.defaultPriority
 
 	if u.host != nil && *u.host != "" {
 		u.codes.Host = *u.host
