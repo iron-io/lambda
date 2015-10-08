@@ -18,7 +18,7 @@ curl -f -sSL https://cli.iron.io/install -O
 sh install
 ```
 
-### `curl | sh` as an Installation Method?
+#### `curl | sh` as an Installation Method?
 
 We'd like to explain why we're telling you to `curl | sh` to install this software.
 The script at https://cli.iron.io/install has some relatively simple logic to download the
