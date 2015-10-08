@@ -7,7 +7,7 @@ Go version of the Iron.io command line tools.
 
 ## Quick and Easy (Recommended)
 
-`curl -sSL http://get.iron.io/cli | sh`
+`curl -sSL https://cli.iron.io/install | sh`
 
 ## Download Yourself
 
