@@ -2,9 +2,9 @@
 set -e
 #
 # This script is meant for quick & easy install via:
-#   'curl -sSL http://get.iron.io/cli | sh'
+#   'curl -sSL https://cli.iron.io/install | sh'
 # or:
-#   'wget -qO- http://get.iron.io/cli | sh'
+#   'wget -qO- https://cli.iron.io/install | sh'
 #
 
 # UPDATE RELEASE HERE AFTER A NEW VERSION IS RELEASED
@@ -94,4 +94,3 @@ cat >&2 <<'EOF'
 
 EOF
 exit 1
-
