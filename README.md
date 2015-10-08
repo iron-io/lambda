@@ -9,6 +9,24 @@ Go version of the Iron.io command line tools.
 
 `curl -sSL https://cli.iron.io/install | sh`
 
+If you're concerned about the [potential insecurity](http://curlpipesh.tumblr.com/)
+of using `curl | sh`, feel free to use a two-step version of our installation and examine our
+installation script:
+
+```bash
+curl -f -sSL https://cli.iron.io/install -O
+sh install
+```
+
+### `curl | sh` as an Installation Method?
+
+We'd like to explain why we're telling you to `curl | sh` to install this software.
+The script at https://cli.iron.io/install has some relatively simple logic to download the
+right `ironcli` binary for your platform. When you run that script by piping the `curl` output
+into `sh`, you're trusting us that it's safe and won't harm your computer. We hope that you do!
+But if you don't please see the section just below this one on how to download and run the binary
+yourself without an install script.
+
 ## Download Yourself
 
 Grab the latest version for your system on the [Releases](https://github.com/iron-io/ironcli/releases) page.
