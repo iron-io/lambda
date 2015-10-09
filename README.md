@@ -15,9 +15,28 @@ Grab the latest version for your system on the [Releases](https://github.com/iro
 
 You can either run the binary directly or add somewhere in your $PATH.
 
-## Coming soon...
+## Use the iron/cli Docker image
 
-Homebrew/deb/msi installer coming...
+If you have Docker installed, then you don't need to install anything else to use this.
+All the commands are the same, but instead of starting the command with `iron`, change it to:
+
+```sh
+docker run --rm -it -v "$PWD":/app -w /app iron/cli ...
+```
+
+If you're using the Docker image, you either need to have your `iron.json` file in the local directory (it won't pick it up from $HOME),
+or set your Iron credentials in environment variables:
+
+```sh
+export IRON_TOKEN=YOURTOKEN
+export IRON_PROJECT_ID=YOURPROJECT_ID
+```
+
+And then use `-e` flags with the docker run command:
+
+```sh
+docker run --rm -it -e IRON_TOKEN -e IRON_PROJECT_ID -v "$PWD":/app -w /app iron/cli ...
+```
 
 # Before Getting Started
 
@@ -118,7 +137,7 @@ You can provide a json file with a set of messages to be pushed onto the queue. 
 ### Delete a set of reserved message
 `iron mq delete [-f file] QUEUE_NAME "MESSAGE_ID" "MESSAGE_ID2"...`
 
-For private images you should use 
+For private images you should use
 `iron worker docker-login --repo-username USERNAME --repo-pass PASS  --repo-email EMAIL`
 Or
 `iron worker docker-login --repo-auth AUTH --repo-email EMAIL`
