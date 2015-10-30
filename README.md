@@ -65,16 +65,18 @@ system](http://dev.iron.io/worker/reference/configuration/) (either in a json
 file or using ENV variables). You only need to do that once for your machine. If
 you've done that, then you can continue.
 
-[See the official docs](http://dev.iron.io/worker/beta/cli/) for more detailed info on using Docker for IronWorker.
+[See the official docs](http://dev.iron.io/worker/cli/) for more detailed info on using Docker for IronWorker.
 
 # Help
 
-`iron worker --help` for list of commands, flags
-`iron worker COMMAND --help` for command specific help
+- `iron worker --help` for list of commands and flags
+- `iron worker COMMAND --help` for command-specific help
 
 # Currently supported commands
 
-__WARNING:__ still in progress (only upload problematic), if running into issues: use `github.com/iron-io/iron_worker_ruby_ng`
+__WARNING:__ still in progress (only upload problematic), if running into
+issues, try falling back to [the previous generation Ruby
+CLI](https://github.com/iron-io/iron_worker_ruby_ng) (sorry!).
 
 ### Queue a task:
 
