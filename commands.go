@@ -132,6 +132,7 @@ type QueueCmd struct {
 	delay       *int
 	wait        *bool
 	cluster     *string
+	label       *string
 
 	// payload
 	task worker.Task
@@ -150,6 +151,7 @@ type SchedCmd struct {
 	cluster     *string
 	endAt       *string // time.RubyTime
 	startAt     *string // time.RubyTime
+	label       *string
 
 	sched worker.Schedule
 }
@@ -178,6 +180,7 @@ func (s *SchedCmd) Flags(args ...string) error {
 	s.endAt = s.flags.endAt()
 	s.startAt = s.flags.startAt()
 	s.cluster = s.flags.cluster()
+	s.label = s.flags.label()
 
 	err := s.flags.Parse(args)
 	if err != nil {
@@ -205,6 +208,7 @@ func (s *SchedCmd) Args() error {
 		Priority: priority,
 		RunTimes: s.runTimes,
 		Cluster:  *s.cluster,
+		Label:    *s.label,
 	}
 
 	payload := *s.payload
@@ -308,6 +312,7 @@ func (q *QueueCmd) Args() error {
 		Timeout:  &timeout,
 		Delay:    &delay,
 		Cluster:  *q.cluster,
+		Label:    *q.label,
 	}
 
 	return nil

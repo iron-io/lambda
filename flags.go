@@ -113,6 +113,10 @@ func (wf *WorkerFlags) cluster() *string {
 	return wf.String("cluster", "", "optional: specify cluster to queue task on")
 }
 
+func (wf *WorkerFlags) label() *string {
+	return wf.String("label", "", "optional: specify label for a task")
+}
+
 func allowedSymbolsOnly(s string) error {
 	for _, runeValue := range s {
 		if !(runeValue == '/' || runeValue == '_' || runeValue == '-' || unicode.IsLetter(runeValue) || unicode.IsNumber(runeValue)) {
