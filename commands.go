@@ -273,6 +273,7 @@ func (q *QueueCmd) Flags(args ...string) error {
 	q.delay = q.flags.delay()
 	q.wait = q.flags.wait()
 	q.cluster = q.flags.cluster()
+	q.label = q.flags.label()
 
 	err := q.flags.Parse(args)
 	if err != nil {
