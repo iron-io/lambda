@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/config"
-	"github.com/iron-io/ironcli/vendored/github.com/iron-io/iron_go3/mq"
+	"github.com/iron-io/iron_go3/config"
+	"github.com/iron-io/iron_go3/mq"
 )
 
 // type Cmd interface {
