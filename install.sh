@@ -67,19 +67,19 @@ case "$(uname)" in
   Linux)
     $sh_c "$curl /usr/local/bin/iron $url/$release/ironcli_linux"
     $sh_c "chmod +x /usr/local/bin/iron"
-    iron --version
+    /usr/local/bin/iron --version
     exit 0
     ;;
   Darwin)
     $sh_c "$curl /usr/local/bin/iron $url/$release/ironcli_mac"
     $sh_c "chmod +x /usr/local/bin/iron"
-    iron --version
+    /usr/local/bin/iron --version
     exit 0
     ;;
   WindowsNT)
     $sh_c "$curl $url/$release/ironcli.exe"
     # TODO how to make executable? chmod?
-    iron --version
+    ironcli.exe --version
     exit 0
     ;;
 esac
