@@ -116,6 +116,10 @@ func (wf *WorkerFlags) label() *string {
 	return wf.String("label", "", "optional: specify label for a task")
 }
 
+func (wf *WorkerFlags) encryptionKey() *string {
+	return wf.String("encryption-key", "", "optional: specify a hex encoded encryption key")
+}
+
 // -- envSlice Value
 type envVariable struct {
 	Name  string

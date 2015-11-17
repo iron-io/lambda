@@ -3,6 +3,11 @@ package main
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"mime/multipart"
@@ -117,4 +122,38 @@ func pushCodes(zipName string, w *worker.Worker, args worker.Code) (*worker.Code
 	var data worker.Code
 	err = json.NewDecoder(response.Body).Decode(&data)
 	return &data, err
+}
+
+// TODO we should probably support other functions at
+// some point so that people have a choice.
+//
+// - expects a hex encoded key of length 16 [decoded] for AES-128-GCM
+// - returns a base64 ciphertext with a new, random iv in the first 12 bytes,
+//   and the auth tag in the last 16 bytes of the [base64 decoded] cipher.
+func aesEncrypt(publicKeyHex, payloadPlain string) (string, error) {
+	key, err := hex.DecodeString(publicKeyHex)
+	if err != nil {
+		return "", err
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	pbytes := []byte(payloadPlain)
+	// The IV needs to be unique, but not secure. Therefore it's common to
+	// include it at the beginning of the ciphertext.
+	ciphertext := make([]byte, gcm.NonceSize(), gcm.NonceSize()+len(pbytes)+gcm.Overhead())
+	nonce := ciphertext[:gcm.NonceSize()]
+	if _, err := rand.Read(nonce); err != nil {
+		return "", err
+	}
+	// tag is appended to cipher as last 16 bytes. https://golang.org/src/crypto/cipher/gcm.go?s=2318:2357#L145
+	ciphertext = gcm.Seal(ciphertext, nonce, pbytes, nil)
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }

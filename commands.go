@@ -141,14 +141,15 @@ type QueueCmd struct {
 	command
 
 	// flags
-	payload     *string
-	payloadFile *string
-	priority    *int
-	timeout     *int
-	delay       *int
-	wait        *bool
-	cluster     *string
-	label       *string
+	payload       *string
+	payloadFile   *string
+	priority      *int
+	timeout       *int
+	delay         *int
+	wait          *bool
+	cluster       *string
+	label         *string
+	encryptionKey *string
 
 	// payload
 	task worker.Task
@@ -290,6 +291,7 @@ func (q *QueueCmd) Flags(args ...string) error {
 	q.wait = q.flags.wait()
 	q.cluster = q.flags.cluster()
 	q.label = q.flags.label()
+	q.encryptionKey = q.flags.encryptionKey()
 
 	err := q.flags.Parse(args)
 	if err != nil {
@@ -320,6 +322,13 @@ func (q *QueueCmd) Args() error {
 	var priority *int
 	if *q.priority > -3 && *q.priority < 3 {
 		priority = q.priority
+	}
+	if *q.encryptionKey != "" {
+		var err error
+		payload, err = aesEncrypt(*q.encryptionKey, payload)
+		if err != nil {
+			return err
+		}
 	}
 
 	q.task = worker.Task{
@@ -356,9 +365,18 @@ func (q *QueueCmd) Run() {
 	if *q.wait {
 		fmt.Println(LINES, yellow("Waiting for task", id))
 
-		out := q.wrkr.WaitForTaskLog(id)
+		ti := <-q.wrkr.WaitForTask(id)
+		if ti.Msg != "" {
+			fmt.Fprintln(os.Stderr, "error running task:", ti.Msg)
+			return
+		}
 
-		log := <-out
+		log, err := q.wrkr.TaskLog(id)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error getting log:", err)
+			return
+		}
+
 		fmt.Println(LINES, green("Done"))
 		fmt.Println(LINES, "Printing Log:")
 		fmt.Printf("%s", string(log))

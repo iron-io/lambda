@@ -202,27 +202,21 @@ func (w *Worker) FilteredTaskList(params TaskListParams) (tasks []TaskInfo, err 
 
 // TaskQueue queues a task
 func (w *Worker) TaskQueue(tasks ...Task) (taskIds []string, err error) {
-	outTasks := make([]map[string]interface{}, 0, len(tasks))
-
-	for _, task := range tasks {
-		thisTask := map[string]interface{}{
-			"code_name": task.CodeName,
-			"payload":   task.Payload,
-			"priority":  task.Priority,
-			"cluster":   task.Cluster,
-			"label":     task.Label,
-		}
+	for i, task := range tasks {
 		if task.Timeout != nil {
-			thisTask["timeout"] = (*task.Timeout).Seconds()
+			*tasks[i].Timeout = *task.Timeout / time.Second
 		}
 		if task.Delay != nil {
-			thisTask["delay"] = int64((*task.Delay).Seconds())
+			*tasks[i].Delay = *task.Delay / time.Second
 		}
-
-		outTasks = append(outTasks, thisTask)
 	}
 
-	in := map[string][]map[string]interface{}{"tasks": outTasks}
+	in := struct {
+		Tasks []Task `json:"tasks"`
+	}{
+		Tasks: tasks,
+	}
+
 	out := struct {
 		Tasks []struct {
 			Id string `json:"id"`
@@ -230,7 +224,7 @@ func (w *Worker) TaskQueue(tasks ...Task) (taskIds []string, err error) {
 		Msg string `json:"msg"`
 	}{}
 
-	err = w.tasks().Req("POST", &in, &out)
+	err = w.tasks().Req("POST", in, &out)
 	if err != nil {
 		return
 	}
