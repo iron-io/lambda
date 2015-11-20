@@ -32,6 +32,7 @@ var (
 		"worker": mapper{
 			"docker-login": new(DockerLoginCmd),
 			"upload":       new(UploadCmd),
+			"register":     new(RegisterCmd),
 			"queue":        new(QueueCmd),
 			"schedule":     new(SchedCmd),
 			"status":       new(StatusCmd),
