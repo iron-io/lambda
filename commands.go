@@ -433,7 +433,7 @@ func (l *DockerLoginCmd) Flags(args ...string) error {
 func (l *DockerLoginCmd) Args() error {
 
 	if *l.Email == "" || *l.Username == "" || *l.Password == "" || l.Email == nil || l.Username == nil || l.Password == nil {
-		return errors.New("you should set email, password, username")
+		return errors.New("you should set email(-e), password(-p), username(-u) parameters")
 	}
 
 	if *l.Serveraddress == "" || l.Serveraddress == nil {
@@ -459,8 +459,9 @@ func (l *DockerLoginCmd) Args() error {
 	req.Header.Set("Authorization", "Basic "+*l.TestAuth)
 	req.Header.Set("Content-Type", "application/json")
 
-	_, err = http.DefaultClient.Do(req)
-	if err != nil {
+	res, err := http.DefaultClient.Do(req)
+
+	if err != nil || res.StatusCode!=200 {
 		return errors.New("Docker repo auth failed")
 	}
 
@@ -468,7 +469,7 @@ func (l *DockerLoginCmd) Args() error {
 }
 
 func (l *DockerLoginCmd) Usage() {
-	fmt.Fprintln(os.Stderr, `usage: iron worker docker-login -u -p -email -url`)
+	fmt.Fprintln(os.Stderr, `usage: iron docker login -u -p -e -url`)
 	l.flags.PrintDefaults()
 }
 

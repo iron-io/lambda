@@ -29,13 +29,15 @@ var (
 	//      mq:     { commands... }
 	commands = map[string]commander{
 		"run": runner{},
+		"docker": mapper{
+			"login": new(DockerLoginCmd),
+		},
 		"worker": mapper{
-			"docker-login": new(DockerLoginCmd),
-			"upload":       new(UploadCmd),
-			"queue":        new(QueueCmd),
-			"schedule":     new(SchedCmd),
-			"status":       new(StatusCmd),
-			"log":          new(LogCmd),
+			"upload":   new(UploadCmd),
+			"queue":    new(QueueCmd),
+			"schedule": new(SchedCmd),
+			"status":   new(StatusCmd),
+			"log":      new(LogCmd),
 		},
 		"mq": mapper{
 			"push":    new(PushCmd),
@@ -67,6 +69,7 @@ where [product] is one of:
 
   mq
   worker
+  docker
   run
 
 run '`+os.Args[0], `[product] -help for a list of commands.
