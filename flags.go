@@ -34,7 +34,7 @@ func (wf *WorkerFlags) dockerRepoUrl() *string {
 	return wf.String("url", "", "docker repo url, if you're using custom repo")
 }
 func (wf *WorkerFlags) dockerRepoEmail() *string {
-	return wf.String("email", "", "docker repo user email")
+	return wf.String("e", "", "docker repo user email")
 }
 
 func (wf *WorkerFlags) host() *string {
