@@ -477,7 +477,7 @@ func (l *DockerLoginCmd) Args() error {
 
 	res, err := http.DefaultClient.Do(req)
 
-	if err != nil || res.StatusCode!=200 {
+	if err != nil || res.StatusCode != 200 {
 		return errors.New("Docker repo auth failed")
 	}
 

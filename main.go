@@ -32,9 +32,9 @@ var (
 		"docker": mapper{
 			"login": new(DockerLoginCmd),
 		},
+		"register": registrar{},
 		"worker": mapper{
 			"upload":   new(UploadCmd),
-			"register":     new(RegisterCmd),
 			"queue":    new(QueueCmd),
 			"schedule": new(SchedCmd),
 			"status":   new(StatusCmd),
@@ -71,6 +71,7 @@ where [product] is one of:
   mq
   worker
   docker
+  register
   run
 
 run '`+os.Args[0], `[product] -help for a list of commands.
@@ -106,11 +107,23 @@ type (
 	mapper map[string]Command
 	// runner calls flags on first (zeroeth) arg
 	runner struct{}
+	// registrar calls flags on first (zeroeth) arg, using RegisterCmd
+	registrar struct{}
 )
 
 func (r runner) Commands() []string { return []string{"just run!"} } // --help handled in Flags()
 func (r runner) Command(args ...string) (Command, error) {
 	run := new(RunCmd)
+	err := run.Flags(args[0:]...)
+	if err == nil {
+		err = run.Args()
+	}
+	return run, err
+}
+
+func (r registrar) Commands() []string { return []string{"just register!"} } // --help handled in Flags()
+func (r registrar) Command(args ...string) (Command, error) {
+	run := new(RegisterCmd)
 	err := run.Flags(args[0:]...)
 	if err == nil {
 		err = run.Args()
