@@ -121,6 +121,22 @@ type UploadCmd struct {
 	envVars         *envSlice
 }
 
+type RegisterCmd struct {
+	command
+
+	name            *string
+	config          *string
+	configFile      *string
+	maxConc         *int
+	retries         *int
+	retriesDelay    *int
+	defaultPriority *int
+	host            *string
+	codes           worker.Code // for fields, not code
+	cmd             string
+	envVars         *envSlice
+}
+
 type QueueCmd struct {
 	command
 
@@ -461,7 +477,7 @@ func (l *DockerLoginCmd) Args() error {
 
 	res, err := http.DefaultClient.Do(req)
 
-	if err != nil || res.StatusCode!=200 {
+	if err != nil || res.StatusCode != 200 {
 		return errors.New("Docker repo auth failed")
 	}
 
@@ -580,6 +596,90 @@ func (u *UploadCmd) Run() {
 		fmt.Println(BLANKS, green(`Hosted at: '`+code.Host+`'`))
 	} else {
 		fmt.Println(BLANKS, green(`Uploaded code package with id='`+code.Id+`'`))
+	}
+	fmt.Println(BLANKS, green(u.hud_URL_str+"code/"+code.Id+INFO))
+}
+
+func (u *RegisterCmd) Flags(args ...string) error {
+	u.flags = NewWorkerFlagSet()
+	u.name = u.flags.name()
+	u.maxConc = u.flags.maxConc()
+	u.retries = u.flags.retries()
+	u.retriesDelay = u.flags.retriesDelay()
+	u.defaultPriority = u.flags.defaultPriority()
+	u.config = u.flags.config()
+	u.configFile = u.flags.configFile()
+	u.envVars = u.flags.envVars()
+
+	err := u.flags.Parse(args)
+	if err != nil {
+		return err
+	}
+	return u.flags.validateAllFlags()
+}
+
+// `iron worker register IMAGE`
+func (u *RegisterCmd) Args() error {
+	if u.flags.NArg() < 1 {
+		return errors.New("command takes at least one argument. see -help")
+	}
+
+	u.codes.Command = strings.TrimSpace(strings.Join(u.flags.Args()[1:], " "))
+	u.codes.Image = u.flags.Arg(0)
+
+	u.codes.Name = u.codes.Image
+
+	u.codes.MaxConcurrency = *u.maxConc
+	u.codes.Retries = *u.retries
+	u.codes.RetriesDelay = *u.retriesDelay
+	u.codes.Config = *u.config
+	u.codes.DefaultPriority = *u.defaultPriority
+
+	if u.host != nil && *u.host != "" {
+		u.codes.Host = *u.host
+	}
+
+	if *u.configFile != "" {
+		pload, err := ioutil.ReadFile(*u.configFile)
+		if err != nil {
+			return err
+		}
+		u.codes.Config = string(pload)
+	}
+
+	if *u.envVars != nil {
+		if envSlice, ok := u.envVars.Get().(envSlice); ok {
+			envVarsMap := make(map[string]string, len(envSlice))
+			for _, envItem := range envSlice {
+				envVarsMap[envItem.Name] = envItem.Value
+			}
+			u.codes.EnvVars = envVarsMap
+		}
+	}
+
+	return nil
+}
+
+func (u *RegisterCmd) Usage() {
+	fmt.Fprintln(os.Stderr, `usage: iron worker register some/image[:tag]`)
+	u.flags.PrintDefaults()
+}
+
+func (u *RegisterCmd) Run() {
+	if u.codes.Host != "" {
+		fmt.Println(LINES, `Spinning up '`+u.codes.Name+`'`)
+	} else {
+		fmt.Println(LINES, `Registering worker '`+u.codes.Name+`'`)
+	}
+	code, err := pushCodes("", &u.wrkr, u.codes)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if code.Host != "" {
+		fmt.Println(BLANKS, green(`Hosted at: '`+code.Host+`'`))
+	} else {
+		fmt.Println(BLANKS, green(`Registered code package with id='`+code.Id+`'`))
 	}
 	fmt.Println(BLANKS, green(u.hud_URL_str+"code/"+code.Id+INFO))
 }
