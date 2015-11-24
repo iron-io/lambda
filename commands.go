@@ -628,6 +628,10 @@ func (u *RegisterCmd) Args() error {
 	u.codes.Image = u.flags.Arg(0)
 
 	u.codes.Name = u.codes.Image
+	if strings.ContainsRune(u.codes.Name, ':') {
+		arr := strings.SplitN(u.codes.Name, ":", 2)
+		u.codes.Name = arr[0]
+	}
 
 	u.codes.MaxConcurrency = *u.maxConc
 	u.codes.Retries = *u.retries
