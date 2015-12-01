@@ -141,15 +141,16 @@ type QueueCmd struct {
 	command
 
 	// flags
-	payload       *string
-	payloadFile   *string
-	priority      *int
-	timeout       *int
-	delay         *int
-	wait          *bool
-	cluster       *string
-	label         *string
-	encryptionKey *string
+	payload           *string
+	payloadFile       *string
+	priority          *int
+	timeout           *int
+	delay             *int
+	wait              *bool
+	cluster           *string
+	label             *string
+	encryptionKey     *string
+	encryptionKeyFile *string
 
 	// payload
 	task worker.Task
@@ -292,6 +293,7 @@ func (q *QueueCmd) Flags(args ...string) error {
 	q.cluster = q.flags.cluster()
 	q.label = q.flags.label()
 	q.encryptionKey = q.flags.encryptionKey()
+	q.encryptionKeyFile = q.flags.encryptionKeyFile()
 
 	err := q.flags.Parse(args)
 	if err != nil {
@@ -323,9 +325,18 @@ func (q *QueueCmd) Args() error {
 	if *q.priority > -3 && *q.priority < 3 {
 		priority = q.priority
 	}
-	if *q.encryptionKey != "" {
+
+	encryptionKey := []byte(*q.encryptionKey)
+	if *q.encryptionKeyFile != "" {
 		var err error
-		payload, err = aesEncrypt(*q.encryptionKey, payload)
+		encryptionKey, err = ioutil.ReadFile(*q.encryptionKeyFile)
+		if err != nil {
+			return err
+		}
+	}
+	if len(encryptionKey) > 0 {
+		var err error
+		payload, err = rsaEncrypt(encryptionKey, payload)
 		if err != nil {
 			return err
 		}

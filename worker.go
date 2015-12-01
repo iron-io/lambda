@@ -6,9 +6,12 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha1"
+	"crypto/x509"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -124,19 +127,37 @@ func pushCodes(zipName string, w *worker.Worker, args worker.Code) (*worker.Code
 	return &data, err
 }
 
-// TODO we should probably support other functions at
-// some point so that people have a choice.
+// TODO we should probably support other functions at some point so that people have a choice.
 //
-// - expects a hex encoded key of length 16 [decoded] for AES-128-GCM
-// - returns a base64 ciphertext with a new, random iv in the first 12 bytes,
-//   and the auth tag in the last 16 bytes of the [base64 decoded] cipher.
-func aesEncrypt(publicKeyHex, payloadPlain string) (string, error) {
-	key, err := hex.DecodeString(publicKeyHex)
+// - expects an x509 rsa public key (ala "-----BEGIN RSA PUBLIC KEY-----")
+// - returns a base64 ciphertext with an rsa encrypted aes-128 session key stored in the bit length
+//   of the modulus of the given RSA key first bits (i.e. 2048 = first 256 bytes), followed by
+//   the aes cipher with a new, random iv in the first 12 bytes,
+//   and the auth tag in the last 16 bytes of the cipher.
+// - must have RSA key >= 1024
+// - end format w/ RSA of 2048 for display purposes, all base64 encoded:
+//   [ 256 byte RSA encrypted AES key | len(payload) AES-GCM cipher | 16 bytes AES tag | 12 bytes AES nonce ]
+func rsaEncrypt(publicKey []byte, payloadPlain string) (string, error) {
+	rsablock, _ := pem.Decode(publicKey)
+	rsaKey, err := x509.ParsePKIXPublicKey(rsablock.Bytes)
+	if err != nil {
+		return "", err
+	}
+	rsaPublicKey := rsaKey.(*rsa.PublicKey)
+
+	// get a random aes-128 session key to encrypt
+	aesKey := make([]byte, 128/8)
+	if _, err := rand.Read(aesKey); err != nil {
+		return "", err
+	}
+
+	// have to use sha1 b/c ruby openssl picks it for OAEP:  https://www.openssl.org/docs/manmaster/crypto/RSA_public_encrypt.html
+	aesKeyCipher, err := rsa.EncryptOAEP(sha1.New(), rand.Reader, rsaPublicKey, aesKey, nil)
 	if err != nil {
 		return "", err
 	}
 
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(aesKey)
 	if err != nil {
 		return "", err
 	}
@@ -146,14 +167,13 @@ func aesEncrypt(publicKeyHex, payloadPlain string) (string, error) {
 	}
 
 	pbytes := []byte(payloadPlain)
-	// The IV needs to be unique, but not secure. Therefore it's common to
-	// include it at the beginning of the ciphertext.
-	ciphertext := make([]byte, gcm.NonceSize(), gcm.NonceSize()+len(pbytes)+gcm.Overhead())
-	nonce := ciphertext[:gcm.NonceSize()]
+	// The IV needs to be unique, but not secure. last 12 bytes are IV.
+	ciphertext := make([]byte, len(pbytes)+gcm.Overhead()+gcm.NonceSize())
+	nonce := ciphertext[len(ciphertext)-gcm.NonceSize():]
 	if _, err := rand.Read(nonce); err != nil {
 		return "", err
 	}
 	// tag is appended to cipher as last 16 bytes. https://golang.org/src/crypto/cipher/gcm.go?s=2318:2357#L145
-	ciphertext = gcm.Seal(ciphertext, nonce, pbytes, nil)
-	return base64.StdEncoding.EncodeToString(ciphertext), nil
+	gcm.Seal(ciphertext[:0], nonce, pbytes, nil)
+	return base64.StdEncoding.EncodeToString(append(aesKeyCipher, ciphertext...)), nil
 }
