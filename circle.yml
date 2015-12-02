@@ -1,6 +1,9 @@
 machine:
   environment:
     GOPATH: $HOME
+    GOROOT: $HOME/go
+    PATH: $GOROOT/bin:$PATH
+    GO15VENDOREXPERIMENT: 1
     CHECKOUT_DIR: $HOME/$CIRCLE_PROJECT_REPONAME
     GH_IRON: $HOME/src/github.com/iron-io
     GO_PROJECT: ../src/github.com/iron-io
@@ -13,23 +16,29 @@ checkout:
     - cp -R "$CHECKOUT_DIR" "$GH_IRON/$CIRCLE_PROJECT_REPONAME":
         pwd: $HOME
 
+dependencies:
+  pre:
+    # install go1.5
+    - wget https://storage.googleapis.com/golang/go1.5.linux-amd64.tar.gz
+    - tar -C $HOME -xvzf go1.5.linux-amd64.tar.gz
+  override:
+    # this was being dumb, don't want it to auto detect we are a go repo b/c vendoring
+    - which go
+
 test:
   override:
     - go build .:
         pwd: $GO_PROJECT/$CIRCLE_PROJECT_REPONAME
 
-# TODO do we need this anymore? can we have this run build-release.sh?
-#dependencies:
-  #pre:
-    #- sudo apt-get install -y s3cmd
-
-#deployment:
-  #ironcli-windows:
-    #branch: production-windows
-    #commands:
-      #- mkdir ./out
-      #- docker run -v "$PWD/out":/home/out iron/ironcli_builder
-      #- sudo chmod 644 ./out/*
-      #- sed -i -- 's/\$S3_ACCESS_KEY/'"$S3_ACCESS_KEY"'/g' ./bin/windows/builder/.s3cfg
-      #- sed -i -- 's/\$S3_SECRET_KEY/'"$S3_SECRET_KEY"'/g' ./bin/windows/builder/.s3cfg
-      #- s3cmd -c ./bin/windows/builder/.s3cfg put ./out/* s3://ironcli-releases/
+deployment:
+  this:
+    branch: release
+    commands:
+      - echo $DOCKER_HUB_CREDS > $HOME/.dockercfg
+      - git config --global user.name "Tony Stark"
+      - git config --global user.email "deploys@iron.io"
+      - cd $GH_IRON/$CIRCLE_PROJECT_REPONAME && ./build-release.sh
+      - cd $GH_IRON/$CIRCLE_PROJECT_REPONAME && go build
+      - docker build -t iron/cli:latest $GH_IRON/$CIRCLE_PROJECT_REPONAME
+      - docker tag iron/cli:latest iron/cli:$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" $GH_IRON/$CIRCLE_PROJECT_REPONAME/install.sh)
+      - docker push iron/cli
