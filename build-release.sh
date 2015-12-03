@@ -23,7 +23,8 @@ if [ -z "${GH_DEPLOY_USER}" ]; then
   exit 1
 fi
 
-git checkout -b master origin/master
+git checkout master
+git pull origin master
 
 # CircleCI has these set in the project
 name=${GH_DEPLOY_USER}
