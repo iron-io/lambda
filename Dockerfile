@@ -1,4 +1,4 @@
-FROM iron/base
+FROM iron/busybox
 
 ADD ironcli /usr/local/bin/iron
 

@@ -54,7 +54,7 @@ func dirUnix() (string, error) {
 
 	// If that fails, try the shell
 	var stdout bytes.Buffer
-	cmd := exec.Command("sh", "-c", "eval echo ~$USER")
+	cmd := exec.Command("/bin/sh", "-c", "eval echo ~$USER")
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err != nil {
 		return "", err
