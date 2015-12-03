@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 )
 
 type WorkerFlags struct {
@@ -117,15 +116,6 @@ func (wf *WorkerFlags) label() *string {
 	return wf.String("label", "", "optional: specify label for a task")
 }
 
-func allowedSymbolsOnly(s string) error {
-	for _, runeValue := range s {
-		if !(runeValue == '/' || runeValue == '_' || runeValue == '-' || unicode.IsLetter(runeValue) || unicode.IsNumber(runeValue)) {
-			return errors.New("Only letters, numbers, underscores, slashes and hyphens allowed in environment variables")
-		}
-	}
-	return nil
-}
-
 // -- envSlice Value
 type envVariable struct {
 	Name  string
@@ -139,11 +129,6 @@ func (s *envSlice) Set(val string) error {
 		return errors.New("Environment variable format is 'ENVNAME=value'")
 	}
 	pair := strings.SplitN(val, "=", 2)
-	for _, item := range pair {
-		if err := allowedSymbolsOnly(item); err != nil {
-			return err
-		}
-	}
 	envVar := envVariable{Name: pair[0], Value: pair[1]}
 	*s = append(*s, envVar)
 	return nil
