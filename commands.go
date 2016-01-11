@@ -374,7 +374,7 @@ func (q *QueueCmd) Run() {
 	fmt.Println(BLANKS, q.hud_URL_str+"jobs/"+id+INFO)
 
 	if *q.wait {
-		fmt.Println(LINES, yellow("Waiting for task", id))
+		fmt.Println(LINES, yellow("Waiting for task ", id))
 
 		ti := <-q.wrkr.WaitForTask(id)
 		if ti.Msg != "" {
