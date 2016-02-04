@@ -78,6 +78,28 @@ func TestCreateImageWithDir(t *testing.T) {
 	}
 }
 
+func ensureBaseImage(name string) error {
+	filteropts := docker.ListImagesOptions{
+		Filter: name,
+	}
+	list, err := client.ListImages(filteropts)
+	if len(list) > 0 {
+		return nil
+	}
+
+	opts := docker.PullImageOptions{
+		Repository: "iron/lambda-node",
+	}
+
+	var conf docker.AuthConfiguration
+	err = client.PullImage(opts, conf)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func TestMain(m *testing.M) {
 	flag.Parse()
 	// Set up docker client to run clean up in individual tests.
@@ -85,6 +107,11 @@ func TestMain(m *testing.M) {
 	client, err = docker.NewClientFromEnv()
 	if err != nil {
 		log.Fatal("Test could not connect to docker daemon", err)
+	}
+
+	// Grab node base image.
+	if err := ensureBaseImage("iron/lambda-node"); err != nil {
+		log.Fatal("Could not get nodejs base image to setup test.", err)
 	}
 
 	os.Exit(m.Run())
