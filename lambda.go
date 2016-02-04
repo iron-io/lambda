@@ -34,7 +34,7 @@ func makeDockerfile(base string, handler string, files ...FileLike) ([]byte, err
 		if err != nil {
 			return buf.Bytes(), err
 		}
-		buf.WriteString(fmt.Sprintf("ADD %s ./%s\n", info.Name()))
+		buf.WriteString(fmt.Sprintf("ADD %s ./%s\n", info.Name(), info.Name()))
 	}
 
 	// FIXME(nikhil): Validate handler.
@@ -45,12 +45,10 @@ func makeDockerfile(base string, handler string, files ...FileLike) ([]byte, err
 func tarFile(tarrer *tar.Writer, file FileLike, info os.FileInfo) error {
 	header, err := tar.FileInfoHeader(info, info.Name())
 	if err != nil {
-		fmt.Println("tarfile infoheader")
 		return err
 	}
 
 	if err := tarrer.WriteHeader(header); err != nil {
-		fmt.Println("tarfile writeheader", info.Name())
 		return err
 	}
 
@@ -62,19 +60,16 @@ func tarFile(tarrer *tar.Writer, file FileLike, info os.FileInfo) error {
 func tarDir(tarrer *tar.Writer, dir string) error {
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			fmt.Println("walk error")
 			return err
 		}
 		header, err := tar.FileInfoHeader(info, info.Name())
 		if err != nil {
-			fmt.Println("walk fileinfoheader")
 			return err
 		}
 
 		header.Name = path
 
 		if err := tarrer.WriteHeader(header); err != nil {
-			fmt.Println("walk writeheader")
 			return err
 		}
 
@@ -141,9 +136,6 @@ func CreateImage(name string, base string, handler string, files ...FileLike) er
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(os.Getwd())
-	fmt.Println("Dockerfile", string(df))
 
 	r, err := makeTar(df, files...)
 	if err != nil {
