@@ -146,6 +146,9 @@ func CreateImage(name string, base string, handler string, files ...FileLike) er
 		return err
 	}
 
+	fmt.Println(os.Getwd())
+	fmt.Println("Dockerfile", string(df))
+
 	r, err := makeTar(df, files...)
 	if err != nil {
 		return err
