@@ -34,7 +34,7 @@ func makeDockerfile(base string, handler string, files ...FileLike) ([]byte, err
 		if err != nil {
 			return buf.Bytes(), err
 		}
-		buf.WriteString(fmt.Sprintf("ADD %s ./%s\n", info.Name(), info.Name()))
+		buf.WriteString(fmt.Sprintf("ADD [\"%s\", \"./%s\"]\n", info.Name(), info.Name()))
 	}
 
 	// FIXME(nikhil): Validate handler.
