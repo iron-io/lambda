@@ -67,7 +67,19 @@ func tarDir(tarrer *tar.Writer, dir string) error {
 			return err
 		}
 
-		header.Name = path
+		// tarDir is called with an absolute path. `path` is relative to dir.
+		// In the Docker image, we want to add the files at the 'top level'.
+		// This means, the tar entry header must be relative to the base of the dir.
+		//
+		// For example, a node project is
+		// - file1.js
+		// - node_modules
+		//
+		// tarDir gets called with /abs/path/to/node_modules `path` will be the
+		// absolute path to each entry. We want to convert a path `sub` to a tar entry of
+		// `node_modules/sub`.
+		p, _ := filepath.Rel(dir, path)
+		header.Name = filepath.Join(filepath.Base(dir), p)
 
 		if err := tarrer.WriteHeader(header); err != nil {
 			return err
@@ -110,7 +122,13 @@ func makeTar(dockerfile []byte, files ...FileLike) (io.Reader, error) {
 		}
 
 		if info.IsDir() {
-			if err = tarDir(tarrer, info.Name()); err != nil {
+			// os.File.Name() is the path passed to os.Open, convert it to absolute path.
+			p, err := filepath.Abs(file.(*os.File).Name())
+			if err != nil {
+				return nil, err
+			}
+
+			if err = tarDir(tarrer, p); err != nil {
 				return nil, err
 			}
 		} else {

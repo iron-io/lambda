@@ -47,13 +47,6 @@ func buildAndClean(name, base, handler, testdir string) error {
 		return err
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	defer os.Chdir(wd)
-	os.Chdir(testdir)
 	return CreateImage(name, base, handler, files...)
 }
 
