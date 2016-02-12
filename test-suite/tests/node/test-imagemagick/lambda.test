@@ -1,0 +1,9 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "imagemagick",
+  "event": {
+    "url": "http://www.exiv2.org/include/img_1771.jpg",
+    "fn": "/tmp/image.jpeg"
+  }
+}

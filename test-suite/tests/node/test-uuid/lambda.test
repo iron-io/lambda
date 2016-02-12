@@ -1,0 +1,5 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "uuid"
+}

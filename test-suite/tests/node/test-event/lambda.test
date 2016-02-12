@@ -1,0 +1,12 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "event",
+  "event": {
+    "key1": "value1",
+    "vertical": "limit",
+    "__maybespecial": "or not",
+    "int": 42,
+    "boolean": true
+  }
+}
