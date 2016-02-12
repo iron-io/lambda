@@ -10,6 +10,7 @@ import (
 	"github.com/fsouza/go-dockerclient"
 )
 
+var baseImage string = "iron/lambda-nodejs"
 var client *docker.Client
 
 func everythingIn(dir string) ([]FileLike, error) {
@@ -51,28 +52,28 @@ func buildAndClean(name, base, handler, testdir string) error {
 }
 
 func TestCreateImageEmpty(t *testing.T) {
-	err := CreateImage("iron-test/lambda-nodejs-empty", "iron/lambda-node", "test.run")
+	err := CreateImage("iron-test/lambda-nodejs-empty", baseImage, "test.run")
 	if err == nil {
 		t.Fatal("Expected error when no files passed")
 	}
 }
 
 func TestCreateImageBasic(t *testing.T) {
-	err := buildAndClean("iron-test/lambda-nodejs-basic", "iron/lambda-node", "test.run", "./nodejs-tests/basic")
+	err := buildAndClean("iron-test/lambda-nodejs-basic", baseImage, "test.run", "./nodejs-tests/basic")
 	if err != nil {
 		t.Fatal("CreateImage failed", err)
 	}
 }
 
 func TestCreateImageWhitespace(t *testing.T) {
-	err := buildAndClean("iron-test/lambda-nodejs-whitespace", "iron/lambda-node", "test.run", "./nodejs-tests/whitespace")
+	err := buildAndClean("iron-test/lambda-nodejs-whitespace", baseImage, "test.run", "./nodejs-tests/whitespace")
 	if err != nil {
 		t.Fatal("CreateImage failed", err)
 	}
 }
 
 func TestCreateImageWithDir(t *testing.T) {
-	err := buildAndClean("iron-test/lambda-nodejs-withdir", "iron/lambda-node", "test.run", "./nodejs-tests/uuid")
+	err := buildAndClean("iron-test/lambda-nodejs-withdir", baseImage, "test.run", "./nodejs-tests/uuid")
 	if err != nil {
 		t.Fatal("CreateImage failed", err)
 	}
@@ -88,7 +89,7 @@ func ensureBaseImage(name string) error {
 	}
 
 	opts := docker.PullImageOptions{
-		Repository: "iron/lambda-node",
+		Repository: baseImage,
 	}
 
 	var conf docker.AuthConfiguration
@@ -110,7 +111,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Grab node base image.
-	if err := ensureBaseImage("iron/lambda-node"); err != nil {
+	if err := ensureBaseImage(baseImage); err != nil {
 		log.Fatal("Could not get nodejs base image to setup test.", err)
 	}
 
