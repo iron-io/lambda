@@ -36,7 +36,7 @@ You can either set these in your shell or pass them to Docker.
 Run the Docker image, or:
 
     $ go build .
-    $ ./lambda-test-suite
+    $ ./test-suite
 
 ### Building Docker image
 
