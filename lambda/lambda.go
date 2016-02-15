@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -141,6 +142,10 @@ func makeTar(dockerfile []byte, files ...FileLike) (io.Reader, error) {
 	return &tarred, nil
 }
 
+func getClient() (*docker.Client, error) {
+	return docker.NewClientFromEnv()
+}
+
 // Creates a docker image called `name`, using `base` as the base image.
 // `handler` is the runtime-specific name to use for a lambda invocation (i.e.
 // <module>.<function> for nodejs). `files` should be a list of files+dirs
@@ -168,7 +173,7 @@ func CreateImage(name string, base string, handler string, files ...FileLike) er
 		OutputStream: &output,
 	}
 
-	client, err := docker.NewClientFromEnv()
+	client, err := getClient()
 	if err != nil {
 		return err
 	}
@@ -178,5 +183,105 @@ func CreateImage(name string, base string, handler string, files ...FileLike) er
 	}
 
 	fmt.Println("Image output", output.String())
+	return nil
+}
+
+func ImageExists(imageName string) (bool, error) {
+	client, err := getClient()
+	if err != nil {
+		return false, err
+	}
+
+	images, err := client.ListImages(docker.ListImagesOptions{Filter: imageName})
+	if err != nil {
+		return false, err
+	}
+
+	return len(images) > 0, nil
+}
+
+func RunImageWithPayload(imageName string, payload string) error {
+	// FIXME(nikhil): Should we bother validating JSON here?
+
+	// Write payload to temp file.
+	fp, _ := filepath.Abs("./")
+	payloadDir, err := ioutil.TempDir(fp, "iron-lambda-")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		os.RemoveAll(payloadDir)
+	}()
+
+	payloadFilePath := filepath.Join(payloadDir, "payload.json")
+
+	err = ioutil.WriteFile(payloadFilePath, []byte(payload), 0644)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Error writing payload to file: %s", err.Error()))
+	}
+
+	client, err := getClient()
+	if err != nil {
+		return err
+	}
+
+	opts := docker.CreateContainerOptions{
+		Config: &docker.Config{
+			Env:       []string{"PAYLOAD_FILE=/mnt/payload.json"},
+			Memory:    1024 * 1024 * 1024,
+			CPUShares: 2,
+			Hostname:  "Hello",
+			Image:     imageName,
+			Volumes: map[string]struct{}{
+				"/mnt": {},
+			},
+		},
+		HostConfig: &docker.HostConfig{
+			Binds: []string{payloadDir + ":/mnt:ro"},
+		},
+	}
+
+	container, err := client.CreateContainer(opts)
+	if err != nil {
+		fmt.Println("CreateContainer error")
+		return err
+	}
+
+	defer func() {
+		client.RemoveContainer(docker.RemoveContainerOptions{
+			ID: container.ID, RemoveVolumes: true, Force: true,
+		})
+	}()
+
+	err = client.StartContainer(container.ID, nil)
+	if err != nil {
+		fmt.Println("StartContainer error")
+		return err
+	}
+
+	attachOpts := docker.AttachToContainerOptions{
+		Container:    container.ID,
+		OutputStream: os.Stdout,
+		ErrorStream:  os.Stderr,
+		Logs:         true,
+		Stream:       true,
+		Stdout:       true,
+		Stderr:       true,
+	}
+
+	err = client.AttachToContainer(attachOpts)
+	if err != nil {
+		return err
+	}
+
+	exitCode, err := client.WaitContainer(container.ID)
+	if err != nil {
+		return err
+	}
+
+	if exitCode != 0 {
+		return errors.New(fmt.Sprintf("Container exited with non-zero exit code %d", exitCode))
+	}
+
 	return nil
 }
