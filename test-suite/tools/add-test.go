@@ -20,8 +20,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/iron-io/iron_go3/worker"
-	iron_lambda "github.com/iron-io/lambda"
 	"github.com/iron-io/lambda-test-suite/util"
+	iron_lambda "github.com/iron-io/lambda/lambda"
 	"github.com/satori/go.uuid"
 )
 
