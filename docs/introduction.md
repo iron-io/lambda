@@ -125,7 +125,7 @@ IronWorker can use it.
 
 Then we tell IronWorker to use this image as our lambda function.
 
-    $ $GOPATH/bin/ironcli register 
+    $ $GOPATH/bin/ironcli register irontest/node-exec:1
     ----->  Configuring client
             Project '<project name>' with id='<project id>'
     ----->  Registering worker 'irontest/node-exec'
