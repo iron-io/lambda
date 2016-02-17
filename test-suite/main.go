@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -19,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/iron-io/iron_go3/worker"
 	"github.com/iron-io/lambda-test-suite/util"
+	"github.com/sendgrid/sendgrid-go"
 )
 
 func loadTests(filter string) ([]*util.TestDescription, error) {
@@ -43,6 +45,37 @@ func loadTests(filter string) ([]*util.TestDescription, error) {
 		descs = append(descs, d)
 	}
 	return descs, nil
+}
+
+func notifyFailure(name string) {
+	var sgApiKey string
+	if sgApiKey = os.Getenv("SENDGRID_API_KEY"); sgApiKey == "" {
+		log.Println("SendGrid support not enabled.")
+		return
+	}
+
+	var taskID string
+	if taskID = os.Getenv("TASK_ID"); taskID == "" {
+		taskID = "\"No task ID, not running on IronWorker.\""
+	}
+
+	message := sendgrid.NewMail()
+	message.AddTos([]string{
+		"dev@iron.io",
+	})
+	message.SetFromName("Lambda Test Suite")
+	message.SetFrom("lambda-test-suite-notifications@iron.io")
+	message.SetSubject(fmt.Sprintf("TEST-FAILURE %s", name))
+	message.SetText(fmt.Sprintf(`The following test failed due to divergence between IronWorker and AWS Lambda output:
+
+	%s: %s
+
+Please check the task log for task ID %s for full output.`, time.Now(), name, taskID))
+
+	client := sendgrid.NewSendGridClientWithApiKey(sgApiKey)
+	if err := client.Send(message); err != nil {
+		log.Println("Error sending email", err)
+	}
 }
 
 func main() {
@@ -99,11 +132,12 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 		irons, _ := ioutil.ReadAll(ironreader)
 
 		if !bytes.Equal(awss, irons) {
-			fmt.Printf("FAIL %s Output does not match!\n", test.Name)
-			fmt.Printf("AWS lambda output '%s'\n", awss)
-			fmt.Printf("Iron output '%s'\n", irons)
+			log.Printf("FAIL %s Output does not match!\n", test.Name)
+			log.Printf("AWS lambda output '%s'\n", awss)
+			log.Printf("Iron output '%s'\n", irons)
+			notifyFailure(test.Name)
 		} else {
-			fmt.Printf("PASS %s\n", test.Name)
+			log.Printf("PASS %s\n", test.Name)
 		}
 	}
 }

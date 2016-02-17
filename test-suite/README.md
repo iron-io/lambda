@@ -29,7 +29,14 @@ If you want to use staging, set:
 
     IRON_WORKER_HOST=staging-worker.iron.io
 
+If you want email notifications on failures, set:
+    SENDGRID_API_KEY=<key>
+
 You can either set these in your shell or pass them to Docker.
+
+The test suite running on IronWorker emails a set of IDs when a test fails.
+See `main.go` `notifyFailure()` function for list of emails and from email (to
+set up email filters).
 
 ### Running test suite
 
@@ -82,6 +89,7 @@ credentials are for user `lambdauser`.
                                  -e IRON_WORKER_PROJECT_ID=<project id> \
                                  -e IRON_LAMBDA_TEST_IMAGE_PREFIX=irontest \
                                  -e IRON_LAMBDA_TEST_LAMBDA_ROLE=<ARN for lambdauser> \
+                                 -e SENDGRID_API_KEY=<key> \
                                  irontest/test-suite:N
 
 The test-suite will be scheduled to run periodically. If I (nikhil) understand
