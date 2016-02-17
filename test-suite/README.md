@@ -100,7 +100,7 @@ run:
                                  -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
                                  -e IRON_WORKER_TOKEN=$IRON_WORKER_TOKEN \
                                  -e IRON_WORKER_PROJECT_ID=$IRON_WORKER_PROJECT_ID \
-                                 -e IRON_LAMBDA_TEST_IMAGE_PREFIX=$IRON_LAMBDA_TEST_IMAGE_PREFIX=irontest \
+                                 -e IRON_LAMBDA_TEST_IMAGE_PREFIX=irontest \
                                  -e IRON_LAMBDA_TEST_LAMBDA_ROLE=$IRON_LAMBDA_TEST_LAMBDA_ROLE \
                                  -e SENDGRID_API_KEY=$SENDGRID_API_KEY \
                                  irontest/test-suite:N
