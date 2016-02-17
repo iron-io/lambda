@@ -41,7 +41,7 @@ Run the Docker image, or:
 ### Building Docker image
 
     $ GOOS=linux GOARCH=amd64 go build .
-    $ docker build -t iron/lambda-test-suite .
+    $ docker build -t iron/test-suite .
 
 Contributing
 ------------
@@ -49,11 +49,43 @@ Contributing
 ### Deploying changes to test harness to IronWorker
 
 NOTE: This is required when you change how the test harness program
-`lambda-test-suite` works. If you only change a test, see `Updating a test`
+`test-suite` works. If you only change a test, see `Updating a test`
 below.
 
 How do we prevent the harness from running tests when changes are being made?
 Should we bother with this right now? Probably not.
+
+First update the local docker image following the instructions above. Then tag
+the docker image
+
+    docker tag iron/test-suite iron/test-suite:N
+
+where N is the latest number that is not in use on [Docker
+Hub](https://hub.docker.com/r/irontest/test-suite/tags/). You can also combine
+the build and tag:
+
+    docker build -t iron/test-suite:N .
+
+Push the new image:
+
+    docker push iron/test-suite:N
+
+Register the image with Iron. You will need to pass various environment
+variables for the tests to run properly. Please get these values from someone
+in the company. The Iron Project is called Lambda Test Suite. The AWS
+credentials are for user `lambdauser`.
+
+    IRON_WORKER_PROJECT_ID=<project id> IRON_WORKER_TOKEN=<token> \
+    $GOPATH/bin/ironcli register -e AWS_ACCESS_KEY=<access key> \
+                                 -e AWS_SECRET_KEY=<key> \
+                                 -e IRON_WORKER_TOKEN=<token> \
+                                 -e IRON_WORKER_PROJECT_ID=<project id> \
+                                 -e IRON_LAMBDA_TEST_IMAGE_PREFIX=irontest \
+                                 -e IRON_LAMBDA_TEST_LAMBDA_ROLE=<ARN for lambdauser> \
+                                 irontest/test-suite:N
+
+The test-suite will be scheduled to run periodically. If I (nikhil) understand
+IronWorker correctly, the next run should automatically pick up the new image.
 
 ### The `lambda.test` file
 

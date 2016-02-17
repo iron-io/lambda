@@ -76,7 +76,7 @@ func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, wg *sync.W
 		return
 	}
 
-	time.Sleep(15 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	invocation_log, err := getLog(cw, name)
 	if err != nil {
