@@ -10,10 +10,11 @@ import (
 type Payload map[string]interface{}
 
 type TestDescription struct {
-	Handler string
-	Name    string
-	Runtime string
-	Event   Payload
+	Handler     string
+	Name        string
+	Runtime     string
+	Event       Payload
+	Description string // Completely ignored by test harness, just useful to convey intent of test.
 }
 
 func ReadTestDescription(dir string) (*TestDescription, error) {
