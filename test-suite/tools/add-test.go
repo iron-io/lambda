@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -169,13 +170,22 @@ func makeImage(dir string, desc *util.TestDescription, imageNameVersion string) 
 	return err
 }
 
-func registerWithIron(imageName, imageNameVersion string) error {
+func registerWithIron(imageName, imageNameVersion string, awsCredentials *credentials.Credentials) error {
+	creds, err := awsCredentials.Get()
+	if err != nil {
+		return errors.New(fmt.Sprintf("Could not extract AWS credentials to register environment variables with IronWorker: %s", err))
+	}
+
 	// Worker API doesn't have support for register yet, but we use it to extract the configuration.
 	w := worker.New()
 	url := fmt.Sprintf("https://%s/2/projects/%s/codes?oauth=%s", w.Settings.Host, w.Settings.ProjectId, w.Settings.Token)
-	marshal, err := json.Marshal(map[string]string{
+	marshal, err := json.Marshal(map[string]interface{}{
 		"name":  imageName,
 		"image": imageNameVersion,
+		"env_vars": map[string]string{
+			"AWS_ACCESS_KEY_ID":     creds.AccessKeyID,
+			"AWS_SECRET_ACCESS_KEY": creds.SecretAccessKey,
+		},
 	})
 
 	var body bytes.Buffer
@@ -235,7 +245,7 @@ func addToIron(dir string) error {
 		return err
 	}
 
-	return registerWithIron(imageName, imageNameVersion)
+	return registerWithIron(imageName, imageNameVersion, credentials.NewEnvCredentials())
 }
 
 func addTest(dir string) error {
