@@ -92,6 +92,19 @@ credentials are for user `lambdauser`.
                                  -e SENDGRID_API_KEY=<key> \
                                  irontest/test-suite:N
 
+Assuming you already have a dev environment setup with these variables, just
+run:
+
+    IRON_WORKER_PROJECT_ID=$IRON_WORKER_PROJECT_ID IRON_WORKER_TOKEN=$IRON_WORKER_TOKEN \
+    $GOPATH/bin/ironcli register -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+                                 -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+                                 -e IRON_WORKER_TOKEN=$IRON_WORKER_TOKEN \
+                                 -e IRON_WORKER_PROJECT_ID=$IRON_WORKER_PROJECT_ID \
+                                 -e IRON_LAMBDA_TEST_IMAGE_PREFIX=$IRON_LAMBDA_TEST_IMAGE_PREFIX=irontest \
+                                 -e IRON_LAMBDA_TEST_LAMBDA_ROLE=$IRON_LAMBDA_TEST_LAMBDA_ROLE \
+                                 -e SENDGRID_API_KEY=$SENDGRID_API_KEY \
+                                 irontest/test-suite:N
+
 The test-suite will be scheduled to run periodically. If I (nikhil) understand
 IronWorker correctly, the next run should automatically pick up the new image.
 
