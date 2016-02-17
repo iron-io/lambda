@@ -19,8 +19,8 @@ For each test in suite:
 
 The following environment variables must be set:
 
-    AWS_ACCESS_KEY
-    AWS_SECRET_KEY
+    AWS_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY
     IRON_WORKER_TOKEN
     IRON_WORKER_PROJECT_ID
     IRON_LAMBDA_TEST_IMAGE_PREFIX=<username to use for Docker images>
@@ -76,8 +76,8 @@ in the company. The Iron Project is called Lambda Test Suite. The AWS
 credentials are for user `lambdauser`.
 
     IRON_WORKER_PROJECT_ID=<project id> IRON_WORKER_TOKEN=<token> \
-    $GOPATH/bin/ironcli register -e AWS_ACCESS_KEY=<access key> \
-                                 -e AWS_SECRET_KEY=<key> \
+    $GOPATH/bin/ironcli register -e AWS_ACCESS_KEY_ID=<access key> \
+                                 -e AWS_SECRET_ACCESS_KEY=<key> \
                                  -e IRON_WORKER_TOKEN=<token> \
                                  -e IRON_WORKER_PROJECT_ID=<project id> \
                                  -e IRON_LAMBDA_TEST_IMAGE_PREFIX=irontest \
