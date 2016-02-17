@@ -48,7 +48,7 @@ Run the Docker image, or:
 ### Building Docker image
 
     $ GOOS=linux GOARCH=amd64 go build .
-    $ docker build -t iron/test-suite .
+    $ docker build -t irontest/test-suite .
 
 Contributing
 ------------
@@ -65,17 +65,17 @@ Should we bother with this right now? Probably not.
 First update the local docker image following the instructions above. Then tag
 the docker image
 
-    docker tag iron/test-suite iron/test-suite:N
+    docker tag irontest/test-suite irontest/test-suite:N
 
 where N is the latest number that is not in use on [Docker
 Hub](https://hub.docker.com/r/irontest/test-suite/tags/). You can also combine
 the build and tag:
 
-    docker build -t iron/test-suite:N .
+    docker build -t irontest/test-suite:N .
 
 Push the new image:
 
-    docker push iron/test-suite:N
+    docker push irontest/test-suite:N
 
 Register the image with Iron. You will need to pass various environment
 variables for the tests to run properly. Please get these values from someone
