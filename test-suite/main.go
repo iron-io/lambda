@@ -56,7 +56,8 @@ func notifyFailure(name string) {
 
 	var taskID string
 	if taskID = os.Getenv("TASK_ID"); taskID == "" {
-		taskID = "\"No task ID, not running on IronWorker.\""
+		log.Println("No task ID, not running on IronWorker. No emails will be sent.")
+		return
 	}
 
 	message := sendgrid.NewMail()
@@ -70,7 +71,7 @@ func notifyFailure(name string) {
 
 	%s: %s
 
-Please check the task log for task ID %s for full output.`, time.Now(), name, taskID))
+Please check the task log for task ID %s for full output. DO NOT reply to this message.`, time.Now(), name, taskID))
 
 	client := sendgrid.NewSendGridClientWithApiKey(sgApiKey)
 	if err := client.Send(message); err != nil {
