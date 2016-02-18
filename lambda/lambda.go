@@ -171,6 +171,7 @@ func CreateImage(name string, base string, handler string, files ...FileLike) er
 		Name:         name,
 		InputStream:  r,
 		OutputStream: &output,
+		Pull:         true,
 	}
 
 	client, err := getClient()
