@@ -34,7 +34,9 @@ Context.prototype.fail = function(error) {
   process.exit(1)
 }
 
-Context.prototype.done = function(error, result) {
+Context.prototype.done = function() {
+  var error = arguments[0];
+  var result = arguments[1];
   if (error) {
     this.fail(error)
   } else {
