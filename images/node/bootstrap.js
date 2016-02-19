@@ -129,17 +129,21 @@ Context.prototype.getRemainingTimeInMillis = function() {
   return 42;
 }
 
+var getEnv = function(name) {
+  return process.env[name] || "";
+}
+
 var makeCtx = function() {
   var ctx = new Context();
   Object.defineProperties(ctx, {
     "functionName": {
-      // FIXME(nikhil): Should be filled in.
-      value: "hello",
+      get: function() {
+        return getEnv("AWS_LAMBDA_FUNCTION_NAME");
+      },
       enumerable: true,
     },
     "functionVersion": {
-      // FIXME(nikhil): Should be filled in.
-      value: "hello",
+      value: "$LATEST",
       enumerable: true,
     },
     "invokedFunctionArn": {
@@ -153,8 +157,9 @@ var makeCtx = function() {
       enumerable: true,
     },
     "awsRequestId": {
-      // FIXME(nikhil): Should be filled in.
-      value: "hello",
+      get: function() {
+        return getEnv("TASK_ID");
+      },
       enumerable: true,
     },
     "logGroupName": {
