@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/iron-io/lambda-test-suite/util"
+	"github.com/iron-io/lambda/test-suite/util"
 )
 
 func clean(input string) (string, error) {
