@@ -97,22 +97,12 @@ You should now see the generated Docker image.
 
 ## Testing the function
 
-Testing your function locally is a little involved at this point. Eventually it
-will be done through `ironcli`.
+You can use ironcli to test the function locally.
 
-IronWorker expects the payload to be in a file defined by the environment
-variable `PAYLOAD_FILE`. Let's create the JSON payload. Our function expects
-a key called `cmd`. Call the file `payload.json`:
-
-    {
-      "cmd": "echo 'Dockerized Lambda!'"
-    }
-
-We will run our Docker image with volume sharing to allow it to read the
-payload.
-
-    $ docker run --rm -v $PWD:/mnt -e PAYLOAD_FILE=/mnt/payload.json irontest/node-exec:1
-    Dockerized Lambda!
+    $ $GOPATH/bin/ironcli lambda test-function \
+                          --function-name irontest/node-exec:1 \
+                          --payload '{ "cmd": "echo Dockerized Lambda" }'
+    Dockerized Lambda
 
 You should see the output. Try changing the command.
 
