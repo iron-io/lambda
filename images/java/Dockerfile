@@ -1,8 +1,7 @@
-FROM iron/java:1.8
-WORKDIR /app
+FROM iron/java:1.8-dev
 
-COPY lambda-java-example-1.0-SNAPSHOT.jar ./
+COPY LambdaLauncher.java /LambdaLauncher/
+COPY LambdaLauncher.sh /LambdaLauncher/
+COPY gson-2.6.1.jar /LambdaLauncher/
 
-CMD java -jar lambda-java-example-1.0-SNAPSHOT.jar
-
-#NOT READY YET
+CMD /LambdaLauncher/LambdaLauncher.sh
