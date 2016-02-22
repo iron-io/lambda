@@ -33,6 +33,10 @@ If you want email notifications on failures, set:
     SENDGRID_API_KEY=<key>
 
 You can either set these in your shell or pass them to Docker.
+Email support is disabled if the suite is not running on IronWorker. This is to
+avoid noise while you are developing tests locally. If you want to test that
+behaviour, comment out the `TASK_ID` check. Make sure to change the recipients
+of the email!
 
 The test suite running on IronWorker emails a set of IDs when a test fails.
 See `main.go` `notifyFailure()` function for list of emails and from email (to

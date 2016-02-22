@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/iron-io/iron_go3/worker"
-	"github.com/iron-io/lambda-test-suite/util"
+	"github.com/iron-io/lambda/test-suite/util"
 )
 
 func cleanIron(input []byte) []byte {
