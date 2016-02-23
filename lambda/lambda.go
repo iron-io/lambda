@@ -3,15 +3,22 @@ package lambda
 import (
 	"archive/tar"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/iron-io/iron_go3/worker"
 )
 
 type FileLike interface {
@@ -285,4 +292,93 @@ func RunImageWithPayload(imageName string, payload string) error {
 	}
 
 	return nil
+}
+
+// Registers public docker image named `imageNameVersion` as a IronWorker called `imageName`.
+// For example,
+//	  RegisterWithIron("foo/myimage:1", credentials.NewEnvCredentials()) will register a worker called "foo/myimage" that will use Docker Image "foo/myimage:1".
+// The AWS credentials are required to configure environment variables for the image so that the AWS APIs can be used successfully.
+func RegisterWithIron(imageNameVersion string, awsCredentials *credentials.Credentials) error {
+	tokens := strings.Split(imageNameVersion, ":")
+	if len(tokens) != 2 || tokens[0] == "" || tokens[1] == "" {
+		return errors.New("Invalid image name. Should be of the form \"name:version\".")
+	}
+
+	imageName := tokens[0]
+
+	creds, err := awsCredentials.Get()
+	if err != nil {
+		return errors.New(fmt.Sprintf("Could not extract AWS credentials to register environment variables with IronWorker: %s", err))
+	}
+
+	// Worker API doesn't have support for register yet, but we use it to extract the configuration.
+	w := worker.New()
+	url := fmt.Sprintf("https://%s/2/projects/%s/codes?oauth=%s", w.Settings.Host, w.Settings.ProjectId, w.Settings.Token)
+	marshal, err := json.Marshal(map[string]interface{}{
+		"name":  imageName,
+		"image": imageNameVersion,
+		"env_vars": map[string]string{
+			"AWS_ACCESS_KEY_ID":           creds.AccessKeyID,
+			"AWS_SECRET_ACCESS_KEY":       creds.SecretAccessKey,
+			"AWS_LAMBDA_FUNCTION_NAME":    imageName,
+			"AWS_LAMBDA_FUNCTION_VERSION": "1", // FIXME: swapi does not allow $ right now.
+		},
+	})
+
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	jsonWriter, err := mw.CreateFormField("data")
+	if err != nil {
+		log.Fatalf("This should never fail")
+	}
+	jsonWriter.Write(marshal)
+	mw.Close()
+
+	resp, err := http.Post(url, mw.FormDataContentType(), &body)
+	if err == nil {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("%s readall %s", imageName, err)
+		}
+		log.Println("Register", imageName, "with iron, response:", string(b))
+	}
+	return err
+}
+
+func PushImage(imageNameVersion string) error {
+	client, err := getClient()
+	if err != nil {
+		return err
+	}
+
+	tokens := strings.Split(imageNameVersion, ":")
+	if len(tokens) != 2 || tokens[0] == "" || tokens[1] == "" {
+		return errors.New("Invalid image name. Should be of the form \"name:version\".")
+	}
+
+	imageName, version := tokens[0], tokens[1]
+
+	opts := docker.PushImageOptions{
+		Name:         imageName,
+		Tag:          version,
+		OutputStream: os.Stdout,
+	}
+
+	auths, err := docker.NewAuthConfigurationsFromDockerCfg()
+	if err != nil {
+		return err
+	}
+
+	// FIXME(nikhil): Is there a nicer way to pick a config?
+	var auth docker.AuthConfiguration
+	if len(auths.Configs) > 0 {
+		for _, a := range auths.Configs {
+			auth = a
+			break
+		}
+	} else {
+		return errors.New("No docker authorizations found. Try `docker login`.")
+	}
+
+	return client.PushImage(opts, auth)
 }

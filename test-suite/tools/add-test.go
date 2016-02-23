@@ -3,14 +3,10 @@ package main
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"log"
-	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -19,8 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/fsouza/go-dockerclient"
-	"github.com/iron-io/iron_go3/worker"
 	iron_lambda "github.com/iron-io/lambda/lambda"
 	"github.com/iron-io/lambda/test-suite/util"
 	"github.com/satori/go.uuid"
@@ -170,37 +164,6 @@ func makeImage(dir string, desc *util.TestDescription, imageNameVersion string) 
 	return err
 }
 
-func registerWithIron(imageName, imageNameVersion string, awsCredentials *credentials.Credentials) error {
-	creds, err := awsCredentials.Get()
-	if err != nil {
-		return errors.New(fmt.Sprintf("Could not extract AWS credentials to register environment variables with IronWorker: %s", err))
-	}
-
-	// Worker API doesn't have support for register yet, but we use it to extract the configuration.
-	w := worker.New()
-	url := fmt.Sprintf("https://%s/2/projects/%s/codes?oauth=%s", w.Settings.Host, w.Settings.ProjectId, w.Settings.Token)
-	marshal, err := json.Marshal(map[string]interface{}{
-		"name":  imageName,
-		"image": imageNameVersion,
-		"env_vars": map[string]string{
-			"AWS_ACCESS_KEY_ID":     creds.AccessKeyID,
-			"AWS_SECRET_ACCESS_KEY": creds.SecretAccessKey,
-		},
-	})
-
-	var body bytes.Buffer
-	mw := multipart.NewWriter(&body)
-	jsonWriter, err := mw.CreateFormField("data")
-	if err != nil {
-		log.Fatalf("This should never fail")
-	}
-	jsonWriter.Write(marshal)
-	mw.Close()
-
-	_, err = http.Post(url, mw.FormDataContentType(), &body)
-	return err
-}
-
 func addToIron(dir string) error {
 	desc, err := util.ReadTestDescription(dir)
 	if err != nil {
@@ -208,44 +171,19 @@ func addToIron(dir string) error {
 	}
 
 	version := uuid.NewV4().String()
-	imageName := fmt.Sprintf("%s/%s", imagePrefix, desc.Name)
-	imageNameVersion := fmt.Sprintf("%s:%s", imageName, version)
+	imageNameVersion := fmt.Sprintf("%s/%s:%s", imagePrefix, desc.Name, version)
 
 	err = makeImage(dir, desc, imageNameVersion)
 	if err != nil {
 		return err
 	}
 
-	client, err := docker.NewClientFromEnv()
+	err = iron_lambda.PushImage(imageNameVersion)
 	if err != nil {
 		return err
 	}
 
-	authconfigs, err := docker.NewAuthConfigurationsFromDockerCfg()
-	if err != nil {
-		return err
-	}
-
-	var config docker.AuthConfiguration
-	for _, v := range authconfigs.Configs {
-		config = v
-	}
-
-	// Upload to Hub with correct version.
-	pushopts := docker.PushImageOptions{
-		Name:         imageName,
-		Tag:          version,
-		OutputStream: os.Stderr,
-	}
-	log.Println("PushOpts", pushopts)
-
-	err = client.PushImage(pushopts, config)
-	if err != nil {
-		log.Println("PushImage error")
-		return err
-	}
-
-	return registerWithIron(imageName, imageNameVersion, credentials.NewEnvCredentials())
+	return iron_lambda.RegisterWithIron(imageNameVersion, credentials.NewEnvCredentials())
 }
 
 func addTest(dir string) error {
