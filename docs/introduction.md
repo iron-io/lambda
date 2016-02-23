@@ -118,14 +118,8 @@ You should see the output. Try changing the command.
 
 ## Uploading the function
 
-Uploading is a two stage process. First we upload the image to Docker Hub so
-IronWorker can use it.
 
-    $ docker push irontest/node-exec:1
-
-Then we tell IronWorker to use this image as our lambda function.
-
-    $ $GOPATH/bin/ironcli register irontest/node-exec:1
+    $ $GOPATH/bin/ironcli lambda publish-function --function-name irontest/node-exec:1
     ----->  Configuring client
             Project '<project name>' with id='<project id>'
     ----->  Registering worker 'irontest/node-exec'
@@ -139,7 +133,7 @@ page.
 
 We can now run this from the command line.
 
-    $ $GOPATH/bin/ironcli worker queue -payload-file payload.json -wait irontest/node-exec
+    $ $GOPATH/bin/ironcli worker queue -payload '{ "cmd": "echo Dockerized Lambda" }' -wait irontest/node-exec
     ----->  Configuring client
             Project '<project name>' with id='<project id>'
     ----->  Queueing task 'irontest/node-exec'
@@ -161,6 +155,4 @@ Code page.
 ---
 
 TODO:
-Add test-function and publish-function commands to CLI and then replace the
-Upload and Test manual steps with them.
 NOTE to devs: Perhaps prefetch Lambda function runners on to certain machines?
