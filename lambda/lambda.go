@@ -345,6 +345,12 @@ func RegisterWithIron(imageNameVersion string, awsCredentials *credentials.Crede
 	return err
 }
 
+// Use AWS credentials from environment variables.
+func RegisterWithIronDefaultAWSCredentials(imageNameVersion string) error {
+	awsCredentials := credentials.NewEnvCredentials()
+	return RegisterWithIron(imageNameVersion, awsCredentials)
+}
+
 func PushImage(imageNameVersion string) error {
 	client, err := getClient()
 	if err != nil {
