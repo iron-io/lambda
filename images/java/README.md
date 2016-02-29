@@ -1,9 +1,9 @@
 Support for running java Lambda functions.
 
 
-Create an image with ->  not working yet
+Create an image with
 
-    docker build -t iron/java-lambda .
+    sudo docker build -t iron/lambda-java .
 
 
 Running
@@ -13,16 +13,10 @@ Compile your code and create jar file (compile example project in example folder
 
     mvn package
 
-Copy compiled jar file in current folder, then compile LambdaLauncher
+Run docker container inside folder with compiled jar file
 
-    javac -cp ".:lambda-java-example-1.0-SNAPSHOT.jar:gson-2.6.1.jar" LambdaLaunchder.java
+    export handler="example.Hello::myHandlerPOJO"
+    export payload='{ "firstName":"John", "lastName":"Doe" }'
+    docker run -ti -e "handler=example.Hello::myHandler" -e "payload=asd" -e "JAR_ZIP_FILENAME=lambda-java-example.jar" -v $(pwd):/app -w /app iron/lambda-java
 
-Create handler and payload env var
-
-    export handler=example.Hello::myHandler
-    export payload=123
-
-Launch Lambda-Java
-
-    java -cp ".:lambda-java-example-1.0-SNAPSHOT.jar:gson-2.6.1.jar" LambdaLaunchder
-
+`handler` env var for package and handler function, `payload` env for payload (int, string, json), `JAR_ZIP_FILENAME` env for filename of compiled jar

@@ -1,7 +1,7 @@
+import java.io.*;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Objects;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
@@ -12,10 +12,19 @@ import com.google.gson.Gson;
 
 public class LambdaLauncher {
     public static void main(String[] args) {
-        String handler_env = System.getenv("handler");
+        String handler = System.getenv("handler");
         String payload = System.getenv("payload");
+        try {
+            String[] packageMethod = validateInputParamsAndGetPackageMethod(handler, payload);
+            LambdaLauncher ll = new LambdaLauncher();
+            ll.launchMethod(packageMethod, payload);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-        if (handler_env == null) {
+    private static String[] validateInputParamsAndGetPackageMethod(String handler, String payload) {
+        if (handler == null) {
             System.out.println("Handler is not specified, please specify handler function (for example: 'example.Hello::myHandler')");
             System.exit(1);
         }
@@ -23,75 +32,95 @@ public class LambdaLauncher {
             System.out.println("Payload is empty, please specify payload");
             System.exit(1);
         }
-
-        String[] package_function = handler_env.split("::");
+        String[] package_function = handler.split("::");
         if (package_function[0] == null || package_function[0].equals("") || package_function[1] == null || package_function[1].equals("")) {
             System.out.println("Handler is not specified, please specify handler function (for example: 'example.Hello::myHandler')");
             System.exit(1);
         }
-        try {
-            LambdaLauncher ll = new LambdaLauncher();
-            ll.launch_function(package_function, payload);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        return package_function;
     }
 
-    public void launch_function(String[] packageFunction, String payload) throws Exception {
-        String payloadType;
+    public void launchMethod(String[] packageHandler, String payload) throws Exception {
         boolean processed = false;
         boolean classFound = false;
-        System.out.println("PAYLOAD: " + payload);
-        if (PayloadHelper.isInteger(payload)) {
-            payloadType = "int";
-            System.out.println("PAYLOAD IS INTEGER!");
-        } else if (PayloadHelper.isJSONValid(payload)) {
-            payloadType = "json";
-            System.out.println("PAYLOAD IS JSON!");
-        } else {
-            payloadType = "string";
-            System.out.println("PAYLOAD IS String!");
-        }
+        Object result = null;
+        String packageName = packageHandler[0];
+        String handlerName = packageHandler[1];
 
         AWSContext aws_ctx = new AWSContext();
 
-        Class cls = Class.forName(packageFunction[0]); //get class in package
+        Class cls = Class.forName(packageName); //get class in package
         Object lambdaClass = cls.newInstance();
 
         Method[] declaredMethods = cls.getDeclaredMethods();
-        for (Method method : declaredMethods) {
-            if (Objects.equals(method.getName(), packageFunction[1])) {  //if method name in user class == method name in env var
+
+        for (Method lambdaMethod : declaredMethods) {
+            if (Objects.equals(lambdaMethod.getName(), handlerName)) {  //if method name in user class == method name in env var
+                System.out.println(String.format("Found package: %s and method: %s", packageName, handlerName));
                 classFound = true;
-                System.out.println("Found package: " + packageFunction[0] + " and method: " + packageFunction[1]);
 
-                Class[] parameterTypes = method.getParameterTypes();
-
-                Method lambdaMethod = cls.getDeclaredMethod(packageFunction[1], parameterTypes);
-                Object result = null;
-
-                //TODO: count and check params, first and second maybe string,int,pojo(class), second or third must be context, first and second maybe input/output stream
-                for (Class parameterType : parameterTypes) {
-
-                    if (Objects.equals(payloadType, "int") && (Objects.equals(parameterType.toString(), payloadType) || Objects.equals(parameterType.toString(), "Integer"))) {
+                Class[] parameterTypes = lambdaMethod.getParameterTypes();
+                if (!parameterTypes[parameterTypes.length - 1].getTypeName().equals("com.amazonaws.services.lambda.runtime.Context")) {
+                    System.out.println("The last param in method must be AWS context");
+                    System.exit(1);
+                }
+                // IOStreams
+                if (checkIfLambdaMethodRequiredIOStreams(parameterTypes)) {
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    lambdaMethod.invoke(lambdaClass, new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8)), out, aws_ctx);
+                    result = new String(out.toByteArray(), "UTF-8");
+                    processed = true;
+                // POJO, map, list
+                } else if (checkIfLambdaMethodRequiredPOJO(parameterTypes, cls.getClasses()) || checkIfLambdaMethodRequiredMap(parameterTypes) || checkIfLambdaMethodRequiredList(parameterTypes)) {
+                    result = ClassTypeHelper.gson.toJson(lambdaMethod.invoke(lambdaClass, ClassTypeHelper.gson.fromJson(payload, parameterTypes[0]), aws_ctx));
+                    processed = true;
+                // int, string, bool
+                } else if (checkIfLambdaMethodRequiredPrimitiveType(parameterTypes)) {
+                    if (Objects.equals(parameterTypes[0].toString(), "int") || Objects.equals(parameterTypes[0].toString(), "Integer")) {
                         result = lambdaMethod.invoke(lambdaClass, Integer.parseInt(payload), aws_ctx);
                         processed = true;
-                    } else if (Objects.equals(payloadType, "string") && (Objects.equals(parameterType.toString(), payloadType) || Objects.equals(parameterType.toString(), "String"))) {
+                    } else if (parameterTypes[0].getName().equals("java.lang.String")) {
                         result = lambdaMethod.invoke(lambdaClass, payload, aws_ctx);
                         processed = true;
-                    } else if (Objects.equals(payloadType, "json")) {
-                        if (parameterType.getName().toLowerCase().contains("RequestClass".toLowerCase())) { //TODO
-                            result = PayloadHelper.gson.toJson(lambdaMethod.invoke(lambdaClass, PayloadHelper.gson.fromJson(payload, parameterType), aws_ctx));
-                            processed = true;
-                        }
+                    } else if (Objects.equals(parameterTypes[0].toString(), "boolean") || Objects.equals(parameterTypes[0].toString(), "Boolean")) {
+                        result = lambdaMethod.invoke(lambdaClass, Boolean.valueOf(payload), aws_ctx);
+                        processed = true;
                     }
                 }
-
-                String ll_result = processed ? String.format("Method executed with result: %s", (String) result) :
-                        String.format("Handler %s with param of %s type not found", packageFunction[1], payloadType);
-                System.out.println(ll_result);
             }
         }
-        if (!classFound) System.out.println(String.format("Class %s not found", packageFunction[0]));
+        if (!classFound) {
+            System.out.println(String.format("Class %s not found", packageName));
+            System.exit(1);
+        }
+        System.out.println(processed ? String.format("Method %s executed with result: %s", handlerName, (String) result) :
+                String.format("Handler %s with simple, POJO, or IO(input/output) types not found", handlerName));
+    }
+
+    public boolean checkIfLambdaMethodRequiredIOStreams(Class[] parameterTypes) {
+        return parameterTypes.length == 3 && parameterTypes[0].getTypeName().equals("java.io.InputStream") && parameterTypes[1].getTypeName().equals("java.io.OutputStream");
+    }
+
+    public boolean checkIfLambdaMethodRequiredPOJO(Class[] parameterTypes, Class[] classes) {
+        boolean classExist = false;
+        for (Class clazz : classes) {
+            if (Objects.equals(clazz.getName(), parameterTypes[0].getTypeName())) {
+                classExist = true;
+                break;
+            }
+        }
+        return parameterTypes.length == 2 && classExist;
+    }
+
+    private boolean checkIfLambdaMethodRequiredMap(Class[] parameterTypes) {
+        return parameterTypes.length == 2 && (parameterTypes[0].getTypeName().equals("java.util.Map") || parameterTypes[0].getTypeName().equals("java.util.HashMap"));
+    }
+
+    private boolean checkIfLambdaMethodRequiredList(Class[] parameterTypes) {
+        return parameterTypes.length == 2 && (parameterTypes[0].getTypeName().equals("java.util.ArrayList") || parameterTypes[0].getTypeName().equals("java.util.List"));
+    }
+    private boolean checkIfLambdaMethodRequiredPrimitiveType(Class[] parameterTypes) {
+        return parameterTypes.length == 2 && ClassTypeHelper.isSimpleType(parameterTypes[0]);
     }
 
     private class AWSContext implements Context {
@@ -112,7 +141,7 @@ public class LambdaLauncher {
 
         @Override
         public String getFunctionName() {
-            return "IRON_LAMBDA";
+            return null;
         }
 
         @Override
@@ -153,43 +182,24 @@ public class LambdaLauncher {
 }
 
 
-//---------payload helper-------//
 
-class PayloadHelper {
+class ClassTypeHelper {
     public static final Gson gson = new Gson();
+    private static final Set<Class<?>> CLASS_TYPES = getSimpleTypes();
 
-    private PayloadHelper() {
+    private ClassTypeHelper() {}
+
+    public static boolean isSimpleType(Class<?> classType) {
+        return CLASS_TYPES.contains(classType);
     }
 
-    public static boolean isJSONValid(String JSON_STRING) {
-        if (!maybeJSON(JSON_STRING)) return false;
-        try {
-            gson.fromJson(JSON_STRING, Object.class);
-            return true;
-        } catch (com.google.gson.JsonSyntaxException ex) {
-            return false;
-        }
-    }
-
-    public static boolean maybeJSON(String test) {
-        return (Objects.equals(String.valueOf(test.charAt(0)), "{") || Objects.equals(String.valueOf(test.charAt(0)), "[")) &&
-                (Objects.equals(test.substring(test.length() - 1), "}") || Objects.equals(test.substring(test.length() - 1), "]"));
-    }
-
-    public static boolean isInteger(String s) {
-        return isInteger(s, 10);
-    }
-
-    public static boolean isInteger(String s, int radix) {
-        if (s.isEmpty()) return false;
-        for (int i = 0; i < s.length(); i++) {
-            if (i == 0 && s.charAt(i) == '-') {
-                if (s.length() == 1) return false;
-                else continue;
-            }
-            if (Character.digit(s.charAt(i), radix) < 0) return false;
-        }
-        return true;
+    private static Set<Class<?>> getSimpleTypes() {
+        Set<Class<?>> ret = new HashSet<>();
+        ret.add(String.class);
+        ret.add(Integer.class);
+        ret.add(int.class);
+        ret.add(Boolean.class);
+        return ret;
     }
 
 }

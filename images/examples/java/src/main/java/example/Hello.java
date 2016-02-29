@@ -5,6 +5,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class Hello {
     public String myHandlerInt(int myCount, Context context) {
@@ -29,6 +31,32 @@ public class Hello {
         {
             outputStream.write(Character.toUpperCase(letter));
         }
+    }
+
+    public Map<String, String> myHandlerMap(Map<String, String> map, Context context) throws IOException {
+        map.put("first" ,"BMW");
+        map.put("second", "Mercedes");
+        map.put("forth", "Audi");
+        return map;
+    }
+
+    public ArrayList<UserInfo> myHandlerList(ArrayList<UserInfo> arrayList, Context context) throws IOException {
+        UserInfo newUser = new UserInfo();
+        newUser.user = "user1";
+        newUser.pass = "pass1";
+        newUser.secretCode = "secretCode1";
+        arrayList.add(newUser);
+        return arrayList;
+    }
+
+    public static ResponseClass myHandlerPOJO(RequestClass request, Context context){
+        return new ResponseClass(String.format("Hello %s %s" , request.firstName, request.lastName));
+    }
+
+    class UserInfo {
+        String user;
+        String pass;
+        String secretCode;
     }
 
     // Define two classes/POJOs for use with Lambda function.
@@ -87,11 +115,6 @@ public class Hello {
         public ResponseClass() {
         }
 
-    }
-
-    public static ResponseClass myHandlerPOJO(RequestClass request, Context context){
-        String greetingString = "Hello %s, %s." + request.firstName + request.lastName;
-        return new ResponseClass(greetingString);
     }
 
 }
