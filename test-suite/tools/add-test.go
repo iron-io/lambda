@@ -160,7 +160,7 @@ func makeImage(dir string, desc *util.TestDescription, imageNameVersion string) 
 	}
 
 	// FIXME(nikhil): Use some configuration username.
-	err = iron_lambda.CreateImage(imageNameVersion, "iron/lambda-"+desc.Runtime, desc.Handler, files...)
+	err = iron_lambda.CreateImage(iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, desc.Handler, os.Stdout, false}, files...)
 	return err
 }
 
