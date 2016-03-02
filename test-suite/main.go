@@ -23,22 +23,50 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 )
 
+func getSubDirs(basePath string) ([]string, error) {
+	infos, err := ioutil.ReadDir(basePath)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]string, 0)
+	for _, info := range infos {
+		if !info.IsDir() {
+			continue
+		}
+		subDirPath := filepath.Join(basePath, info.Name())
+		result = append(result, subDirPath)
+	}
+
+	return result, nil
+}
+
 func loadTests(filter string) ([]*util.TestDescription, error) {
+	testsRoot := "./tests"
+	// assume test location <testsRoot>/<lang>/<test>/lambda.test
 	descs := []*util.TestDescription{}
-	infos, err := ioutil.ReadDir("./tests/node")
+
+	langFolders, err := getSubDirs(testsRoot)
 	if err != nil {
 		return descs, err
 	}
 
-	for _, info := range infos {
-		p := filepath.Join("./tests/node", info.Name())
+	allFolders := make([]string, 0)
+	for _, folder := range langFolders {
+		testFolders, err := getSubDirs(folder)
+		if err != nil {
+			return descs, err
+		}
+		allFolders = append(allFolders, testFolders...)
+	}
+
+	for _, folder := range allFolders {
 		if filter != "" {
-			if !strings.Contains(p, filter) {
+			if !strings.Contains(folder, filter) {
 				continue
 			}
 		}
 
-		d, err := util.ReadTestDescription(p)
+		d, err := util.ReadTestDescription(folder)
 		if err != nil {
 			return descs, err
 		}
