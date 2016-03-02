@@ -6,7 +6,9 @@ WORKDIR /app
 # Install ImageMagick and AWS SDK as provided by Lambda.
 RUN apk update
 RUN apk add imagemagick
-RUN npm install aws-sdk@2.2.12 imagemagick
+RUN npm install aws-sdk@2.2.32 imagemagick
+RUN rm -rf /var/cache/apk/*
+RUN npm cache clear
 
 # ironcli should forbid this name
 ADD bootstrap.js /app/lambda-bootstrap.js
