@@ -1,7 +1,8 @@
-FROM iron/java:1.8-dev
+FROM iron/java:1.8
 
-COPY LambdaLauncher.java /LambdaLauncher/
+WORKDIR /LambdaLauncher
+
+COPY target/lambda-* /LambdaLauncher/lambda.jar
 COPY LambdaLauncher.sh /LambdaLauncher/
-COPY gson-2.6.1.jar /LambdaLauncher/
 
-CMD /LambdaLauncher/LambdaLauncher.sh
+ENTRYPOINT ["./LambdaLauncher.sh"]
