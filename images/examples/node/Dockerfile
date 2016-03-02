@@ -1,4 +1,4 @@
-FROM iron/lambda-node
+FROM iron/lambda-nodejs
 
 ADD example.js ./example.js
 ADD node_modules ./node_modules
