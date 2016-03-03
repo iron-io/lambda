@@ -68,7 +68,7 @@ func loadTests(filter string) ([]*util.TestDescription, error) {
 
 		d, err := util.ReadTestDescription(folder)
 		if err != nil {
-			return descs, err
+			return descs, fmt.Errorf("Could not load test: %s error: %s", folder, err)
 		}
 		descs = append(descs, d)
 	}
@@ -145,6 +145,10 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 	log.Print("All API connections successful.")
 
 	tests, err := loadTests(filter)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for _, test := range tests {
 		awschan := make(chan io.Reader, 1)
 		ironchan := make(chan io.Reader, 1)
