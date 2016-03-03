@@ -18,10 +18,10 @@ import (
 	"github.com/iron-io/lambda/test-suite/util"
 )
 
-func clean(input string) (string, error) {
+func cleanNodeJsAwsOutput(output string) (string, error) {
 	var buf bytes.Buffer
-	if strings.HasPrefix(input, "START RequestId:") {
-		scanner := bufio.NewScanner(strings.NewReader(input))
+	if strings.HasPrefix(output, "START RequestId:") {
+		scanner := bufio.NewScanner(strings.NewReader(output))
 		if scanner.Scan() {
 			firstLine := scanner.Text()
 			fields := strings.Fields(firstLine)
@@ -51,7 +51,41 @@ func clean(input string) (string, error) {
 		}
 	}
 
-	return "", errors.New(fmt.Sprintf("Don't know how to clean '%s'", input))
+	return "", errors.New(fmt.Sprintf("Don't know how to clean '%s'", output))
+}
+
+func cleanPython27AwsOutput(output string) (string, error) {
+	var buf bytes.Buffer
+	if strings.HasPrefix(output, "START RequestId:") {
+		scanner := bufio.NewScanner(strings.NewReader(output))
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "START RequestId:") {
+				continue
+			}
+			if strings.HasPrefix(line, "END RequestId:") {
+				return buf.String(), nil
+			}
+			buf.WriteString(line)
+			buf.WriteRune('\n')
+			if err := scanner.Err(); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	return "", errors.New(fmt.Sprintf("Don't know how to clean '%s'", output))
+}
+
+func clean(output, runtime string) (string, error) {
+	switch runtime {
+	case "nodejs":
+		return cleanNodeJsAwsOutput(output)
+	case "python2.7":
+		return cleanPython27AwsOutput(output)
+	default:
+		return output, (error)(nil)
+	}
 }
 
 func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, wg *sync.WaitGroup, test *util.TestDescription, result chan<- io.Reader) {
@@ -75,8 +109,12 @@ func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, wg *sync.W
 		output.WriteString(fmt.Sprintf("Error invoking function %s %s", name, err))
 		return
 	}
+	timeout := 30 * time.Second
+	if test.Timeout != 0 {
+		timeout = time.Duration(test.Timeout) * time.Second
+	}
 
-	time.Sleep(30 * time.Second)
+	time.Sleep(timeout)
 
 	invocation_log, err := getLog(cw, name)
 	if err != nil {
@@ -84,7 +122,8 @@ func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, wg *sync.W
 		return
 	}
 
-	final, err := clean(invocation_log)
+	final, err := clean(invocation_log, test.Runtime)
+
 	if err != nil {
 		output.WriteString(fmt.Sprintf("Error cleaning log %s %s", name, err))
 		return
