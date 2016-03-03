@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 )
 
 type Payload map[string]interface{}
@@ -28,7 +29,7 @@ func ReadTestDescription(dir string) (*TestDescription, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	desc.Name = fmt.Sprintf("lambda-test-suite-%s-%s", desc.Runtime, desc.Name)
+	normalizedRuntime := strings.Replace(desc.Runtime, ".", "_", -1)
+	desc.Name = fmt.Sprintf("lambda-test-suite-%s-%s", normalizedRuntime, desc.Name)
 	return &desc, nil
 }
