@@ -2,6 +2,7 @@ package lambda
 
 import (
 	"flag"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -48,11 +49,11 @@ func buildAndClean(name, base, handler, testdir string) error {
 		return err
 	}
 
-	return CreateImage(name, base, handler, files...)
+	return CreateImage(CreateImageOptions{name, base, handler, ioutil.Discard, false}, files...)
 }
 
 func TestCreateImageEmpty(t *testing.T) {
-	err := CreateImage("iron-test/lambda-nodejs-empty", baseImage, "test.run")
+	err := CreateImage(CreateImageOptions{"iron-test/lambda-nodejs-empty", baseImage, "test.run", ioutil.Discard, false})
 	if err == nil {
 		t.Fatal("Expected error when no files passed")
 	}

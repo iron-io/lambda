@@ -153,16 +153,24 @@ func getClient() (*docker.Client, error) {
 	return docker.NewClientFromEnv()
 }
 
+type CreateImageOptions struct {
+	Name          string
+	Base          string
+	Handler       string
+	OutputStream  io.Writer
+	RawJSONStream bool
+}
+
 // Creates a docker image called `name`, using `base` as the base image.
 // `handler` is the runtime-specific name to use for a lambda invocation (i.e.
 // <module>.<function> for nodejs). `files` should be a list of files+dirs
 // *relative to the current directory* that are to be included in the image.
-func CreateImage(name string, base string, handler string, files ...FileLike) error {
+func CreateImage(opts CreateImageOptions, files ...FileLike) error {
 	if len(files) == 0 {
 		return ErrorNoFiles
 	}
 
-	df, err := makeDockerfile(base, handler, files...)
+	df, err := makeDockerfile(opts.Base, opts.Handler, files...)
 	if err != nil {
 		return err
 	}
@@ -172,12 +180,11 @@ func CreateImage(name string, base string, handler string, files ...FileLike) er
 		return err
 	}
 
-	var output bytes.Buffer
-
-	opts := docker.BuildImageOptions{
-		Name:         name,
-		InputStream:  r,
-		OutputStream: &output,
+	buildopts := docker.BuildImageOptions{
+		Name:          opts.Name,
+		InputStream:   r,
+		OutputStream:  opts.OutputStream,
+		RawJSONStream: opts.RawJSONStream,
 	}
 
 	client, err := getClient()
@@ -185,11 +192,10 @@ func CreateImage(name string, base string, handler string, files ...FileLike) er
 		return err
 	}
 
-	if err := client.BuildImage(opts); err != nil {
+	if err := client.BuildImage(buildopts); err != nil {
 		return err
 	}
 
-	fmt.Println("Image output", output.String())
 	return nil
 }
 
