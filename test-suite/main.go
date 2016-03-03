@@ -165,9 +165,10 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 		irons, _ := ioutil.ReadAll(ironreader)
 
 		if !bytes.Equal(awss, irons) {
+			delimiter := "=========================================="
 			log.Printf("FAIL %s Output does not match!\n", test.Name)
-			log.Printf("AWS lambda output '%s'\n", awss)
-			log.Printf("Iron output '%s'\n", irons)
+			log.Printf("AWS lambda output\n%s\n%s\n%s\n", delimiter, awss, delimiter)
+			log.Printf("Iron output\n%s\n%s\n%s\n", delimiter, irons, delimiter)
 			notifyFailure(test.Name)
 		} else {
 			log.Printf("PASS %s\n", test.Name)
