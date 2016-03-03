@@ -122,7 +122,8 @@ This file describes some parameters of the test. It is a simple JSON file.
       "name": "event",
       "event": {
         "key1": "value1",
-      }
+      },
+      "timeout" : 30
     }
 
 Handler - The handler as defined by AWS lambda.
@@ -136,6 +137,9 @@ IronWorker. If you change this, it is your responsibility to clean up existing
 functions/images.
 
 Event - JSON payload sent to the function and worker.
+
+Timeout - the duration in seconds to wait for finishing AWS Lambda Function event processing.
+If not specified the default value of 30 is used
 
 ### Adding/Updating a test
 

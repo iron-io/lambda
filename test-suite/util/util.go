@@ -16,6 +16,7 @@ type TestDescription struct {
 	Runtime     string
 	Event       Payload
 	Description string // Completely ignored by test harness, just useful to convey intent of test.
+	Timeout     int
 }
 
 func ReadTestDescription(dir string) (*TestDescription, error) {
