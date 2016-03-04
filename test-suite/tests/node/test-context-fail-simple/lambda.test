@@ -1,0 +1,6 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "context-fail-simple",
+  "description": "Test context.fail() tick behavior."
+}

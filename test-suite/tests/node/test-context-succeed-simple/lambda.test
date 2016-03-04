@@ -1,0 +1,6 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "context-succeed-simple",
+  "description": "Test context.succeed() tick behavior."
+}
