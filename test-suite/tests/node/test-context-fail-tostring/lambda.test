@@ -1,0 +1,6 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "context-fail-tostring",
+  "description": "Ensure fail calls toString() and not directly JSON.stringify()."
+}
