@@ -1,0 +1,6 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "context-done-fail",
+  "description": "Test context.done() wraps fail() when err is truthy."
+}

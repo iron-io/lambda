@@ -1,0 +1,6 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "context-succeed-undefined",
+  "description": "context.succeed() gets converted to null."
+}

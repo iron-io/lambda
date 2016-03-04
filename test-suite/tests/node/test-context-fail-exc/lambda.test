@@ -1,0 +1,6 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "context-fail-exc",
+  "description": "context.fail() with a non-stringifyable object fails."
+}

@@ -35,14 +35,15 @@ func cleanNodeJsAwsOutput(output string) (string, error) {
 
 					// Remove timestamp
 					idx := strings.IndexByte(line, 'Z')
-					if idx == -1 {
-						return "", errors.New(fmt.Sprintf("Expected timestamp at beginning of line, but could not find one it seems '%s'", line))
+					if idx >= 0 {
+						untimed := strings.TrimSpace(line[idx+1:])
+						unprefix := strings.TrimPrefix(untimed, id)
+						buf.WriteString(strings.TrimSpace(unprefix))
+						buf.WriteRune('\n')
+					} else {
+						buf.WriteString(line)
+						buf.WriteRune('\n')
 					}
-
-					untimed := strings.TrimSpace(line[idx+1:])
-					unprefix := strings.TrimPrefix(untimed, id)
-					buf.WriteString(strings.TrimSpace(unprefix))
-					buf.WriteRune('\n')
 				}
 				if err := scanner.Err(); err != nil {
 					return "", err
