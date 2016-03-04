@@ -59,12 +59,8 @@ Contributing
 
 ### Deploying changes to test harness to IronWorker
 
-NOTE: This is required when you change how the test harness program
-`test-suite` works. If you only change a test, see `Updating a test`
-below.
-
-How do we prevent the harness from running tests when changes are being made?
-Should we bother with this right now? Probably not.
+(How do we prevent the harness from running tests when changes are being made?
+Should we bother with this right now? Probably not.)
 
 First update the local docker image following the instructions above. Then tag
 the docker image
@@ -184,6 +180,15 @@ Adding a test does the following:
   4. Register's image with UUID with IronWorker, replacing the older
      association. This means the Worker with name derived from `lambda.test`
      always runs the latest UUID.
+
+Understand that the `test-suite` binary only runs tests for the directories it
+can find in it's local `tests` directory. This means even after running the
+`add-test` tool, the automated test harness will not run those tests. This
+separation is good because you can now run the test locally as many times as
+you like and fix any failures. To have the IronWorker deployed, automatic
+test-harness pick up these new tests, you must recreate the `test-suite` Docker
+image and publish+register it as specified at the beginning of this guide. Also
+remember to add the tests to version control.
 
 ### Removing a test
 
