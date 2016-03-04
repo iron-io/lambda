@@ -141,6 +141,19 @@ Event - JSON payload sent to the function and worker.
 Timeout - the duration in seconds to wait for finishing AWS Lambda Function event processing.
 If not specified the default value of 30 is used
 
+### Testing a test locally
+
+`IRON_LAMBDA_TEST_LAMBDA_PREFIX=irontest` must be set.
+
+The `local-image` tool will build a docker image out of a test directory. For
+example:
+
+    go run ./tools/local-image/main.go tests/node/test-context
+
+Run it via:
+
+    docker run --rm -it irontest/lambda-test-suite-nodejs-context
+
 ### Adding/Updating a test
 
 The following environment variable must be set in addition to the ones above.
@@ -156,7 +169,7 @@ For execution role see [Getting Started][gs] and [Permissions Model][pm].
 You MUST run this command every time you introduce a new test or make changes to an
 existing test.
 
-    go run ./tools/add-test.go tests/path/to/test/dir (e.g. tests/node/test-event)
+    go run ./tools/add-test/main.go tests/path/to/test/dir (e.g. tests/node/test-event)
 
 Adding a test does the following:
 

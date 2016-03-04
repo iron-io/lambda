@@ -123,47 +123,6 @@ func addToLambda(dir string) error {
 	return err
 }
 
-func makeImage(dir string, desc *util.TestDescription, imageNameVersion string) error {
-	files := make([]iron_lambda.FileLike, 0)
-	defer func() {
-		for _, file := range files {
-			file.(*os.File).Close()
-		}
-	}()
-
-	first := false
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		// Skip dir itself.
-		if !first {
-			first = true
-			return nil
-		}
-
-		if info.Name() == "lambda.test" {
-			return nil
-		}
-
-		f, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		files = append(files, f)
-
-		if info.IsDir() {
-			return filepath.SkipDir
-		}
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	// FIXME(nikhil): Use some configuration username.
-	err = iron_lambda.CreateImage(iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, desc.Handler, os.Stdout, false}, files...)
-	return err
-}
-
 func addToIron(dir string) error {
 	desc, err := util.ReadTestDescription(dir)
 	if err != nil {
@@ -173,7 +132,7 @@ func addToIron(dir string) error {
 	version := uuid.NewV4().String()
 	imageNameVersion := fmt.Sprintf("%s/%s:%s", imagePrefix, desc.Name, version)
 
-	err = makeImage(dir, desc, imageNameVersion)
+	err = util.MakeImage(dir, desc, imageNameVersion)
 	if err != nil {
 		return err
 	}
