@@ -200,11 +200,24 @@ function run() {
     var parts = handler.split('.');
     // FIXME(nikhil): Error checking.
     var script = parts[0];
+    var entry = parts[1];
     try {
       var mod = require('./'+script);
-      mod[parts[1]](payload, makeCtx())
+      if (mod[entry] === undefined) {
+        throw "Handler '" + entry + "' missing on module '" + script + "'"
+      }
+
+      if (typeof mod[entry] !== 'function') {
+        throw "TypeError: " + (typeof mod[entry]) + " is not a function"
+      }
+
+      mod[entry](payload, makeCtx())
     } catch(e) {
-      console.error("bootstrap: Error running handler", e)
+      if (typeof e === 'string') {
+        console.log(e)
+      } else {
+        console.log(e.message)
+      }
     }
   } else {
     console.error("bootstrap: No script specified")

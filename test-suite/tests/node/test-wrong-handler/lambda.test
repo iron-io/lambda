@@ -1,0 +1,6 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "wrong-handler",
+  "description": "Error message for incorrect handler function."
+}
