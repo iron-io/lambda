@@ -1,0 +1,6 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "context-context-fail-undefined",
+  "description": "context.fail() gets converted to null."
+}
