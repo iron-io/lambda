@@ -1,0 +1,6 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "context-succeed-exc",
+  "description": "context.succeed() with a non-JSON.stringify() object fails."
+}
