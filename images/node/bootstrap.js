@@ -2,45 +2,125 @@
 
 var fs = require('fs');
 
-var Context = function() {}
+// Some notes on the semantics of the succeed(), fail() and done() methods.
+// Tests are the source of truth!
+// First call wins in terms of deciding the result of the function. BUT,
+// subsequent calls also log. Further, code execution does not stop, even where
+// for done(), the docs say that the "function terminates". It seems though
+// that further cycles of the event loop do not run. For example:
+// index.handler = function(event, context) {
+//   context.fail("FAIL")
+//   process.nextTick(function() {
+//     console.log("This does not get logged")
+//   })
+//   console.log("This does get logged")
+// }
+// on the other hand:
+// index.handler = function(event, context) {
+//   process.nextTick(function() {
+//     console.log("This also gets logged")
+//     context.fail("FAIL")
+//   })
+//   console.log("This does get logged")
+// }
+//
+// The same is true for context.succeed() and done() captures the semantics of
+// both. It seems this is implemented simply by having process.nextTick() cause
+// process.exit() or similar, because the following:
+// exports.handler = function(event, context) {
+//     process.nextTick(function() {console.log("This gets logged")})
+//     process.nextTick(function() {console.log("This also gets logged")})
+//     context.succeed("END")
+//     process.nextTick(function() {console.log("This does not get logged")})
+// };
+//
+// So the context object needs to have some sort of hidden boolean that is only
+// flipped once, by the first call, and dictates the behavior on the next tick.
+//
+// In addition, the response behaviour depends on the invocation type. If we
+// are to only support the async type, succeed() must return a 202 response
+// code, not sure how to do this.
+//
+// Only the first 256kb, followed by a truncation message, should be logged.
+//
+// Also, the error log is always in a json literal
+// { "errorMessage": "<message>" }
+var Context = function() {
+  var concluded = false;
 
-Context.prototype.succeed = function(result) {
-  if (!result) {
-    return
-  }
+  var contextSelf = this;
 
-  var str;
-  try {
-    str = JSON.stringify(result)
-  } catch(e) {
-    // Set X-Amz-Function-Error: Unhandled header
-  }
+  // The succeed, fail and done functions are public, but access a private
+  // member (concluded). Hence this ugly nested definition.
+  this.succeed = function(result) {
+    if (concluded) {
+      return
+    }
 
-  // FIXME(nikhil): Return 202 or 200 based on invocation type and set response
-  // to result. Should probably be handled externally by the runner/swapi.
-}
+    // We have to process the result before we can conclude, because otherwise
+    // we have to fail. This means NO EARLY RETURNS from this function without
+    // review!
+    if (result === undefined) {
+      result = null
+    }
 
-Context.prototype.fail = function(error) {
-  if (error) {
+    var str;
     try {
-      var str = JSON.stringify(error);
-      // FIXME(nikhil): Truncated log of str, plus non-truncated response body
-      console.error(str)
+      str = JSON.stringify(result)
+      // Succeed does not output to log, it only responds to the HTTP request.
     } catch(e) {
       // Set X-Amz-Function-Error: Unhandled header
+      return contextSelf.fail("Unable to stringify body as json: " + e);
+    }
+
+    // FIXME(nikhil): Return 202 or 200 based on invocation type and set response
+    // to result. Should probably be handled externally by the runner/swapi.
+
+    // OK, everything good.
+    concluded = true;
+    process.nextTick(function() { process.exit(0) })
+  }
+
+  this.fail = function(error) {
+    if (concluded) {
+      return
+    }
+
+    concluded = true
+    process.nextTick(function() { process.exit(1) })
+
+    if (error === undefined) {
+      error = null
+    }
+
+    // FIXME(nikhil): Truncated log of error, plus non-truncated response body
+    var errstr = "fail() called with argument but a problem was encountered while converting it to a to string";
+
+    // The semantics of fail() are weird. If the error is something that can be
+    // converted to a string, the log output wraps the string in a JSON literal
+    // with key "errorMessage". If toString() fails, then the output is only
+    // the error string.
+    try {
+      if (error === null) {
+        errstr = null
+      } else {
+        errstr = error.toString()
+      }
+      console.log(JSON.stringify({"errorMessage": errstr }))
+    } catch(e) {
+      // Set X-Amz-Function-Error: Unhandled header
+      console.log(errstr)
     }
   }
 
-  process.exit(1)
-}
-
-Context.prototype.done = function() {
-  var error = arguments[0];
-  var result = arguments[1];
-  if (error) {
-    this.fail(error)
-  } else {
-    this.succeed(result)
+  this.done = function() {
+    var error = arguments[0];
+    var result = arguments[1];
+    if (error) {
+      contextSelf.fail(error)
+    } else {
+      contextSelf.succeed(result)
+    }
   }
 }
 
