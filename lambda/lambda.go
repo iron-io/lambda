@@ -18,6 +18,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/iron-io/iron_go3/worker"
+	"github.com/satori/go.uuid"
 )
 
 type FileLike interface {
