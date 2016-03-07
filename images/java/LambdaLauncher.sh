@@ -17,24 +17,6 @@ else
   exit 1
 fi
 
-if [ -z "$HANDLER" ];then
-  if [ -z "$2" ];then
-    echo "Please set HANDLER env var or specify handler in the second param of CMD command in Dockerfile"
-    exit 1
-  else
-    export HANDLER="$2"
-  fi
-fi
-
-if [ -z "$PAYLOAD_FILE" ];then
-  if [ -z "$3" ];then
-    echo "Please set PAYLOAD_FILE env var or specify payload in the third param of CMD command in Dockerfile"
-    exit 1
-  else
-    export PAYLOAD_FILE="$3"
-  fi
-fi
-
-java -jar lambda.jar
+java -jar lambda.jar $2
 
 exit 0

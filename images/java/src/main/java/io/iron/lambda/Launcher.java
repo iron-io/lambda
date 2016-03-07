@@ -3,14 +3,23 @@ package io.iron.lambda;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 
 public class Launcher {
     public static void main(String[] args) {
-        String handler = System.getenv("HANDLER");
-        String payload = System.getenv("PAYLOAD_FILE");
+        String handler = args[0];
+        String payload = "";
+        try {
+            String file = System.getenv("PAYLOAD_FILE");
+            payload = new String(Files.readAllBytes(Paths.get(file)));
+        } catch (IOException ioe) {
+            // Should probably log this somewhere useful but not in the output.
+        }
+
         try {
             String[] packageMethod = validateInputParamsAndGetPackageMethod(handler, payload);
             Launcher ll = new Launcher();
