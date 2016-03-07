@@ -78,3 +78,23 @@ func MakeImage(dir string, desc *TestDescription, imageNameVersion string) error
 	err = iron_lambda.CreateImage(iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, desc.Handler, os.Stdout, false}, files...)
 	return err
 }
+
+func RemoveTimestampAndRequestIdFromLogLine(line, requestId string) string {
+	if requestId != "" {
+		parts := strings.Fields(line)
+
+		// assume timestamp is before request_id
+		for i, p := range parts {
+			if p == requestId {
+				ts := parts[i-1]
+				if strings.HasSuffix(ts, "Z") && strings.HasPrefix(ts, "20") {
+					line = strings.Replace(line, ts, "<timestamp>", 1)
+				}
+				line = strings.Replace(line, parts[i], "<request_id>", 1)
+				break
+			}
+		}
+	}
+
+	return line
+}
