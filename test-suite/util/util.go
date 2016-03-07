@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -85,8 +86,20 @@ func MakeImage(dir string, desc *TestDescription, imageNameVersion string) error
 		return err
 	}
 
+	if desc.Runtime == "java8" {
+		if len(files) > 0 {
+			st, err := files[0].Stat()
+			if err != nil {
+				return err
+			}
+			if !strings.HasSuffix(st.Name(), "test-build.jar") {
+				return errors.New("First file MUST be test-build.jar for Java tests.")
+			}
+		}
+	}
+
 	// FIXME(nikhil): Use some configuration username.
-	err = iron_lambda.CreateImage(iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, desc.Handler, os.Stdout, false}, files...)
+	err = iron_lambda.CreateImage(iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, "test-build.jar", desc.Handler, os.Stdout, false}, files...)
 	return err
 }
 
