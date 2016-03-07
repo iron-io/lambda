@@ -1,0 +1,6 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "handler-not-function",
+  "description": "Error message for handler not being a function."
+}
