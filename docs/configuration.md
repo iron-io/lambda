@@ -42,3 +42,13 @@ do this instead:
 
 Now, when you invoke the function, the AWS SDK will load the credentials from
 the environment variables and your AWS API operations should work.
+
+### Accessing context information
+
+While the planned `publish-function` command will set this up automatically,
+for now you explicitly need to pass the following environment variables to the
+`register` call for `context.functionName` and `context.functionVersion` to
+work:
+
+    AWS_LAMBDA_FUNCTION_NAME=<string>
+    AWS_LAMBDA_FUNCTION_VERSION=<string>

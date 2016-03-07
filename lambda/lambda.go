@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/iron-io/iron_go3/worker"
+	"github.com/satori/go.uuid"
 )
 
 type FileLike interface {
@@ -238,9 +239,14 @@ func RunImageWithPayload(imageName string, payload string) error {
 		return err
 	}
 
+	envs := []string{"PAYLOAD_FILE=/mnt/payload.json"}
+	envs = append(envs, "AWS_LAMBDA_FUNCTION_NAME="+imageName)
+	envs = append(envs, "AWS_LAMBDA_FUNCTION_VERSION=$LATEST")
+	envs = append(envs, "TASK_ID="+uuid.NewV4().String())
+
 	opts := docker.CreateContainerOptions{
 		Config: &docker.Config{
-			Env:       []string{"PAYLOAD_FILE=/mnt/payload.json"},
+			Env:       envs,
 			Memory:    1024 * 1024 * 1024,
 			CPUShares: 2,
 			Hostname:  "Hello",
