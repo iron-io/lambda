@@ -2,9 +2,7 @@ Support for running java Lambda functions.
 
 Compile lambda launcher and create an lambda-java base image:
 
-    mvn package
-    sudo docker build -t iron/lambda-java8 .
-
+    make
 
 Running
 -------
