@@ -149,29 +149,60 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 		log.Fatal(err)
 	}
 
+	endMarker, _ := util.UUID()
+	testResults := make(chan []string)
+	endMarkerCount := 0
 	for _, test := range tests {
-		awschan := make(chan io.Reader, 1)
-		ironchan := make(chan io.Reader, 1)
-		var wg sync.WaitGroup
-		wg.Add(2)
-		go runOnLambda(l, cw, &wg, test, awschan)
-		go runOnIron(w, &wg, test, ironchan)
-		wg.Wait()
+		endMarkerCount++
+		go runTest(endMarker, testResults, test, w, cw, l)
+	}
 
-		awsreader := <-awschan
-		awss, _ := ioutil.ReadAll(awsreader)
+	for endMarkerCount > 0 {
+		select {
+		case lines := <-testResults:
+			for _, line := range lines {
+				if line == endMarker {
+					endMarkerCount--
+				} else {
+					log.Println(line)
+				}
+			}
+		}
+	}
+}
 
-		ironreader := <-ironchan
-		irons, _ := ioutil.ReadAll(ironreader)
+func runTest(endMarker string, result chan<- []string, test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.CloudWatchLogs, l *lambda.Lambda) {
+	defer func() {
+		result <- []string{endMarker}
+	}()
 
-		if !bytes.Equal(awss, irons) {
-			delimiter := "=========================================="
-			log.Printf("FAIL %s Output does not match!\n", test.Name)
-			log.Printf("AWS lambda output\n%s\n%s\n%s\n", delimiter, awss, delimiter)
-			log.Printf("Iron output\n%s\n%s\n%s\n", delimiter, irons, delimiter)
-			notifyFailure(test.Name)
-		} else {
-			log.Printf("PASS %s\n", test.Name)
+	awschan := make(chan io.Reader, 1)
+	ironchan := make(chan io.Reader, 1)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go runOnLambda(l, cw, &wg, test, awschan)
+	go runOnIron(w, &wg, test, ironchan)
+
+	wg.Wait()
+
+	awsreader := <-awschan
+	awss, _ := ioutil.ReadAll(awsreader)
+
+	ironreader := <-ironchan
+	irons, _ := ioutil.ReadAll(ironreader)
+
+	if !bytes.Equal(awss, irons) {
+		delimiter := "=========================================="
+		result <- []string{
+			fmt.Sprintf("FAIL %s Output does not match!", test.Name),
+			fmt.Sprintf("AWS lambda output\n%s\n%s\n%s", delimiter, awss, delimiter),
+			fmt.Sprintf("Iron output\n%s\n%s\n%s", delimiter, irons, delimiter),
+		}
+		notifyFailure(test.Name)
+	} else {
+		result <- []string{
+			fmt.Sprintf("PASS %s", test.Name),
 		}
 	}
 }
