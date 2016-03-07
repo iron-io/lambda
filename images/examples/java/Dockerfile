@@ -1,4 +1,4 @@
-FROM iron/lambda-java
+FROM iron/lambda-java8
 
 ADD target/lambda-java-example-1.0-SNAPSHOT.jar ./lambda-java-example-1.0-SNAPSHOT.jar
 

@@ -17,21 +17,21 @@ else
   exit 1
 fi
 
-if [ -z "$handler" ];then
+if [ -z "$HANDLER" ];then
   if [ -z "$2" ];then
-    echo "Please set handler env var or specify handler in the second param of CMD command in Dockerfile"
+    echo "Please set HANDLER env var or specify handler in the second param of CMD command in Dockerfile"
     exit 1
   else
-    export handler="$2"
+    export HANDLER="$2"
   fi
 fi
 
-if [ -z "$payload" ];then
+if [ -z "$PAYLOAD_FILE" ];then
   if [ -z "$3" ];then
-    echo "Please set payload env var or specify payload in the third param of CMD command in Dockerfile"
+    echo "Please set PAYLOAD_FILE env var or specify payload in the third param of CMD command in Dockerfile"
     exit 1
   else
-    export payload="$3"
+    export PAYLOAD_FILE="$3"
   fi
 fi
 

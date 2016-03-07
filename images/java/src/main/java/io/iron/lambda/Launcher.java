@@ -9,8 +9,8 @@ import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 
 public class Launcher {
     public static void main(String[] args) {
-        String handler = System.getenv("handler");
-        String payload = System.getenv("payload");
+        String handler = System.getenv("HANDLER");
+        String payload = System.getenv("PAYLOAD_FILE");
         try {
             String[] packageMethod = validateInputParamsAndGetPackageMethod(handler, payload);
             Launcher ll = new Launcher();

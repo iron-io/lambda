@@ -3,7 +3,7 @@ Support for running java Lambda functions.
 Compile lambda launcher and create an lambda-java base image:
 
     mvn package
-    sudo docker build -t iron/lambda-java .
+    sudo docker build -t iron/lambda-java8 .
 
 
 Running
@@ -20,24 +20,24 @@ Then build docker image and run docker container, you can set handler and payloa
 
 Or you can set handler and payload in env vars
 
-    docker run -ti -e "handler=example.Hello::myHandlerIO" -e "payload=test_string" lambda-java-my
+    docker run -ti -e "HANDLER=example.Hello::myHandlerIO" -e "PAYLOAD_FILE=test_string" lambda-java-my
 
 Examples of `handler` and `payload` params:
 
-    handler=example.Hello::myHandlerInt
-    payload=1122
+    HANDLER=example.Hello::myHandlerInt
+    PAYLOAD_FILE=1122
 
-    handler=example.Hello::myHandlerString
-    payload=test_string
+    HANDLER=example.Hello::myHandlerString
+    PAYLOAD_FILE=test_string
 
-    handler=example.Hello::myHandlerIO
+    HANDLER=example.Hello::myHandlerIO
     payload=test_input_line
 
-    handler=example.Hello::myHandlerMap
-    payload={\"zero\":\"Zero Element\",\"third\":\"Third Element!\"}
+    HANDLER=example.Hello::myHandlerMap
+    PAYLOAD_FILE={\"zero\":\"Zero Element\",\"third\":\"Third Element!\"}
 
-    handler=example.Hello::myHandlerList
-    payload=[{\"user\":\"1\",\"pass\":\"2\",\"secretCode\":\"3\"}]
+    HANDLER=example.Hello::myHandlerList
+    PAYLOAD_FILE=[{\"user\":\"1\",\"pass\":\"2\",\"secretCode\":\"3\"}]
 
-    handler=example.Hello::myHandlerPOJO
-    payload={ \"firstName\":\"John\", \"lastName\":\"Doe\" }
+    HANDLER=example.Hello::myHandlerPOJO
+    PAYLOAD_FILE={ \"firstName\":\"John\", \"lastName\":\"Doe\" }
