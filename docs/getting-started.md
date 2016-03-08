@@ -1,40 +1,34 @@
 # Introduction
 
-This guide will walk you through running a simple Lambda function on
-IronWorker.
+This guide will walk you through creating and testing a simple Lambda function.
+
+We will then upload it to IronWorker and run it.
 
 ## Prerequisites
 
-- You should have a working [Go][go] >=1.5 installation.
-- You should have [Docker][docker] installed and working.
+These workflows have been tested on Linux and Mac. You must have a:
+
+- Working [Go][go] >=1.5 installation,
+- Working [Glide][glide] installation,
+- Working [Docker][docker] installation.
 
 [go]: http://golang.org
+[glide]: http://glide.sh
 [docker]: http://www.docker.com
 
-Until the Lambda Docker images are published on Docker Hub, you'll also need to
-build those yourselves. If you haven't already cloned this repository, do so
-now.
-
-    $ git clone https://github.com/iron-io/lambda
-    $ cd lambda/images/node
-    $ make
-
-This will create a base Docker image `iron/lambda-nodejs`.
-
 We are going to use a development branch of `ironcli` instead of the official
-release.
+release. TODO: `go install` will fail due to (lack of) vendoring.
 
     $ cd $GOPATH
-    $ mkdir -p src/github.com/iron-io
-    $ cd src/github.com/iron-io
-    $ git clone https://github.com/iron-io/ironcli
-    $ cd ironcli
-    $ git checkout -b lambda -t origin/lambda
+    $ go get github.com/iron-io/ironcli
+    $ cd src/github.com/iron-io/ironcli
+    $ git checkout -t origin/lambda
     $ go install .
 
 ## Creating the function
 
-Let's convert the `node-exec` lambda example to Docker.
+Let's convert the `node-exec` AWS Lambda example to Docker. This simply
+executes the command passed to it as the payload and logs the output.
 
     var exec = require('child_process').exec;
     
@@ -53,7 +47,8 @@ Let's convert the `node-exec` lambda example to Docker.
         child.stderr.on('data', console.error);
     };
 
-Create an empty directory for your project and save this code in a file called `node_exec.js`.
+Create an empty directory for your project and save this code in a file called
+`node_exec.js`.
 
 Now let's use `ironcli`'s Lambda functionality to create a Docker image. We can
 then run the Docker image with a payload to execute the Lambda function.
@@ -88,24 +83,14 @@ You should now see the generated Docker image.
 
 ## Testing the function
 
-Testing your function locally is a little involved at this point. Eventually it
-will be done through `ironcli`.
+The `test-function` subcommand can launch the Dockerized function with the
+right parameters.
 
-IronWorker expects the payload to be in a file defined by the environment
-variable `PAYLOAD_FILE`. Let's create the JSON payload. Our function expects
-a key called `cmd`. Call the file `payload.json`:
-
-    {
-      "cmd": "echo 'Dockerized Lambda!'"
-    }
-
-We will run our Docker image with volume sharing to allow it to read the
-payload.
-
-    $ docker run --rm -v $PWD:/mnt -e PAYLOAD_FILE=/mnt/payload.json irontest/node-exec:1
+    $ $GOPATH/bin/ironcli lambda test-function --function-name irontest/node-exec:1 --payload '{ "cmd": "echo Dockerized Lambda" }'
     Dockerized Lambda!
 
-You should see the output. Try changing the command.
+You should see the output. Try changing the command to `date` or something more
+useful.
 
 ## Uploading the function
 
@@ -114,14 +99,14 @@ framework to launch it based on events. The ironcli tool allows publishing the
 function directly to the IronWorker platform, where you can run it at scale,
 without having to deal with machines and uptime.
 
-Sign up for a free IronWorker account. Follow the [IronWorker guide][iwguide]
-to get your system ready. This means:
+[Sign up](signup) for a free IronWorker account. Follow the [IronWorker
+guide][iwguide] to get your system ready. This means:
 
 - You should have a Docker Hub ID and set up the credentials using `docker
   login`. In this tutorial, we'll use `irontest` as the Docker ID.
-- You should have [environment variables][iron-vars] set to interact with IronWorker through
-  ironcli.
+- Your environment should be [set up][iron-vars] with the credentials for your Iron.io account.
 
+[signup]: http://www.iron.io/get-started/#start-trial
 [iwguide]: http://dev.iron.io/worker/getting_started/
 [iron-vars]: http://dev.iron.io/worker/reference/configuration/
 
@@ -154,13 +139,14 @@ We can now run this from the command line.
     ----->  Printing Log:
     Dockerized Lambda!
 
-The first run takes some time as IronWorker has to fetch the Docker image.
-Subsequent runs are faster.
+IronWorker tasks are launched asynchronously. The `-wait` flag forces ironcli
+to wait until the task is finished. The first run takes some time as
+IronWorker has to fetch the Docker image. Subsequent runs are faster.
 
 You can also launch the task via Webhooks. You can find the Webhook URL on the
 Code page.
 
-    $ curl -X POST -d @payload.json '<webhook URL>'
+    $ curl -X POST -d '{ "cmd": "echo Dockerized Lambda" }' '<webhook URL>'
 
 ---
 
