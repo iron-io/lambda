@@ -67,7 +67,6 @@ public class Launcher {
 
         for (Method lambdaMethod : declaredMethods) {
             if (Objects.equals(lambdaMethod.getName(), handlerName)) {  //if method name in user class == method name in env var
-                System.out.println(String.format("Found package: %s and method: %s", packageClass, handlerName));
                 methodFound = true;
 
                 Class[] parameterTypes = lambdaMethod.getParameterTypes();
@@ -104,8 +103,9 @@ public class Launcher {
             System.out.println(String.format("Method %s not found", handlerName));
             System.exit(1);
         }
-        System.out.println(processed ? String.format("Method %s executed with result: %s", handlerName, (String) result) :
-                String.format("Handler %s with simple, POJO, or IO(input/output) types not found", handlerName));
+        if (!processed) {
+            System.out.println(String.format("Handler %s with simple, POJO, or IO(input/output) types not found", handlerName));
+        }
     }
 
     public boolean checkIfLambdaMethodRequiredIOStreams(Class[] parameterTypes) {
