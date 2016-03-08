@@ -58,6 +58,7 @@ func MakeImage(dir string, desc *TestDescription, imageNameVersion string) error
 		}
 	}()
 
+	hasTestJar := false
 	first := false
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		// Skip dir itself.
@@ -68,6 +69,10 @@ func MakeImage(dir string, desc *TestDescription, imageNameVersion string) error
 
 		if info.Name() == "lambda.test" {
 			return nil
+		}
+
+		if info.Name() == "test-build.jar" {
+			hasTestJar = true
 		}
 
 		f, err := os.Open(path)
@@ -86,16 +91,8 @@ func MakeImage(dir string, desc *TestDescription, imageNameVersion string) error
 		return err
 	}
 
-	if desc.Runtime == "java8" {
-		if len(files) > 0 {
-			st, err := files[0].Stat()
-			if err != nil {
-				return err
-			}
-			if !strings.HasSuffix(st.Name(), "test-build.jar") {
-				return errors.New("First file MUST be test-build.jar for Java tests.")
-			}
-		}
+	if desc.Runtime == "java8" && !hasTestJar {
+		return errors.New("One of the files MUST be test-build.jar for Java tests.")
 	}
 
 	// FIXME(nikhil): Use some configuration username.

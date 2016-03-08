@@ -17,6 +17,9 @@ var imagePrefix string
 
 func makeLocalDocker(dir string) error {
 	desc, err := util.ReadTestDescription(dir)
+	if err != nil {
+		return err
+	}
 	imageNameVersion := fmt.Sprintf("%s/%s:%s", imagePrefix, desc.Name, "latest")
 	if err != nil {
 		return err

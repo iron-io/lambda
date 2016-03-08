@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -101,7 +102,7 @@ func createLambdaFunction(l *lambda.Lambda, code []byte, runtime, role, name, ha
 		}
 	}
 
-	_ = resp
+	log.Println(resp)
 	return nil
 }
 
@@ -111,9 +112,17 @@ func addToLambda(dir string) error {
 		return err
 	}
 
-	zipContents, err := makeZip(dir)
-	if err != nil {
-		return err
+	var zipContents []byte
+	if desc.Runtime == "java8" {
+		zipContents, err = ioutil.ReadFile(filepath.Join(dir, "test-build.jar"))
+		if err != nil {
+			return err
+		}
+	} else {
+		zipContents, err = makeZip(dir)
+		if err != nil {
+			return err
+		}
 	}
 
 	s := session.New(&aws.Config{Region: aws.String("us-east-1"), Credentials: credentials.NewEnvCredentials()})
