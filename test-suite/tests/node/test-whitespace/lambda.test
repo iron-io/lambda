@@ -1,0 +1,6 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "whitespace",
+  "description": "Test that we can deal with files containing whitespace."
+}
