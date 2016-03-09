@@ -1,8 +1,8 @@
-hash: b956758ad3a079bb1bb27741dd8f7d89941c0d5a16316fbbcf926fffae5c1df4
-updated: 2016-03-08T11:48:16.346680691+05:30
+hash: bd75ec0b49c31e40d732d4bc627bf4c4b78187dab306f804c1b6806b6cb58324
+updated: 2016-03-09T15:57:52.11531567+05:30
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 84dd2369d1041b2c79c67bc81bba00636711d01b
+  version: 2e7cf03d7f5c8a4b4c9f7341ddf1e13102845cf2
   subpackages:
   - aws
   - aws/awserr
@@ -26,7 +26,7 @@ imports:
   - private/protocol/json/jsonutil
   - private/protocol/rest
 - name: github.com/fsouza/go-dockerclient
-  version: 8fd3f77099a437356f92afa2319ab078914eb3f6
+  version: 9b6c9720043b74304a6dd07a2a901d16e7bf3d3d
   subpackages:
   - external/github.com/docker/docker/opts
   - external/github.com/docker/docker/pkg/archive
@@ -55,7 +55,7 @@ imports:
 - name: github.com/satori/go.uuid
   version: e673fdd4dea8a7334adbbe7f57b7e4b00bdc5502
 - name: github.com/sendgrid/sendgrid-go
-  version: 618ae01fc450f11509a8dee37756036780338593
+  version: 0bf6332788d0230b7da84a1ae68d7531073200e1
 - name: github.com/sendgrid/smtpapi-go
   version: 08102729bcf72bfe74dde6c0da8e0423e94090ca
 devImports: []
