@@ -150,8 +150,7 @@ def getREQUEST_ID():
     return os.environ.get('TASK_ID') or uuid.uuid4()
 
 
-def getHANDLER():
-    # return os.environ.get('HANDLER')
+def getHandlerName():
     if len(sys.argv) > 1:
         return sys.argv[1]
     return None
@@ -217,11 +216,11 @@ debugging and print ('config loaded')
 payloadFileName = getPAYLOAD_FILE()
 debugging and print ('PAYLOAD_FILE = ', payloadFileName)
 
-handlerName = getHANDLER()
-debugging and print ('HANDLER = ', handlerName)
+handlerName = getHandlerName()
+debugging and print ('handlerName = ', handlerName)
 
 if handlerName is None:
-    stopWithError("HANDLER variable is not specified")
+    stopWithError("handlerName arg is not specified")
 if payloadFileName is None:
     stopWithError("PAYLOAD_FILE variable is not specified")
 
@@ -231,7 +230,7 @@ if not os.path.isfile(payloadFileName):
 handlerParts = string.rsplit(handlerName, ".", 2)
 
 if len(handlerParts) < 2:
-    stopWithError("HANDLER variable should be specified " +
+    stopWithError("handlerName arg should be specified " +
         "in format 'moduleName.functionName'")
 
 moduleName = handlerParts[0]
