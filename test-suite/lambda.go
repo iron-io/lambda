@@ -18,6 +18,15 @@ import (
 	"github.com/iron-io/lambda/test-suite/util"
 )
 
+func indexOf(a string, list []string) int {
+	for i, b := range list {
+		if b == a {
+			return i
+		}
+	}
+	return -1
+}
+
 func cleanNodeJsAwsOutput(output string) (string, error) {
 	var buf bytes.Buffer
 	if strings.HasPrefix(output, "START RequestId:") {
@@ -55,27 +64,73 @@ func cleanNodeJsAwsOutput(output string) (string, error) {
 	return "", errors.New(fmt.Sprintf("Don't know how to clean '%s'", output))
 }
 
+// Processes all requests log lines inside the log and succedes only with the latest one
+// The log line format:  [some data] [timestamp] [request_id] [some other data]
+// Request start format: START RequestId: [request_id] [some data]
+// Request end format:   END RequestId: [request_id] [some data]
+// AWS report format:    REPORT RequestId: [request_id] [some data]
 func cleanPython27AwsOutput(output string) (string, error) {
 	var buf bytes.Buffer
-	if strings.HasPrefix(output, "START RequestId:") {
-		scanner := bufio.NewScanner(strings.NewReader(output))
-		for scanner.Scan() {
-			line := scanner.Text()
-			if strings.HasPrefix(line, "START RequestId:") {
+	var requestId string = ""
+	knownRequestIds := make(map[string]bool, 0)
+	requestProcessed := false
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+
+		//processing START, END and REPORT log lines
+		requestIdFieldIndex := indexOf("RequestId:", fields)
+		if (requestIdFieldIndex > 0) && (requestIdFieldIndex+1 < len(fields)) {
+			requestIdInLine := fields[requestIdFieldIndex+1]
+			prefix := fields[requestIdFieldIndex-1]
+			requestIdIsKnown := knownRequestIds[requestIdInLine]
+			skip := true
+			switch prefix {
+			case "START":
+				requestId = requestIdInLine
+				knownRequestIds[requestId] = true
+				requestIdIsKnown = true
+
+				// in case of multiple requests in the log we should use only the last one
+				buf.Reset()
+				requestProcessed = false
+			case "END":
+				if requestIdIsKnown {
+					requestId = ""
+					requestProcessed = true
+				}
+			case "REPORT":
+				{
+					// no specific action needed
+				}
+			default:
+				skip = false
+			}
+
+			if skip {
+				if !requestIdIsKnown {
+					return "", errors.New(fmt.Sprintf("Unknown request_id '%s' in the line '%s' of the log '%s'", requestIdInLine, line, output))
+				}
 				continue
 			}
-			if strings.HasPrefix(line, "END RequestId:") {
-				return buf.String(), nil
-			}
-			buf.WriteString(line)
-			buf.WriteRune('\n')
-			if err := scanner.Err(); err != nil {
-				return "", err
-			}
+		}
+
+		line = util.RemoveTimestampAndRequestIdFromLogLine(line, requestId)
+
+		buf.WriteString(line)
+		buf.WriteRune('\n')
+		if err := scanner.Err(); err != nil {
+			return "", err
 		}
 	}
 
-	return "", errors.New(fmt.Sprintf("Don't know how to clean '%s'", output))
+	if !requestProcessed {
+		return "", errors.New(fmt.Sprintf("Don't know how to clean '%s'", output))
+	} else {
+		return buf.String(), nil
+	}
+
 }
 
 func clean(output, runtime string) (string, error) {
