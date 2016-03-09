@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/iron-io/iron_go3/worker"
 	"github.com/iron-io/lambda/test-suite/util"
+	"github.com/satori/go.uuid"
 	"github.com/sendgrid/sendgrid-go"
 )
 
@@ -149,7 +150,7 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 		log.Fatal(err)
 	}
 
-	endMarker, _ := util.UUID()
+	endMarker := uuid.NewV4().String()
 	testResults := make(chan []string)
 	endMarkerCount := 0
 	for _, test := range tests {
