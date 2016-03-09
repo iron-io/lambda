@@ -175,6 +175,12 @@ func runTest(endMarker string, result chan<- []string, test *util.TestDescriptio
 		result <- []string{endMarker}
 	}()
 
+	testName := test.Name
+
+	result <- []string{
+		fmt.Sprintf("Starting test %s", testName),
+	}
+
 	awschan := make(chan io.Reader, 1)
 	ironchan := make(chan io.Reader, 1)
 
@@ -194,14 +200,14 @@ func runTest(endMarker string, result chan<- []string, test *util.TestDescriptio
 	if !bytes.Equal(awss, irons) {
 		delimiter := "=========================================="
 		result <- []string{
-			fmt.Sprintf("FAIL %s Output does not match!", test.Name),
+			fmt.Sprintf("FAIL %s Output does not match!", testName),
 			fmt.Sprintf("AWS lambda output\n%s\n%s\n%s", delimiter, awss, delimiter),
 			fmt.Sprintf("Iron output\n%s\n%s\n%s", delimiter, irons, delimiter),
 		}
-		notifyFailure(test.Name)
+		notifyFailure(testName)
 	} else {
 		result <- []string{
-			fmt.Sprintf("PASS %s", test.Name),
+			fmt.Sprintf("PASS %s", testName),
 		}
 	}
 }
