@@ -1,0 +1,16 @@
+{
+  "handler": "test.run",
+  "runtime": "python2.7",
+  "name": "context-log-func",
+  "description": "Test context.log method compatibility.",
+  "event" : {
+  	"a" : 1,
+  	"b" : "a string",
+  	"null":  null,
+  	"obj" : {
+      "msg":"i'm an object"
+  	},
+  	"arr" : [1, "a string 2", null]
+  },
+  "timeout" : 5
+}
