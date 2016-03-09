@@ -148,7 +148,7 @@ var makeCtx = function() {
     },
     "invokedFunctionArn": {
       // FIXME(nikhil): Should be filled in.
-      value: "hello",
+      value: "",
       enumerable: true,
     },
     "memoryLimitInMB": {
@@ -164,12 +164,12 @@ var makeCtx = function() {
     },
     "logGroupName": {
       // FIXME(nikhil): Should be filled in.
-      value: "iron",
+      value: "",
       enumerable: true,
     },
     "logStreamName": {
       // FIXME(nikhil): Should be filled in.
-      value: "your-worker",
+      value: "",
       enumerable: true,
     },
     "identity": {
