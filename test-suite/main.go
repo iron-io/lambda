@@ -158,14 +158,12 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 	}
 
 	for endMarkerCount > 0 {
-		select {
-		case lines := <-testResults:
-			for _, line := range lines {
-				if line == endMarker {
-					endMarkerCount--
-				} else {
-					log.Println(line)
-				}
+		lines := <-testResults
+		for _, line := range lines {
+			if line == endMarker {
+				endMarkerCount--
+			} else {
+				log.Println(line)
 			}
 		}
 	}
