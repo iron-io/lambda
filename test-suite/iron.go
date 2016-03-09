@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -12,7 +11,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"unicode/utf8"
 
 	"github.com/iron-io/iron_go3/worker"
 	"github.com/iron-io/lambda/test-suite/util"
@@ -41,6 +39,7 @@ func cleanIronGeneric(output []byte) []byte {
 func cleanPython27IronOutput(output string) (string, error) {
 	var buf bytes.Buffer
 	var requestId string = ""
+	// expecting request id as hex of bson_id
 	requestIdPattern, _ := regexp.Compile("[a-f0-9]{24}")
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
@@ -70,48 +69,12 @@ func cleanPython27IronOutput(output string) (string, error) {
 	return buf.String(), nil
 }
 
-func convertUtf8ByteSequenceToString(buffer []byte) (string, error) {
-	if !utf8.Valid(buffer) {
-		return "", errors.New("Invalid utf8 sequence")
-	}
-
-	result := make([]rune, 0, utf8.RuneCount(buffer))
-
-	for len(buffer) > 0 {
-		r, c := utf8.DecodeRune(buffer)
-
-		result = append(result, r)
-		buffer = buffer[c:]
-	}
-	return string(result), nil
-}
-
-func convertStringToUtf8BySequence(buffer string) []byte {
-	var buf bytes.Buffer
-	runeBuffer := make([]byte, 32)
-	for _, r := range buffer {
-		l := utf8.EncodeRune(runeBuffer, r)
-		buf.Write(runeBuffer[:l])
-	}
-
-	return buf.Bytes()
-}
-
 func cleanIron(runtime string, output []byte) ([]byte, error) {
 	output = cleanIronGeneric(output)
 	switch runtime {
 	case "python2.7":
-		{
-			outputAsString, err := convertUtf8ByteSequenceToString(output)
-			if err != nil {
-				return nil, err
-			}
-			cleaned, err := cleanPython27IronOutput(outputAsString)
-			if err != nil {
-				return nil, err
-			}
-			return convertStringToUtf8BySequence(cleaned), nil
-		}
+		cleaned, err := cleanPython27IronOutput(string(output))
+		return []byte(cleaned), err
 	default:
 		return output, nil
 	}
