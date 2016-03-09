@@ -60,21 +60,21 @@ func TestCreateImageEmpty(t *testing.T) {
 }
 
 func TestCreateImageBasic(t *testing.T) {
-	err := buildAndClean("iron-test/lambda-nodejs-basic", baseImage, "test.run", "./nodejs-tests/basic")
+	err := buildAndClean("iron-test/lambda-nodejs-basic", baseImage, "test.run", "../test-suite/tests/node/test-event")
 	if err != nil {
 		t.Fatal("CreateImage failed", err)
 	}
 }
 
 func TestCreateImageWhitespace(t *testing.T) {
-	err := buildAndClean("iron-test/lambda-nodejs-whitespace", baseImage, "test.run", "./nodejs-tests/whitespace")
+	err := buildAndClean("iron-test/lambda-nodejs-whitespace", baseImage, "test.run", "../test-suite/tests/node/test-whitespace")
 	if err != nil {
 		t.Fatal("CreateImage failed", err)
 	}
 }
 
 func TestCreateImageWithDir(t *testing.T) {
-	err := buildAndClean("iron-test/lambda-nodejs-withdir", baseImage, "test.run", "./nodejs-tests/uuid")
+	err := buildAndClean("iron-test/lambda-nodejs-withdir", baseImage, "test.run", "../test-suite/tests/node/test-uuid")
 	if err != nil {
 		t.Fatal("CreateImage failed", err)
 	}
