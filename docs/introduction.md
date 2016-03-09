@@ -40,8 +40,8 @@ The Docker container has to be run with a certain configuration, described
 
 Write and package your Lambda functions with our [Getting started
 guide](./getting-started.md). [Here is the environment](./environment.md) that
-Lambda provides. The [ironcli](./cli.md) guide explains the available commands
-and options.
+Lambda provides. `ironcli lambda` lists the commands to work with Lambda
+functions locally.
 
 There is a short guide to [using Lambda with IronWorker](./ironworker.md).
 Non-AWS Lambda functions do have the disadvantage of not having deep
