@@ -18,7 +18,7 @@ import (
 	"github.com/iron-io/lambda/test-suite/util"
 )
 
-func member(a string, list []string) int {
+func indexOf(a string, list []string) int {
 	for i, b := range list {
 		if b == a {
 			return i
@@ -80,7 +80,8 @@ func cleanPython27AwsOutput(output string) (string, error) {
 		fields := strings.Fields(line)
 
 		//processing START, END and REPORT log lines
-		if requestIdFieldIndex := member("RequestId:", fields); (requestIdFieldIndex > 0) && (requestIdFieldIndex+1 < len(fields)) {
+		requestIdFieldIndex := indexOf("RequestId:", fields)
+		if (requestIdFieldIndex > 0) && (requestIdFieldIndex+1 < len(fields)) {
 			requestIdInLine := fields[requestIdFieldIndex+1]
 			prefix := fields[requestIdFieldIndex-1]
 			requestIdIsKnown := knownRequestIds[requestIdInLine]
