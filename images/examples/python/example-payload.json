@@ -1,9 +1,3 @@
 {
-    "str" :"a string",
-    "num": 123,
-    "obj" : {
-        "a" : "a",
-        "b" : "b"
-        },
-    "nullObj": null
+    "str" :"this is a string from example payload"
 }

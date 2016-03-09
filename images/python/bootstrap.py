@@ -43,18 +43,6 @@ class Context(object):
         return
 
 
-class Payload(object):
-
-    def __init__(self, js):
-        self.__dict__ = json.loads(js)
-
-    def __repr__(self):
-        return json.dumps(self.__dict__, sort_keys=True)
-
-    def __str__(self):
-        return str(self.__dict__)
-
-
 class DynaCallerError(Exception):
     pass
 
@@ -243,15 +231,16 @@ if funcName is None:
 
 try:
     with file(payloadFileName) as f:
-        s = f.read()
+        payload = f.read()
 except:
-    stopWithError("Failed to read {payload}".format(payload=payloadFileName))
+    stopWithError("Failed to read {payloadFileName}".format(payloadFileName=payloadFileName))
 
 debugging and print ('payload loaded')
 
 try:
-    payload = Payload(s)
+    payload = json.loads(payload)
 except:
+    debugging and print ('payload is ') and print (payload)
     stopWithError('Payload is not JSON')
 
 debugging and print ('payload parsed as JSON')
