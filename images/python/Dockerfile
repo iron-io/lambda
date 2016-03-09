@@ -8,6 +8,4 @@ RUN pip install -I boto3==1.2.3 --no-cache-dir
 # ironcli should forbid this name
 ADD bootstrap.py /app/lambda-bootstrap.py
 
-# Run the handler, with a payload in the future.
-
 ENTRYPOINT ["python", "./lambda-bootstrap.py"]

@@ -2,14 +2,13 @@ Support for running python Lambda functions.
 
 Create an image with
 
-    docker build -t iron/lambda-python .
+    make image
 
 This sets up a python stack and installs some deps to provide the Lambda runtime.
 
 Running
 -------
 
-Does not support payload (AWS Lambda 'event') yet. 
 Expects the lambda files places inside or mounted to docker image.
 Two environment variables should be provided:
 * HANDLER is the name of python function to call in format <python-module-name>.<top-level-function-name>
@@ -25,7 +24,7 @@ for the fancyFunction inside fancy.py
 
 the HANDLER should be fancy.fancyFunction
 
-To run the image with payload.json and fancy.py is the working directory use the following command
+To run the image with payload.json and fancy.py in the working directory use the following command
     docker run --rm -it -v `pwd`:/mnt -e HANDLER=fancy.fancyFunction -e PAYLOAD_FILE=/mnt/payload.json iron/lambda-python
 
 In Lambda you'd submit the HANDLER parameter in the call to `create-function`.

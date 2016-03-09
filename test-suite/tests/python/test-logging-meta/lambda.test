@@ -3,14 +3,6 @@
   "runtime": "python2.7",
   "name": "logging-meta",
   "description": "Test default logging config compatibility.",
-  "event" : {
-  	"a" : 1,
-  	"b" : "a string",
-  	"null":  null,
-  	"obj" : {
-      "msg":"i'm an object"
-  	},
-  	"arr" : [1, "a string 2", null]
-  },
+  "event" : {},
   "timeout" : 5
 }

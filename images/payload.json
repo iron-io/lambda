@@ -1,9 +1,0 @@
-{
-    "str" :"a string",
-    "num": 123,
-    "obj" : {
-        "a" : "a",
-        "b" : "b"
-        },
-    "nullObj": null
-}

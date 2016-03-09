@@ -15,12 +15,12 @@ debugging and print ('loading...')
 
 
 class Context(object):
-#FIXME attributes should be set on start
     function_name = None
     function_version = None
-    invoked_function_arn = None
     memory_limit_in_mb = None
     aws_request_id = None
+
+    invoked_function_arn = None
     log_group_name = None
     log_stream_name = None
     identity = None
@@ -55,6 +55,10 @@ class Payload(object):
         return str(self.__dict__)
 
 
+class DynaCallerError(Exception):
+    pass
+
+
 class DynaCaller(object):
 
     def __init__(self, module, name):
@@ -62,31 +66,30 @@ class DynaCaller(object):
         self.funcName = name
 
     def locateFunc(self):
-        self.module = (self.locateModuleInMountFolder()
-            or self.locateModuleDefault())
-        if self.module is None:
-            print ("Failed to locate a module", file=sys.stderr)
-            return False
+        loaders = [self.locateModuleInMountFolder, self.locateModuleDefault]
+
+        lastError = None
+        for loader in loaders:
+            try:
+                self.module = loader()
+            except Exception as e:
+                lastError = e
+
+        if not (lastError is None):
+            raise lastError
+
         self.func = getattr(self.module, self.funcName)
         if self.func is None:
-            print ("Failed to locate a function inside module", file=sys.stderr)
-            return False
-        return True
+            raise DynaCallerError("Failed to locate a function inside module")
 
     def locateModuleDefault(self):
-        try:
-            return __import__(self.moduleName)
-        except Exception:
-            return None
+        return __import__(self.moduleName)
 
     def locateModuleInMountFolder(self):
         mountModuleLocation = '/mnt/' + self.moduleName + '.py'
         if not os.path.isfile(mountModuleLocation):
             return None
-        try:
-            return imp.load_source(self.moduleName, mountModuleLocation)
-        except Exception:
-            return None
+        return imp.load_source(self.moduleName, mountModuleLocation)
 
     def call(self, payload, context):
         return self.func(payload, context)
@@ -155,6 +158,13 @@ def getHANDLER():
 
 
 def configLogging(context):
+
+	# RequestIdFilter is used to add request_id field value into log line. More details could be found on the following links:
+	#  https://docs.python.org/2/howto/logging-cookbook.html#filters-contextual
+	#  https://docs.python.org/2/howto/logging-cookbook.html#an-example-dictionary-based-configuration
+
+
+
     class RequestIdFilter(logging.Filter):
         def filter(self, record):
             record.request_id = context.aws_request_id
@@ -250,9 +260,7 @@ debugging and print ('payload parsed as JSON')
 caller = DynaCaller(moduleName, funcName)
 
 try:
-    if not caller.locateFunc():
-        stopWithError("Failed to locate {module}.{func}"
-            .format(module=moduleName, func=funcName))
+    caller.locateFunc()
 except Exception as e:
     print (e, file=sys.stderr)
     stopWithError("Failed to locate {module}.{func}"
