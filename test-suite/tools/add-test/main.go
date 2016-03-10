@@ -72,13 +72,14 @@ func makeZip(dir string) ([]byte, error) {
 	return buffer.Bytes(), err
 }
 
-func createLambdaFunction(l *lambda.Lambda, code []byte, runtime, role, name, handler string) error {
+func createLambdaFunction(l *lambda.Lambda, code []byte, runtime, role, name, handler string, timeout int) error {
 	func_input := &lambda.CreateFunctionInput{
 		Code:         &lambda.FunctionCode{ZipFile: code},
 		Runtime:      aws.String(runtime),
 		Role:         aws.String(role),
 		FunctionName: aws.String(name),
 		Handler:      aws.String(handler),
+		Timeout:      aws.Int64(int64(timeout)),
 	}
 
 	resp, err := l.CreateFunction(func_input)
@@ -119,7 +120,7 @@ func addToLambda(dir string) error {
 
 	l := lambda.New(s)
 
-	err = createLambdaFunction(l, zipContents, desc.Runtime, lambdaRole, desc.Name, desc.Handler)
+	err = createLambdaFunction(l, zipContents, desc.Runtime, lambdaRole, desc.Name, desc.Handler, desc.Timeout)
 	return err
 }
 

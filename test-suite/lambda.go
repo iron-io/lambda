@@ -165,10 +165,9 @@ func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, wg *sync.W
 		output.WriteString(fmt.Sprintf("Error invoking function %s %s", name, err))
 		return
 	}
-	timeout := 30 * time.Second
-	if test.Timeout != 0 {
-		timeout = time.Duration(test.Timeout) * time.Second
-	}
+
+	latency := 1 //1 second for network and infrastructure timeouts
+	timeout := time.Duration(test.Timeout+latency) * time.Second
 
 	time.Sleep(timeout)
 
