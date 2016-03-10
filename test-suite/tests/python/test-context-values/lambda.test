@@ -1,0 +1,8 @@
+{
+  "handler": "test.run",
+  "runtime": "python2.7",
+  "name": "context-values",
+  "description": "Test context object compatibility #2.",
+  "event" : {},
+  "timeout" : 5
+}

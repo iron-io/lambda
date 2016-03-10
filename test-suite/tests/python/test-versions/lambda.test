@@ -1,0 +1,8 @@
+{
+  "handler": "test.run",
+  "runtime": "python2.7",
+  "name": "versions",
+  "description": "Test installed package versions.",
+  "event" : {},
+  "timeout" : 5
+}

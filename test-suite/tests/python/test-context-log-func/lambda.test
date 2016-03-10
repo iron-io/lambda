@@ -1,0 +1,8 @@
+{
+  "handler": "test.run",
+  "runtime": "python2.7",
+  "name": "context-log-func",
+  "description": "Test context.log method compatibility.",
+  "event" : {},
+  "timeout" : 5
+}

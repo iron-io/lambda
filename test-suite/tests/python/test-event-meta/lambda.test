@@ -1,0 +1,8 @@
+{
+  "handler": "test.run",
+  "runtime": "python2.7",
+  "name": "event-meta",
+  "description": "Extracts event attributes",
+  "event" : {},
+  "timeout" : 5
+}
