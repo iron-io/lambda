@@ -21,6 +21,14 @@ exports.run = function(event, context) {
   assert.ok(context.getRemainingTimeInMillis.length === 0,
             "context.getRemainingTimeInMillis takes zero arguments");
 
+  var timeLeft = context.getRemainingTimeInMillis();
+  assert.ok(timeLeft >= 0,
+            "context.getRemainingTimeInMillis returns a non-negative number");
+  setTimeout(function() {
+    var newLeft = context.getRemainingTimeInMillis();
+    assert.ok(newLeft < timeLeft, "subsequent call to context.getRemainingTimeInMillis() should report lower value.");
+  }, 500);
+
   // We can't check for equality since the AWS and Iron naming convention is different.
   assert.ok(typeof context.functionName == 'string' && context.functionName.match('context'), "context.functionName contains 'context'.");
 
@@ -28,4 +36,6 @@ exports.run = function(event, context) {
   assert.ok(typeof context.functionVersion == 'string' && context.functionVersion == "$LATEST", "context.functionVersion is $LATEST");
 
   assert.ok(typeof context.awsRequestId == 'string' && context.awsRequestId.length > 0, "context.awsRequestId is defined.");
+
+  assert.ok(typeof context.memoryLimitInMB == 'string' && parseInt(context.memoryLimitInMB) >= 0, "context.memoryLimitInMB is a string representing a non-negative number.");
 }

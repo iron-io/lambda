@@ -239,15 +239,17 @@ func RunImageWithPayload(imageName string, payload string) error {
 		return err
 	}
 
+	var allocatedMemory = int64(300 * 1024 * 1024)
 	envs := []string{"PAYLOAD_FILE=/mnt/payload.json"}
 	envs = append(envs, "AWS_LAMBDA_FUNCTION_NAME="+imageName)
 	envs = append(envs, "AWS_LAMBDA_FUNCTION_VERSION=$LATEST")
 	envs = append(envs, "TASK_ID="+uuid.NewV4().String())
+	envs = append(envs, fmt.Sprintf("TASK_MAXMEM=%d", allocatedMemory))
 
 	opts := docker.CreateContainerOptions{
 		Config: &docker.Config{
 			Env:       envs,
-			Memory:    1024 * 1024 * 1024,
+			Memory:    allocatedMemory,
 			CPUShares: 2,
 			Hostname:  "Hello",
 			Image:     imageName,
