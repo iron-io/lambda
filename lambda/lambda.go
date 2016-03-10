@@ -380,15 +380,16 @@ func PushImage(imageNameVersion string) error {
 		return err
 	}
 
-	// FIXME(nikhil): Is there a nicer way to pick a config?
 	var auth docker.AuthConfiguration
-	if len(auths.Configs) > 0 {
-		for _, a := range auths.Configs {
+	for _, a := range auths.Configs {
+		if strings.Contains(a.ServerAddress, "index.docker.io") {
 			auth = a
 			break
 		}
-	} else {
-		return errors.New("No docker authorizations found. Try `docker login`.")
+	}
+
+	if auth.ServerAddress == "" {
+		return errors.New("No Docker Hub (index.docker.io) authorization found. Try `docker login`.")
 	}
 
 	return client.PushImage(opts, auth)
