@@ -122,11 +122,20 @@ var Context = function() {
       contextSelf.succeed(result)
     }
   }
+
+  var plannedEnd = Date.now() + (getTimeoutInSeconds() * 1000);
+  this.getRemainingTimeInMillis = function() {
+    return Math.max(plannedEnd - Date.now(), 0);
+  }
 }
 
-Context.prototype.getRemainingTimeInMillis = function() {
-  // FIXME(nikhil): Obviously need to feed this in to the program.
-  return 42;
+function getTimeoutInSeconds() {
+  var t = parseInt(getEnv("TASK_TIMEOUT"));
+  if (Number.isNaN(t)) {
+    return 3600;
+  }
+
+  return t;
 }
 
 var getEnv = function(name) {
@@ -134,12 +143,39 @@ var getEnv = function(name) {
 }
 
 var makeCtx = function() {
+  var fnname = getEnv("AWS_LAMBDA_FUNCTION_NAME");
+  // FIXME(nikhil): Generate UUID.
+  var taskID = getEnv("TASK_ID");
+
+  var mem = getEnv("TASK_MAXMEM").toLowerCase();
+  var bytes = 300 * 1024 * 1024;
+
+  var scale = { 'b': 1, 'k': 1024, 'm': 1024*1024, 'g': 1024*1024*1024 };
+  // We don't bother validating too much, if the last character is not a number
+  // and not in the scale table we just return a default value.
+  // We use slice instead of indexing so that we always get an empty string,
+  // instead of undefined.
+  if (mem.slice(-1).match(/[0-9]/)) {
+    var a = parseInt(mem);
+    if (!Number.isNaN(a)) {
+      bytes = a;
+    }
+  } else {
+    var rem = parseInt(mem.slice(0, -1));
+    if (!Number.isNaN(rem)) {
+      var multiplier = scale[mem.slice(-1)];
+      if (multiplier) {
+        bytes = rem * multiplier
+      }
+    }
+  }
+
+  var memoryMB = bytes / (1024 * 1024);
+
   var ctx = new Context();
   Object.defineProperties(ctx, {
     "functionName": {
-      get: function() {
-        return getEnv("AWS_LAMBDA_FUNCTION_NAME");
-      },
+      value: fnname,
       enumerable: true,
     },
     "functionVersion": {
@@ -152,14 +188,12 @@ var makeCtx = function() {
       enumerable: true,
     },
     "memoryLimitInMB": {
-      // FIXME(nikhil): Should be filled in.
-      value: 256,
+      // Sigh, yes it is a string.
+      value: ""+memoryMB,
       enumerable: true,
     },
     "awsRequestId": {
-      get: function() {
-        return getEnv("TASK_ID");
-      },
+      value: taskID,
       enumerable: true,
     },
     "logGroupName": {
