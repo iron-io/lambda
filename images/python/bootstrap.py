@@ -52,19 +52,22 @@ class DynaCaller(object):
     def __init__(self, module, name):
         self.moduleName = module
         self.funcName = name
+        self.module = None
 
     def locateFunc(self):
         loaders = [self.locateModuleInMountFolder, self.locateModuleDefault]
 
-        lastError = None
-        for loader in loaders:
+        for i, loader in enumerate(loaders):
+            if not (self.module is None):
+                break;
             try:
                 self.module = loader()
             except Exception as e:
-                lastError = e
+                if i == len(loaders) - 1:
+                    raise
 
-        if not (lastError is None):
-            raise lastError
+        if self.module is None:
+            raise DynaCallerError("Failed to locate a module")
 
         self.func = getattr(self.module, self.funcName)
         if self.func is None:
@@ -146,11 +149,9 @@ def getHandlerName():
 
 def configLogging(context):
 
-	# RequestIdFilter is used to add request_id field value into log line. More details could be found on the following links:
-	#  https://docs.python.org/2/howto/logging-cookbook.html#filters-contextual
-	#  https://docs.python.org/2/howto/logging-cookbook.html#an-example-dictionary-based-configuration
-
-
+    # RequestIdFilter is used to add request_id field value into log line. More details could be found on the following links:
+    #  https://docs.python.org/2/howto/logging-cookbook.html#filters-contextual
+    #  https://docs.python.org/2/howto/logging-cookbook.html#an-example-dictionary-based-configuration
 
     class RequestIdFilter(logging.Filter):
         def filter(self, record):
