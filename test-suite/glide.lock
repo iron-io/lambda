@@ -1,0 +1,61 @@
+hash: bd75ec0b49c31e40d732d4bc627bf4c4b78187dab306f804c1b6806b6cb58324
+updated: 2016-03-09T15:57:52.11531567+05:30
+imports:
+- name: github.com/aws/aws-sdk-go
+  version: 2e7cf03d7f5c8a4b4c9f7341ddf1e13102845cf2
+  subpackages:
+  - aws
+  - aws/awserr
+  - aws/credentials
+  - aws/session
+  - service/cloudwatchlogs
+  - service/lambda
+  - aws/client
+  - aws/corehandlers
+  - aws/defaults
+  - aws/request
+  - private/endpoints
+  - aws/awsutil
+  - aws/client/metadata
+  - private/protocol
+  - private/protocol/jsonrpc
+  - private/signer/v4
+  - private/protocol/restjson
+  - aws/credentials/ec2rolecreds
+  - aws/ec2metadata
+  - private/protocol/json/jsonutil
+  - private/protocol/rest
+- name: github.com/fsouza/go-dockerclient
+  version: 9b6c9720043b74304a6dd07a2a901d16e7bf3d3d
+  subpackages:
+  - external/github.com/docker/docker/opts
+  - external/github.com/docker/docker/pkg/archive
+  - external/github.com/docker/docker/pkg/fileutils
+  - external/github.com/docker/docker/pkg/homedir
+  - external/github.com/docker/docker/pkg/stdcopy
+  - external/github.com/hashicorp/go-cleanhttp
+  - external/github.com/Sirupsen/logrus
+  - external/github.com/opencontainers/runc/libcontainer/user
+  - external/golang.org/x/sys/unix
+- name: github.com/go-ini/ini
+  version: 776aa739ce9373377cd16f526cdf06cb4c89b40f
+- name: github.com/iron-io/iron_go3
+  version: 4aec4b86e69b521ea83e4434e274630585b73b54
+  subpackages:
+  - worker
+  - api
+  - config
+- name: github.com/iron-io/lambda
+  version: 87d7e8b826b6f14fa15fb639e8f448fcfba9e7d0
+  subpackages:
+  - lambda
+  - test-suite/util
+- name: github.com/jmespath/go-jmespath
+  version: 0b12d6b521d83fc7f755e7cfc1b1fbdd35a01a74
+- name: github.com/satori/go.uuid
+  version: e673fdd4dea8a7334adbbe7f57b7e4b00bdc5502
+- name: github.com/sendgrid/sendgrid-go
+  version: 0bf6332788d0230b7da84a1ae68d7531073200e1
+- name: github.com/sendgrid/smtpapi-go
+  version: 08102729bcf72bfe74dde6c0da8e0423e94090ca
+devImports: []

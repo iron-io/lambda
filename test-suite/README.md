@@ -44,15 +44,18 @@ set up email filters).
 
 ### Running test suite
 
+We use [Glide](http://glide.sh) for dependency management. Otherwise vendor
+dependencies manually.
+
 Run the Docker image, or:
 
+    $ GOPATH/bin/glide install
     $ go build .
     $ ./test-suite
 
 ### Building Docker image
 
-    $ GOOS=linux GOARCH=amd64 go build .
-    $ docker build -t irontest/test-suite .
+    make
 
 Contributing
 ------------
