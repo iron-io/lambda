@@ -19,7 +19,11 @@ type TestDescription struct {
 	Runtime     string
 	Event       Payload
 	Description string // Completely ignored by test harness, just useful to convey intent of test.
-	Timeout     int
+
+	// The test's timeout in seconds, valid timeout as imposed by Lambda
+	// is between 1 and 300 inclusive.
+	// If no Timeout is specified the 30 sec default is used
+	Timeout int
 }
 
 func ReadTestDescription(dir string) (*TestDescription, error) {
@@ -35,6 +39,15 @@ func ReadTestDescription(dir string) (*TestDescription, error) {
 	}
 	normalizedRuntime := strings.Replace(desc.Runtime, ".", "_", -1)
 	desc.Name = fmt.Sprintf("lambda-test-suite-%s-%s", normalizedRuntime, desc.Name)
+
+	if desc.Timeout == 0 {
+		desc.Timeout = 30
+	} else if desc.Timeout < 1 {
+		desc.Timeout = 1
+	} else if desc.Timeout > 300 {
+		desc.Timeout = 300
+	}
+
 	return &desc, nil
 }
 

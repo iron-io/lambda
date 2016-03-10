@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/iron-io/iron_go3/worker"
 	"github.com/iron-io/lambda/test-suite/util"
@@ -93,10 +94,12 @@ func runOnIron(w *worker.Worker, wg *sync.WaitGroup, test *util.TestDescription,
 	}()
 
 	payload, _ := json.Marshal(test.Event)
+	timeout := time.Duration(test.Timeout) * time.Second
 
 	taskids, err := w.TaskQueue(worker.Task{
 		CodeName: fmt.Sprintf("%s/%s", imagePrefix, test.Name),
 		Payload:  string(payload),
+		Timeout:  &timeout,
 	})
 
 	if err != nil {
