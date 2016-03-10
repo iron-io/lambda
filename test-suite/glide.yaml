@@ -1,4 +1,6 @@
 package: github.com/iron-io/lambda/test-suite
+ignore:
+- github.com/iron-io/lambda
 import:
 - package: github.com/aws/aws-sdk-go
   version: ~1.1.9
@@ -12,9 +14,6 @@ import:
 - package: github.com/iron-io/iron_go3
   subpackages:
   - worker
-- package: github.com/iron-io/lambda
-  subpackages:
-  - lambda
 - package: github.com/satori/go.uuid
 - package: github.com/sendgrid/sendgrid-go
   version: ~2.0.0
