@@ -4,5 +4,5 @@
   "name": "versions",
   "description": "Test installed package versions.",
   "event" : {},
-  "timeout" : 5
+  "timeout" : 15
 }
