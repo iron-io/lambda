@@ -60,18 +60,24 @@ func loadTests(filter string) ([]*util.TestDescription, error) {
 		allFolders = append(allFolders, testFolders...)
 	}
 
+	testLocations := make(map[string]string)
 	for _, folder := range allFolders {
-		if filter != "" {
-			if !strings.Contains(folder, filter) {
-				continue
-			}
-		}
 
 		d, err := util.ReadTestDescription(folder)
 		if err != nil {
 			return descs, fmt.Errorf("Could not load test: %s error: %s", folder, err)
 		}
-		descs = append(descs, d)
+		key := d.Name
+		if otherFolder, ok := testLocations[key]; ok {
+			return descs, fmt.Errorf("Duplicate test name detected. Runtime: %s, Name: %s, Location1: %s, Location2: %s ", d.Runtime, d.Name, otherFolder, folder)
+		}
+
+		testLocations[key] = folder
+
+		if filter == "" || strings.Contains(folder, filter) {
+			descs = append(descs, d)
+		}
+
 	}
 	return descs, nil
 }
