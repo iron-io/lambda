@@ -1,0 +1,7 @@
+{
+  "handler": "lambdatest.Hello::myHandler",
+  "runtime": "java8",
+  "name": "resolution-ctx",
+  "description": "Pass integer and test that context method gets priority over non-context.",
+  "event": 2147483647
+}

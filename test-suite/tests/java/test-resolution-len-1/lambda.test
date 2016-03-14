@@ -1,0 +1,7 @@
+{
+  "handler": "lambdatest.Hello::myHandler",
+  "runtime": "java8",
+  "name": "resolution-len-1",
+  "description": "Pass integer and test that method with more args gets priority.",
+  "event": 2147483647
+}
