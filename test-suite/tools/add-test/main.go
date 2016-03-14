@@ -155,12 +155,21 @@ func addToIron(dir string) error {
 	return iron_lambda.RegisterWithIron(imageNameVersion, credentials.NewEnvCredentials())
 }
 
-func addTest(dir string) error {
-	if err := addToLambda(dir); err != nil {
-		return err
+type RegisterOn struct {
+	aws  bool
+	iron bool
+}
+
+func addTest(dir string, ro RegisterOn) error {
+	if ro.aws {
+		if err := addToLambda(dir); err != nil {
+			return err
+		}
 	}
-	if err := addToIron(dir); err != nil {
-		return err
+	if ro.iron {
+		if err := addToIron(dir); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -174,16 +183,20 @@ func main() {
 		log.Fatalf("IRON_LAMBDA_TEST_LAMBDA_ROLE not set")
 	}
 
+	noAws := flag.Bool("no-aws", false, "Do not register with AWS.")
+	noIron := flag.Bool("no-iron", false, "Do not register with IronWorker.")
 	flag.Parse()
 	if flag.NArg() < 1 {
 		fmt.Println(`Usage: ./add-test path/to/test [/more/paths...]
 
 This will package all files and subdirectories except lambda.test as a test.`)
+		flag.PrintDefaults()
 		return
 	}
 
+	p := RegisterOn{aws: !*noAws, iron: !*noIron}
 	for _, dir := range flag.Args() {
-		if err := addTest(dir); err != nil {
+		if err := addTest(dir, p); err != nil {
 			log.Fatal(err)
 		}
 	}
