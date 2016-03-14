@@ -224,6 +224,32 @@ test-harness pick up these new tests, you must recreate the `test-suite` Docker
 image and publish+register it as specified at the beginning of this guide. Also
 remember to add the tests to version control.
 
+#### Java tests
+
+The procedure for building Java tests is slightly involved. You will need Maven
+in your path.
+
+Copy one of the available tests to make changes:
+
+    cp -R tests/java/test-resolution-ctx tests/java/test-new-test
+
+You'll have to edit the following three files:
+
+    # pom.xml
+    Change artifactId to test name.
+
+    # lambda.test
+    Change test name and description and event.
+
+    # Makefile
+    Change the cp command's first argument.
+
+The last step is because the local-image and add-test tools require a file
+called `test-build.jar` for Java tests.
+
+The Makefile provides a convenient script to build the test, copy the JAR and
+register the test locally (for local testing).
+
 ### Removing a test
 
 TODO

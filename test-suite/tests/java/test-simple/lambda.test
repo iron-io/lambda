@@ -1,0 +1,9 @@
+{
+  "handler": "lambdatest.Hello::myHandlerPOJO",
+  "runtime": "java8",
+  "name": "simple",
+  "event": {
+    "firstName": "Iron",
+    "lastName": "Lambda"
+  }
+}
