@@ -11,13 +11,11 @@ import (
 	iron_lambda "github.com/iron-io/lambda/lambda"
 )
 
-type Payload map[string]interface{}
-
 type TestDescription struct {
 	Handler     string
 	Name        string
 	Runtime     string
-	Event       Payload
+	Event       interface{}
 	Description string // Completely ignored by test harness, just useful to convey intent of test.
 
 	// The test's timeout in seconds, valid timeout as imposed by Lambda

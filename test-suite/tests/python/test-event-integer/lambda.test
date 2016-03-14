@@ -1,0 +1,8 @@
+{
+  "handler": "test.run",
+  "runtime": "python2.7",
+  "name": "event-integer",
+  "description": "Integer payload",
+  "event" : 4294967296,
+  "timeout" : 5
+}
