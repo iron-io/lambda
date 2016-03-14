@@ -97,6 +97,7 @@ func runOnIron(w *worker.Worker, wg *sync.WaitGroup, test *util.TestDescription,
 	timeout := time.Duration(test.Timeout) * time.Second
 
 	taskids, err := w.TaskQueue(worker.Task{
+		Cluster:  "internal",
 		CodeName: fmt.Sprintf("%s/%s", imagePrefix, test.Name),
 		Payload:  string(payload),
 		Timeout:  &timeout,
