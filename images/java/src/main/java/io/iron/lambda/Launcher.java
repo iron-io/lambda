@@ -35,8 +35,8 @@ public class Launcher {
             System.err.println("Handler is not specified, please specify handler function (for example: 'example.Hello::myHandler')");
             System.exit(1);
         }
-        if (payload == null || payload.equals("")) {
-            System.err.println("Payload is empty, please specify payload");
+        if (payload == null) {
+            System.err.println("Payload should not be null. There is a problem in the Launcher.");
             System.exit(1);
         }
         String[] package_function = handler.split("::");
