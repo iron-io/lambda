@@ -32,16 +32,16 @@ public class Launcher {
 
     private static String[] validateInputParamsAndGetPackageMethod(String handler, String payload) {
         if (handler == null) {
-            System.out.println("Handler is not specified, please specify handler function (for example: 'example.Hello::myHandler')");
+            System.err.println("Handler is not specified, please specify handler function (for example: 'example.Hello::myHandler')");
             System.exit(1);
         }
         if (payload == null || payload.equals("")) {
-            System.out.println("Payload is empty, please specify payload");
+            System.err.println("Payload is empty, please specify payload");
             System.exit(1);
         }
         String[] package_function = handler.split("::");
         if (package_function[0] == null || package_function[0].equals("") || package_function[1] == null || package_function[1].equals("")) {
-            System.out.println("Handler is not specified, please specify handler function (for example: 'example.Hello::myHandler')");
+            System.err.println("Handler is not specified, please specify handler function (for example: 'example.Hello::myHandler')");
             System.exit(1);
         }
         return package_function;
@@ -107,7 +107,7 @@ public class Launcher {
             }
         }
         if (!processed) {
-            System.out.println(String.format("Handler %s with simple, POJO, or IO(input/output) types not found", handlerName));
+            System.err.println(String.format("Handler %s with simple, POJO, or IO(input/output) types not found", handlerName));
         }
     }
 
@@ -136,7 +136,7 @@ public class Launcher {
         Method[] matchedArray = matches.toArray(Method[]::new);
 
         if (matchedArray.length == 0) {
-            System.out.println(String.format("Method %s not found", handlerName));
+            System.err.println(String.format("Method %s not found", handlerName));
             System.exit(1);
         }
 
