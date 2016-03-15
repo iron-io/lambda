@@ -1,0 +1,6 @@
+{
+  "handler": "lambdatest.Hello::myHandler",
+  "runtime": "java8",
+  "name": "context",
+  "description": "Test context functions."
+}
