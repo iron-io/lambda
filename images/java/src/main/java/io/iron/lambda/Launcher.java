@@ -172,6 +172,11 @@ public class Launcher {
           return -1;
         });
 
+        Class returnType = matchedArray[0].getReturnType();
+        if (!returnType.getTypeName().equals("void")) {
+            System.err.println(String.format("Handler can only have 'void' return type. Found '%s'.", returnType.getTypeName()));
+            System.exit(1);
+        }
         runMethod(matchedArray[0], payload, cls, handlerName);
     }
 
