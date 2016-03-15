@@ -1,0 +1,7 @@
+{
+  "handler": "test.run",
+  "runtime": "nodejs",
+  "name": "event-integer",
+  "description": "Test non-JSON object payload.",
+  "event": 4294967296
+}

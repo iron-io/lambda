@@ -227,7 +227,7 @@ function run() {
   var path = process.env["PAYLOAD_FILE"];
   if (path) {
     try {
-      var contents = fs.readFileSync(path);
+      var contents = fs.readFileSync(path, { encoding: 'utf8' });
       payload = JSON.parse(contents);
     } catch(e) {
       console.error("bootstrap: Error reading payload file", e)
