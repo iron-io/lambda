@@ -49,7 +49,7 @@ public class Hello {
         return arrayList;
     }
 
-    public static ResponseClass myHandlerPOJO(RequestClass request, Context context){
-        return new ResponseClass(String.format("Hello %s %s" , request.firstName, request.lastName));
+    public static void myHandlerPOJO(RequestClass request, Context context){
+        System.out.println(String.format("Hello %s %s" , request.firstName, request.lastName));
     }
 }
