@@ -2,7 +2,7 @@ machine:
   environment:
     GOPATH: $HOME
     GOROOT: $HOME/go
-    PATH: $GOROOT/bin:$PATH
+    PATH: $GOROOT/bin:$HOME/bin:$PATH
     GO15VENDOREXPERIMENT: 1
     CHECKOUT_DIR: $HOME/$CIRCLE_PROJECT_REPONAME
     GH_IRON: $HOME/src/github.com/iron-io
@@ -21,15 +21,27 @@ dependencies:
     # install go1.5
     - wget https://storage.googleapis.com/golang/go1.5.linux-amd64.tar.gz
     - tar -C $HOME -xvzf go1.5.linux-amd64.tar.gz
+    # install glide 0.9.3
+    - wget https://github.com/Masterminds/glide/releases/download/0.9.3/glide-0.9.3-linux-amd64.tar.gz
+    - tar -C $HOME/bin -xvzf glide-0.9.3-linux-amd64.tar.gz --strip=1
   override:
     # this was being dumb, don't want it to auto detect we are a go repo b/c vendoring
-    - which go
+    - go version
+    - glide --version
 
 test:
   pre:
-    - docker build -t iron/lambda-nodejs ./images/nodejs
-    - go get github.com/fsouza/go-dockerclient
+    # make lambda images for node, python & java
+    - make --directory=./images/node
+    - make --directory=./images/python
+    # no java for now
+    #- make --directory=./images/java
+    - glide install:
+        pwd: $GO_PROJECT/$CIRCLE_PROJECT_REPONAME/lambda
+    - glide install:
+        pwd: $GO_PROJECT/$CIRCLE_PROJECT_REPONAME/test-suite
   override:
     - go build .:
         pwd: $GO_PROJECT/$CIRCLE_PROJECT_REPONAME/lambda
-    - go test -v ./lambda
+    - go test -v .:
+        pwd: $GO_PROJECT/$CIRCLE_PROJECT_REPONAME/lambda

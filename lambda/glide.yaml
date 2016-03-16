@@ -1,0 +1,11 @@
+package: github.com/iron-io/lambda/lambda
+import:
+- package: github.com/aws/aws-sdk-go
+  version: ~1.1.9
+  subpackages:
+  - aws/credentials
+- package: github.com/fsouza/go-dockerclient
+- package: github.com/iron-io/iron_go3
+  subpackages:
+  - worker
+- package: github.com/satori/go.uuid
