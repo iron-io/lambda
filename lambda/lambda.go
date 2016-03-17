@@ -33,7 +33,7 @@ var ErrorNoFiles = errors.New("No files to add to image")
 // expectation is that the base image sets up the current working directory
 // inside the image correctly.  `handler` is set to be passed to node-lambda
 // for now, but we may have to change this to accomodate other stacks.
-func makeDockerfile(base string, handler string, files ...FileLike) ([]byte, error) {
+func makeDockerfile(base string, package_ string, handler string, files ...FileLike) ([]byte, error) {
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("FROM %s\n", base))
 
@@ -46,8 +46,14 @@ func makeDockerfile(base string, handler string, files ...FileLike) ([]byte, err
 		buf.WriteString(fmt.Sprintf("ADD [\"%s\", \"./%s\"]\n", info.Name(), info.Name()))
 	}
 
+	buf.WriteString("CMD [")
+	if package_ != "" {
+		buf.WriteString(fmt.Sprintf("\"%s\", ", package_))
+	}
 	// FIXME(nikhil): Validate handler.
-	buf.WriteString(fmt.Sprintf("CMD [\"%s\"]\n", handler))
+	buf.WriteString(fmt.Sprintf("\"%s\"", handler))
+	buf.WriteString("]\n")
+
 	return buf.Bytes(), nil
 }
 
@@ -157,6 +163,7 @@ func getClient() (*docker.Client, error) {
 type CreateImageOptions struct {
 	Name          string
 	Base          string
+	Package       string // Used for Java, empty string for others.
 	Handler       string
 	OutputStream  io.Writer
 	RawJSONStream bool
@@ -171,7 +178,7 @@ func CreateImage(opts CreateImageOptions, files ...FileLike) error {
 		return ErrorNoFiles
 	}
 
-	df, err := makeDockerfile(opts.Base, opts.Handler, files...)
+	df, err := makeDockerfile(opts.Base, opts.Package, opts.Handler, files...)
 	if err != nil {
 		return err
 	}

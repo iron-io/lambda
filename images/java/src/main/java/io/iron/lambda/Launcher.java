@@ -1,22 +1,28 @@
+package io.iron.lambda;
+
 import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
-import com.amazonaws.services.lambda.runtime.ClientContext;
-import com.amazonaws.services.lambda.runtime.CognitoIdentity;
-import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 
-import com.google.gson.Gson;
-
-public class LambdaLauncher {
+public class Launcher {
     public static void main(String[] args) {
-        String handler = System.getenv("handler");
-        String payload = System.getenv("payload");
+        String handler = args[0];
+        String payload = "";
+        try {
+            String file = System.getenv("PAYLOAD_FILE");
+            payload = new String(Files.readAllBytes(Paths.get(file)));
+        } catch (IOException ioe) {
+            // Should probably log this somewhere useful but not in the output.
+        }
+
         try {
             String[] packageMethod = validateInputParamsAndGetPackageMethod(handler, payload);
-            LambdaLauncher ll = new LambdaLauncher();
+            Launcher ll = new Launcher();
             ll.launchMethod(packageMethod, payload);
         } catch (Exception e) {
             e.printStackTrace();
@@ -40,24 +46,28 @@ public class LambdaLauncher {
         return package_function;
     }
 
-    public void launchMethod(String[] packageHandler, String payload) throws Exception {
+    private void launchMethod(String[] packageHandler, String payload) throws Exception {
         boolean processed = false;
-        boolean classFound = false;
+        boolean methodFound = false;
         Object result = null;
-        String packageName = packageHandler[0];
+        String packageClass = packageHandler[0];
         String handlerName = packageHandler[1];
 
         AWSContext aws_ctx = new AWSContext();
 
-        Class cls = Class.forName(packageName); //get class in package
+        Class cls = Class.forName(packageClass); //get class in package
         Object lambdaClass = cls.newInstance();
+
+        String packageName = lambdaClass.getClass().getPackage().getName();
+
+        List<String> classNames = new FastClasspathScanner(packageName).scan().getNamesOfAllClasses();
+        String packageNamePrefix = packageName + ".";
 
         Method[] declaredMethods = cls.getDeclaredMethods();
 
         for (Method lambdaMethod : declaredMethods) {
             if (Objects.equals(lambdaMethod.getName(), handlerName)) {  //if method name in user class == method name in env var
-                System.out.println(String.format("Found package: %s and method: %s", packageName, handlerName));
-                classFound = true;
+                methodFound = true;
 
                 Class[] parameterTypes = lambdaMethod.getParameterTypes();
                 if (!parameterTypes[parameterTypes.length - 1].getTypeName().equals("com.amazonaws.services.lambda.runtime.Context")) {
@@ -71,7 +81,7 @@ public class LambdaLauncher {
                     result = new String(out.toByteArray(), "UTF-8");
                     processed = true;
                 // POJO, map, list
-                } else if (checkIfLambdaMethodRequiredPOJO(parameterTypes, cls.getClasses()) || checkIfLambdaMethodRequiredMap(parameterTypes) || checkIfLambdaMethodRequiredList(parameterTypes)) {
+                } else if (checkIfLambdaMethodRequiredPOJO(parameterTypes, classNames, packageNamePrefix) || checkIfLambdaMethodRequiredMap(parameterTypes) || checkIfLambdaMethodRequiredList(parameterTypes)) {
                     result = ClassTypeHelper.gson.toJson(lambdaMethod.invoke(lambdaClass, ClassTypeHelper.gson.fromJson(payload, parameterTypes[0]), aws_ctx));
                     processed = true;
                 // int, string, bool
@@ -89,22 +99,23 @@ public class LambdaLauncher {
                 }
             }
         }
-        if (!classFound) {
-            System.out.println(String.format("Class %s not found", packageName));
+        if (!methodFound) {
+            System.out.println(String.format("Method %s not found", handlerName));
             System.exit(1);
         }
-        System.out.println(processed ? String.format("Method %s executed with result: %s", handlerName, (String) result) :
-                String.format("Handler %s with simple, POJO, or IO(input/output) types not found", handlerName));
+        if (!processed) {
+            System.out.println(String.format("Handler %s with simple, POJO, or IO(input/output) types not found", handlerName));
+        }
     }
 
     public boolean checkIfLambdaMethodRequiredIOStreams(Class[] parameterTypes) {
         return parameterTypes.length == 3 && parameterTypes[0].getTypeName().equals("java.io.InputStream") && parameterTypes[1].getTypeName().equals("java.io.OutputStream");
     }
 
-    public boolean checkIfLambdaMethodRequiredPOJO(Class[] parameterTypes, Class[] classes) {
+    public boolean checkIfLambdaMethodRequiredPOJO(Class[] parameterTypes, List<String> classNames, String packageNamePrefix) {
         boolean classExist = false;
-        for (Class clazz : classes) {
-            if (Objects.equals(clazz.getName(), parameterTypes[0].getTypeName())) {
+        for (String className : classNames) {
+            if (className.startsWith(packageNamePrefix) && className.toLowerCase().contains(parameterTypes[0].getTypeName().toLowerCase())) {
                 classExist = true;
                 break;
             }
@@ -122,84 +133,4 @@ public class LambdaLauncher {
     private boolean checkIfLambdaMethodRequiredPrimitiveType(Class[] parameterTypes) {
         return parameterTypes.length == 2 && ClassTypeHelper.isSimpleType(parameterTypes[0]);
     }
-
-    private class AWSContext implements Context {
-        @Override
-        public String getAwsRequestId() {
-            return null;
-        }
-
-        @Override
-        public String getLogGroupName() {
-            return null;
-        }
-
-        @Override
-        public String getLogStreamName() {
-            return null;
-        }
-
-        @Override
-        public String getFunctionName() {
-            return null;
-        }
-
-        @Override
-        public String getFunctionVersion() {
-            return null;
-        }
-
-        @Override
-        public String getInvokedFunctionArn() {
-            return null;
-        }
-
-        @Override
-        public CognitoIdentity getIdentity() {
-            return null;
-        }
-
-        @Override
-        public ClientContext getClientContext() {
-            return null;
-        }
-
-        @Override
-        public int getRemainingTimeInMillis() {
-            return 0;
-        }
-
-        @Override
-        public int getMemoryLimitInMB() {
-            return 0;
-        }
-
-        @Override
-        public LambdaLogger getLogger() {
-            return null;
-        }
-    }
-}
-
-
-
-class ClassTypeHelper {
-    public static final Gson gson = new Gson();
-    private static final Set<Class<?>> CLASS_TYPES = getSimpleTypes();
-
-    private ClassTypeHelper() {}
-
-    public static boolean isSimpleType(Class<?> classType) {
-        return CLASS_TYPES.contains(classType);
-    }
-
-    private static Set<Class<?>> getSimpleTypes() {
-        Set<Class<?>> ret = new HashSet<>();
-        ret.add(String.class);
-        ret.add(Integer.class);
-        ret.add(int.class);
-        ret.add(Boolean.class);
-        return ret;
-    }
-
 }

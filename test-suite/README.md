@@ -140,6 +140,37 @@ Event - JSON payload sent to the function and worker.
 Timeout - the duration in seconds to wait for finishing AWS Lambda Function event processing.
 If not specified the default value of 30 is used
 
+
+### A note on Java tests
+
+The Java build process is a little cumbersome. First, write your test. Keep it
+in the lambdatest package. You'll want to use maven or similar to build the
+package. The test directory layout will look like:
+
+    test-suite/tests/java/test-simple/
+    ├── lambda.test
+    ├── pom.xml
+    ├── src
+    │   └── main
+    │       └── java
+    │           └── lambdatest
+    │               └── TestFile.java
+    ├── target
+    │   ├── ...
+    │   └── test-simple-1.0.jar
+    └── test-build.jar
+
+Due to the complications of uploading Java functions to AWS, the harness only
+supports one style of Java functions, which is to create a JAR and upload the
+JAR to AWS. This means, specifically for Java tests, the harness and tools will
+exclude all files except the `test-build.jar`. You MUST copy the Maven
+generated file from `target` to `test-build.jar` before using `add-test` or
+other tools. The test harness does not support non-JSON payloads right now.
+Logging is easiest to do by `System.out.println()`.
+
+It seems like Java images don't always run from the test-suite. It could be
+because they are large in size, or due to something else.
+
 ### Testing a test locally
 
 `IRON_LAMBDA_TEST_LAMBDA_PREFIX=irontest` must be set.

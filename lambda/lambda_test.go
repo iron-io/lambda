@@ -49,11 +49,11 @@ func buildAndClean(name, base, handler, testdir string) error {
 		return err
 	}
 
-	return CreateImage(CreateImageOptions{name, base, handler, ioutil.Discard, false}, files...)
+	return CreateImage(CreateImageOptions{name, base, "", handler, ioutil.Discard, false}, files...)
 }
 
 func TestCreateImageEmpty(t *testing.T) {
-	err := CreateImage(CreateImageOptions{"iron-test/lambda-nodejs-empty", baseImage, "test.run", ioutil.Discard, false})
+	err := CreateImage(CreateImageOptions{"iron-test/lambda-nodejs-empty", baseImage, "", "test.run", ioutil.Discard, false})
 	if err == nil {
 		t.Fatal("Expected error when no files passed")
 	}

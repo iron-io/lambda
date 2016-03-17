@@ -155,6 +155,8 @@ func cleanAws(old_output, output, runtime string) (string, error) {
 		return cleanNodeJsAwsOutput(output)
 	case "python2.7":
 		return cleanPython27AwsOutput(output)
+	case "java8":
+		return cleanNodeJsAwsOutput(output)
 	default:
 		return output, nil
 	}

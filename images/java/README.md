@@ -1,22 +1,41 @@
 Support for running java Lambda functions.
 
+Compile lambda launcher and create an lambda-java base image:
 
-Create an image with
-
-    sudo docker build -t iron/lambda-java .
-
+    make
 
 Running
 -------
 
-Compile your code and create jar file (compile example project in example folder with maven)
+Compile your code with maven (you can compile example project in examples folder)
 
     mvn package
 
-Run docker container inside folder with compiled jar file
+Then build docker image and run docker container, you can set handler and payload in Dockerfile (CMD string, second param for handler, third for payload)
 
-    export handler="example.Hello::myHandlerPOJO"
-    export payload='{ "firstName":"John", "lastName":"Doe" }'
-    docker run -ti -e "handler=example.Hello::myHandler" -e "payload=asd" -e "JAR_ZIP_FILENAME=lambda-java-example.jar" -v $(pwd):/app -w /app iron/lambda-java
+    docker build -t lambda-java-my .
+    docker run lambda-java-my
 
-`handler` env var for package and handler function, `payload` env for payload (int, string, json), `JAR_ZIP_FILENAME` env for filename of compiled jar
+Or you can set handler and payload in env vars
+
+    docker run -ti -e "HANDLER=example.Hello::myHandlerIO" -e "PAYLOAD_FILE=test_string" lambda-java-my
+
+Examples of `handler` and `payload` params:
+
+    HANDLER=example.Hello::myHandlerInt
+    PAYLOAD_FILE=1122
+
+    HANDLER=example.Hello::myHandlerString
+    PAYLOAD_FILE=test_string
+
+    HANDLER=example.Hello::myHandlerIO
+    payload=test_input_line
+
+    HANDLER=example.Hello::myHandlerMap
+    PAYLOAD_FILE={\"zero\":\"Zero Element\",\"third\":\"Third Element!\"}
+
+    HANDLER=example.Hello::myHandlerList
+    PAYLOAD_FILE=[{\"user\":\"1\",\"pass\":\"2\",\"secretCode\":\"3\"}]
+
+    HANDLER=example.Hello::myHandlerPOJO
+    PAYLOAD_FILE={ \"firstName\":\"John\", \"lastName\":\"Doe\" }
