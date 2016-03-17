@@ -30,7 +30,7 @@ class Context(object):
         self.function_name = getAWS_LAMBDA_FUNCTION_NAME()
         self.function_version = getAWS_LAMBDA_FUNCTION_VERSION()
         self.aws_request_id = getREQUEST_ID()
-        self.memory_limit_in_mb = int(getTASK_MAXMEM() / 1024 / 1024)
+        self.memory_limit_in_mb = int(getTASK_MAXRAM() / 1024 / 1024)
 
     def get_remaining_time_in_millis(self):
         remaining = plannedEnd - time.time()
@@ -115,9 +115,9 @@ def getTASK_TIMEOUT():
     return os.environ.get('TASK_TIMEOUT') or 3600
 
 
-def getTASK_MAXMEM():
+def getTASK_MAXRAM():
     # IronWorker uses MAXMEM, Hybrid uses MAXRAM.
-    maxmemFlag = os.environ.get('TASK_MAXMEM') or os.environ.get('TASK_MAXRAM') or '300m'
+    maxmemFlag = os.environ.get('TASK_MAXRAM') or '300m'
     suffix = maxmemFlag[-1:]
     theNumber = int(maxmemFlag[:-1])
     factor = 1024

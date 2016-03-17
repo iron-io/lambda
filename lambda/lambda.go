@@ -251,7 +251,7 @@ func RunImageWithPayload(imageName string, payload string) error {
 	envs = append(envs, "AWS_LAMBDA_FUNCTION_NAME="+imageName)
 	envs = append(envs, "AWS_LAMBDA_FUNCTION_VERSION=$LATEST")
 	envs = append(envs, "TASK_ID="+uuid.NewV4().String())
-	envs = append(envs, fmt.Sprintf("TASK_MAXMEM=%d", allocatedMemory))
+	envs = append(envs, fmt.Sprintf("TASK_MAXRAM=%d", allocatedMemory))
 
 	opts := docker.CreateContainerOptions{
 		Config: &docker.Config{
