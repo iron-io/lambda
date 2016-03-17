@@ -16,87 +16,83 @@ public class AWSContext implements Context {
 
     // Constructs a context from environment variables.
     public AWSContext() {
-      init();
+        init();
     }
 
     private void init() {
-      functionName = System.getenv("AWS_LAMBDA_FUNCTION_NAME");
-      if (functionName == null) {
-        functionName = "";
-      }
+        functionName = System.getenv("AWS_LAMBDA_FUNCTION_NAME");
+        if (functionName == null) {
+            functionName = "";
+        }
 
-      functionVersion = System.getenv("AWS_LAMBDA_FUNCTION_VERSION");
-      if (functionVersion == null) {
-        functionVersion = "$LATEST";
-      }
+        functionVersion = System.getenv("AWS_LAMBDA_FUNCTION_VERSION");
+        if (functionVersion == null) {
+            functionVersion = "$LATEST";
+        }
 
-      requestId = System.getenv("TASK_ID");
-      if (requestId == null) {
-        requestId = UUID.randomUUID().toString();
-      }
+        requestId = System.getenv("TASK_ID");
+        if (requestId == null) {
+            requestId = UUID.randomUUID().toString();
+        }
 
-      figureOutTime();
-      figureOutMemory();
+        figureOutTime();
+        figureOutMemory();
     }
 
     private void figureOutTime() {
-      long startTime = System.currentTimeMillis();
-      String timeoutEnv = System.getenv("TASK_TIMEOUT");
-      if (timeoutEnv == null) {
-        timeoutEnv = "";
-      }
-
-      long timeout = 3600;
-      try {
-        timeout = Integer.parseInt(timeoutEnv);
-      } catch (Exception e) {
-      }
-
-      endTime = startTime + timeout*1000;
+        long startTime = System.currentTimeMillis();
+        String timeoutEnv = System.getenv("TASK_TIMEOUT");
+        if (timeoutEnv == null) {
+            timeoutEnv = "";
+        }
+  
+        long timeout = 3600;
+        try {
+            timeout = Integer.parseInt(timeoutEnv);
+        } catch (Exception e) {
+        }
+  
+        endTime = startTime + timeout*1000;
     }
 
     private void figureOutMemory() {
-      String memEnv = System.getenv("TASK_MAXMEM");
-      if (memEnv == null) {
-        memEnv = "";
-      }
-
-      int bytes = 300 * 1024 * 1024;
-
-      if (Character.isDigit(memEnv.charAt(memEnv.length() - 1))) {
-        try {
-          bytes = Integer.parseInt(memEnv);
-        } catch(Exception e) {
-        }
-      } else {
-        char unit = memEnv.charAt(memEnv.length() - 1);
-        try {
-          int value = Integer.parseInt(memEnv.substring(0, memEnv.length() - 1));
-          int multiplier = -1;
-          switch (unit) {
-            case 'b': multiplier = 1; break;
-            case 'k': multiplier = 1024; break;
-            case 'm': multiplier = 1024 * 1024; break;
-            case 'g': multiplier = 1024 * 1024 * 1024; break;
-          }
-
-          if (multiplier >= 0) {
-            bytes = value * multiplier;
-          }
-        } catch(Exception e) {
+        String memEnv = System.getenv("TASK_MAXMEM");
+        if (memEnv == null) {
+            memEnv = "";
         }
 
-        memory = bytes / 1024 / 1024;
-      }
+        int bytes = 300 * 1024 * 1024;
 
-      try {
-      } catch(Exception e) {
-      }
+        if (memEnv.length() > 0 && Character.isDigit(memEnv.charAt(memEnv.length() - 1))) {
+            try {
+              bytes = Integer.parseInt(memEnv);
+            } catch(Exception e) {
+            }
+        } else if (memEnv.length() > 0) {
+            char unit = memEnv.charAt(memEnv.length() - 1);
+            try {
+                int value = Integer.parseInt(memEnv.substring(0, memEnv.length() - 1));
+                int multiplier = -1;
+                switch (unit) {
+                    case 'b': multiplier = 1; break;
+                    case 'k': multiplier = 1024; break;
+                    case 'm': multiplier = 1024 * 1024; break;
+                    case 'g': multiplier = 1024 * 1024 * 1024; break;
+                }
+
+                if (multiplier >= 0) {
+                    bytes = value * multiplier;
+                }
+            } catch(Exception e) {
+            }
+
+            memory = bytes / 1024 / 1024;
+        }
     }
 
     @Override
     public String getAwsRequestId() {
-      return requestId;
+        return requestId;
     }
 
     @Override
@@ -136,13 +132,13 @@ public class AWSContext implements Context {
 
     @Override
     public int getRemainingTimeInMillis() {
-      int duration = (int)(endTime - System.currentTimeMillis());
-      return Math.max(duration, 0);
+        int duration = (int)(endTime - System.currentTimeMillis());
+        return Math.max(duration, 0);
     }
 
     @Override
     public int getMemoryLimitInMB() {
-      return memory;
+        return memory;
     }
 
     @Override
