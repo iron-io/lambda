@@ -1,0 +1,39 @@
+hash: 9b7cc1bc2b97edaeaf112bfd4bf7c728916e635cf66e76210fd0f6df8caa0b0b
+updated: 2016-03-16T11:56:33.753917009+06:00
+imports:
+- name: github.com/aws/aws-sdk-go
+  version: c38eb9eaa3b9782b6a9dc9097911a014680aab6c
+  subpackages:
+  - aws/credentials
+  - aws/awserr
+- name: github.com/fsouza/go-dockerclient
+  version: cec3f19b1d800de38185ec0e08446156254ec463
+  subpackages:
+  - external/github.com/docker/docker/opts
+  - external/github.com/docker/docker/pkg/archive
+  - external/github.com/docker/docker/pkg/fileutils
+  - external/github.com/docker/docker/pkg/homedir
+  - external/github.com/docker/docker/pkg/stdcopy
+  - external/github.com/hashicorp/go-cleanhttp
+  - external/github.com/Sirupsen/logrus
+  - external/github.com/docker/docker/pkg/idtools
+  - external/github.com/docker/docker/pkg/ioutils
+  - external/github.com/docker/docker/pkg/longpath
+  - external/github.com/docker/docker/pkg/pools
+  - external/github.com/docker/docker/pkg/promise
+  - external/github.com/docker/docker/pkg/system
+  - external/github.com/opencontainers/runc/libcontainer/user
+  - external/golang.org/x/sys/unix
+  - external/golang.org/x/net/context
+  - external/github.com/docker/go-units
+- name: github.com/go-ini/ini
+  version: 776aa739ce9373377cd16f526cdf06cb4c89b40f
+- name: github.com/iron-io/iron_go3
+  version: 4aec4b86e69b521ea83e4434e274630585b73b54
+  subpackages:
+  - worker
+  - api
+  - config
+- name: github.com/satori/go.uuid
+  version: e673fdd4dea8a7334adbbe7f57b7e4b00bdc5502
+devImports: []
