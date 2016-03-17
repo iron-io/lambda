@@ -55,7 +55,7 @@ APIs. Lambda functions created by users are simply auto-generated Docker images
 layered onto these base images.
 
 Images are located in `./images/<platform>` and have a Makefile to package the
-bootstrap and create the image. Note that the JavaScript and Python scripts are
+bootstrap and create the image. Note that the Node.js and Python scripts are
 not compiled or linted in any form, so make sure you test it out.
 
 All changes that affect the Lambda environment should include tests added to
