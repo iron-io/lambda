@@ -58,7 +58,11 @@ public class AWSContext implements Context {
     private void figureOutMemory() {
         String memEnv = System.getenv("TASK_MAXMEM");
         if (memEnv == null) {
-            memEnv = "";
+            // On hybrid.
+            memEnv = System.getenv("TASK_MAXRAM");
+            if (memEnv == null) {
+                memEnv = "";
+            }
         }
 
         int bytes = 300 * 1024 * 1024;
