@@ -133,14 +133,30 @@ func cleanPython27AwsOutput(output string) (string, error) {
 
 }
 
-func clean(output, runtime string) (string, error) {
+func cleanAwsGeneric(old_output, output string) (string, error) {
+	if old_output == output {
+		return "", errors.New("No change in the log")
+	}
+
+	if strings.HasPrefix(output, old_output) {
+		return output[len(old_output):], nil
+	}
+	return output, nil
+}
+
+func cleanAws(old_output, output, runtime string) (string, error) {
+	output, err := cleanAwsGeneric(old_output, output)
+	if err != nil {
+		return "", err
+	}
+
 	switch runtime {
 	case "nodejs":
 		return cleanNodeJsAwsOutput(output)
 	case "python2.7":
 		return cleanPython27AwsOutput(output)
 	default:
-		return output, (error)(nil)
+		return output, nil
 	}
 }
 
@@ -153,6 +169,11 @@ func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, wg *sync.W
 
 	name := test.Name
 
+	old_invocation_log, err := getLog(cw, name)
+	if err != nil {
+		old_invocation_log = ""
+	}
+
 	payload, _ := json.Marshal(test.Event)
 
 	invoke_input := &lambda.InvokeInput{
@@ -160,7 +181,7 @@ func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, wg *sync.W
 		InvocationType: aws.String("Event"),
 		Payload:        payload,
 	}
-	_, err := l.Invoke(invoke_input)
+	_, err = l.Invoke(invoke_input)
 	if err != nil {
 		output.WriteString(fmt.Sprintf("Error invoking function %s %s", name, err))
 		return
@@ -177,7 +198,7 @@ func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, wg *sync.W
 		return
 	}
 
-	final, err := clean(invocation_log, test.Runtime)
+	final, err := cleanAws(old_invocation_log, invocation_log, test.Runtime)
 
 	if err != nil {
 		output.WriteString(fmt.Sprintf("Error cleaning log %s %s", name, err))
