@@ -65,12 +65,14 @@ var Context = function() {
     }
 
     var str;
+    var failed = false;
     try {
       str = JSON.stringify(result)
       // Succeed does not output to log, it only responds to the HTTP request.
     } catch(e) {
       // Set X-Amz-Function-Error: Unhandled header
-      return contextSelf.fail("Unable to stringify body as json: " + e);
+      console.log("Unable to stringify body as json: " + e);
+      failed = true;
     }
 
     // FIXME(nikhil): Return 202 or 200 based on invocation type and set response
@@ -78,7 +80,7 @@ var Context = function() {
 
     // OK, everything good.
     concluded = true;
-    process.nextTick(function() { process.exit(0) })
+    process.nextTick(function() { process.exit(failed ? 1 : 0) })
   }
 
   this.fail = function(error) {
