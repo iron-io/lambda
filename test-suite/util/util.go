@@ -96,7 +96,11 @@ func MakeImage(dir string, desc *TestDescription, imageNameVersion string) error
 	}
 
 	// FIXME(nikhil): Use some configuration username.
-	err = iron_lambda.CreateImage(iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, "test-build.jar", desc.Handler, os.Stdout, false}, files...)
+	if desc.Runtime == "java8" {
+		err = iron_lambda.CreateImage(iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, "test-build.jar", desc.Handler, os.Stdout, false}, files...)
+	} else {
+		err = iron_lambda.CreateImage(iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, "", desc.Handler, os.Stdout, false}, files...)
+	}
 	return err
 }
 
