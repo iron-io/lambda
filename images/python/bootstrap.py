@@ -116,7 +116,8 @@ def getTASK_TIMEOUT():
 
 
 def getTASK_MAXMEM():
-    maxmemFlag = os.environ.get('TASK_MAXMEM') or '300m'
+    # IronWorker uses MAXMEM, Hybrid uses MAXRAM.
+    maxmemFlag = os.environ.get('TASK_MAXMEM') or os.environ.get('TASK_MAXRAM') or '300m'
     suffix = maxmemFlag[-1:]
     theNumber = int(maxmemFlag[:-1])
     factor = 1024

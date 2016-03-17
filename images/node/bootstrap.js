@@ -148,6 +148,10 @@ var makeCtx = function() {
   var taskID = getEnv("TASK_ID");
 
   var mem = getEnv("TASK_MAXMEM").toLowerCase();
+  if (mem == "") {
+    // On hybrid.
+    mem = getEnv("TASK_MAXRAM").toLowerCase();
+  }
   var bytes = 300 * 1024 * 1024;
 
   var scale = { 'b': 1, 'k': 1024, 'm': 1024*1024, 'g': 1024*1024*1024 };
