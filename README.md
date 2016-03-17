@@ -24,3 +24,9 @@ custom images.
 
 Harness and tests to run Lambda functions on AWS and IronWorker and ensure
 compatibility. See the test-suite README for more information.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+Based on [previous work](https://github.com/vlopatkin/iron-lambda) by Vitaly Lopatkin.
