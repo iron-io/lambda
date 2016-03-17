@@ -95,12 +95,12 @@ func MakeImage(dir string, desc *TestDescription, imageNameVersion string) error
 		return errors.New("One of the files MUST be test-build.jar for Java tests.")
 	}
 
+	opts := iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, "", desc.Handler, os.Stdout, false}
 	// FIXME(nikhil): Use some configuration username.
 	if desc.Runtime == "java8" {
-		err = iron_lambda.CreateImage(iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, "test-build.jar", desc.Handler, os.Stdout, false}, files...)
-	} else {
-		err = iron_lambda.CreateImage(iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, "", desc.Handler, os.Stdout, false}, files...)
+		opts.Package = "test-build.jar"
 	}
+	err = iron_lambda.CreateImage(opts, files...)
 	return err
 }
 
