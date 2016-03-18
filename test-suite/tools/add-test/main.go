@@ -97,6 +97,16 @@ func createLambdaFunction(l *lambda.Lambda, code []byte, runtime, role, name, ha
 				log.Println("Could not update function code", err)
 				return err
 			}
+
+			configInput := &lambda.UpdateFunctionConfigurationInput{
+				Timeout: aws.Int64(int64(timeout)),
+			}
+			resp, err = l.UpdateFunctionConfiguration(configInput)
+			if err != nil {
+				log.Println("Could not update function configuration", err)
+				return err
+			}
+
 		} else {
 			return err
 		}
