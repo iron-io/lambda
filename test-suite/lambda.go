@@ -6,10 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -116,10 +114,11 @@ func cleanPython27AwsOutput(output string) (string, error) {
 			}
 		}
 
-		line = util.RemoveTimestampAndRequestIdFromLogLine(line, requestId)
-
-		buf.WriteString(line)
-		buf.WriteRune('\n')
+		line, isOk := util.RemoveTimestampAndRequestIdFromAwsLogLine(line, requestId)
+		if isOk {
+			buf.WriteString(line)
+			buf.WriteRune('\n')
+		}
 		if err := scanner.Err(); err != nil {
 			return "", err
 		}
@@ -138,10 +137,7 @@ func cleanAwsGeneric(old_output, output string) (string, error) {
 		return "", errors.New("No change in the log")
 	}
 
-	if strings.HasPrefix(output, old_output) {
-		return output[len(old_output):], nil
-	}
-	return output, nil
+	return strings.TrimPrefix(output, old_output), nil
 }
 
 func cleanAws(old_output, output, runtime string) (string, error) {
@@ -152,7 +148,7 @@ func cleanAws(old_output, output, runtime string) (string, error) {
 
 	switch runtime {
 	case "nodejs":
-		return cleanNodeJsAwsOutput(output)
+		return cleanPython27AwsOutput(output)
 	case "python2.7":
 		return cleanPython27AwsOutput(output)
 	case "java8":
@@ -162,52 +158,57 @@ func cleanAws(old_output, output, runtime string) (string, error) {
 	}
 }
 
-func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, wg *sync.WaitGroup, test *util.TestDescription, result chan<- io.Reader) {
-	var output bytes.Buffer
-	defer func() {
-		result <- &output
-		wg.Done()
+func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, test *util.TestDescription) (<-chan string, <-chan string) {
+	result := make(chan string, 1)
+	debug := make(chan string, 1)
+	go func() {
+		defer close(result)
+		defer close(debug)
+
+		name := test.Name
+
+		debug <- "Getting old log"
+		old_invocation_log, err := getLog(cw, name)
+		if err != nil {
+			old_invocation_log = ""
+		}
+
+		payload, _ := json.Marshal(test.Event)
+
+		invoke_input := &lambda.InvokeInput{
+			FunctionName:   aws.String(name),
+			InvocationType: aws.String("Event"),
+			Payload:        payload,
+		}
+		debug <- "Enqueuing task"
+		_, err = l.Invoke(invoke_input)
+		if err != nil {
+			debug <- fmt.Sprintf("Error invoking function %s ", err)
+			return
+		}
+
+		timeout := time.Duration(test.Timeout) * time.Second
+
+		debug <- "Waiting for task"
+		time.Sleep(timeout)
+
+		debug <- "Getting new log"
+		invocation_log, err := getLog(cw, name)
+		if err != nil {
+			debug <- fmt.Sprintf("Error getting log %s ", err)
+			return
+		}
+
+		final, err := cleanAws(old_invocation_log, invocation_log, test.Runtime)
+
+		if err != nil {
+			debug <- fmt.Sprintf("Error cleaning log  %s", err)
+			return
+		}
+
+		result <- final
 	}()
-
-	name := test.Name
-
-	old_invocation_log, err := getLog(cw, name)
-	if err != nil {
-		old_invocation_log = ""
-	}
-
-	payload, _ := json.Marshal(test.Event)
-
-	invoke_input := &lambda.InvokeInput{
-		FunctionName:   aws.String(name),
-		InvocationType: aws.String("Event"),
-		Payload:        payload,
-	}
-	_, err = l.Invoke(invoke_input)
-	if err != nil {
-		output.WriteString(fmt.Sprintf("Error invoking function %s %s", name, err))
-		return
-	}
-
-	latency := 1 //1 second for network and infrastructure timeouts
-	timeout := time.Duration(test.Timeout+latency) * time.Second
-
-	time.Sleep(timeout)
-
-	invocation_log, err := getLog(cw, name)
-	if err != nil {
-		output.WriteString(fmt.Sprintf("Error getting log %s %s", name, err))
-		return
-	}
-
-	final, err := cleanAws(old_invocation_log, invocation_log, test.Runtime)
-
-	if err != nil {
-		output.WriteString(fmt.Sprintf("Error cleaning log %s %s", name, err))
-		return
-	}
-
-	output.WriteString(final)
+	return result, debug
 }
 
 func getLog(cw *cloudwatchlogs.CloudWatchLogs, name string) (string, error) {
