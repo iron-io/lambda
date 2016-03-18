@@ -279,8 +279,8 @@ func runTest(test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.Cl
 				awsOutputStr,
 				ironOutputStr,
 			}
-			nofityFailure(testName)
-		} else if awsOutput != ironOutput {
+			notifyFailure(testName)
+		} else if awsOutput != ironOutput || awss == nil || irons == nil {
 			result <- []string{
 				fmt.Sprintf("FAIL %s Output does not match!", testName),
 				awsOutputStr,
@@ -289,10 +289,10 @@ func runTest(test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.Cl
 			notifyFailure(testName)
 		} else {
 			if awss == nil {
-				panic(awsOutputStr)
+				panic(testName + " " + awsOutputStr)
 			}
 			if irons == nil {
-				panic(ironOutputStr)
+				panic(testName + " " + ironOutputStr)
 			}
 			result <- []string{
 				fmt.Sprintf("PASS %s", testName),
@@ -304,7 +304,7 @@ func runTest(test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.Cl
 }
 
 func forward(prefix string, from <-chan string, to chan<- []string) {
-	defer recover()
+	defer func() { recover() }()
 	var lastData *string = nil
 	for {
 		select {
