@@ -1,0 +1,10 @@
+{
+  "handler": "test.run",
+  "runtime": "python2.7",
+  "name": "awssdk",
+  "description": "Test that AWS SDK is available and works by attempting to create a bucket and write to it on S3.",
+  "event": {
+    "bucket": "lambda-python2.7-test-bucket",
+    "region": "us-west-2"
+  }
+}
