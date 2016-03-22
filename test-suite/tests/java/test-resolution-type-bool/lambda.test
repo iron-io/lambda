@@ -1,0 +1,7 @@
+{
+  "handler": "lambdatest.Hello::myHandler",
+  "runtime": "java8",
+  "name": "resolution-type-bool",
+  "description": "Pass boolean as a string and see which one is chosen. Looks like the first one in order is picked.",
+  "event": "true"
+}
