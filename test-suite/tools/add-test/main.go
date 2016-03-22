@@ -147,7 +147,8 @@ func addToIron(dir string) error {
 		return err
 	}
 
-	err = iron_lambda.PushImage(imageNameVersion)
+	opts := iron_lambda.PushImageOptions{imageNameVersion, os.Stdout, false}
+	err = iron_lambda.PushImage(opts)
 	if err != nil {
 		return err
 	}
