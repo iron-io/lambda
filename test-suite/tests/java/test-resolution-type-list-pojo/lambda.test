@@ -1,0 +1,22 @@
+{
+  "handler": "lambdatest.Hello::myHandler",
+  "runtime": "java8",
+  "name": "resolution-type-list-pojo",
+  "description": "Pass a list of deserializable POJO.",
+  "event": [{
+    "symbol": "Fe",
+    "name": "Iron",
+    "atomicNumber": 26,
+    "foundOnEarth": true,
+    "configuration": [2, 8, 14, 2],
+    "halfLife": { "54": 3.1e22, "55": 2.73, "56": "stable" }
+  },
+  {
+    "symbol": "Ti",
+    "name": "Titanium",
+    "atomicNumber": 22,
+    "foundOnEarth": true,
+    "configuration": [2, 8, 10, 2],
+    "halfLife": { "44": 63, "46": "stable" }
+  }]
+}

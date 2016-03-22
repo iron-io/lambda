@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/docker/docker/pkg/jsonmessage"
 	iron_lambda "github.com/iron-io/lambda/lambda"
 	"github.com/iron-io/lambda/test-suite/util"
 	"github.com/satori/go.uuid"
@@ -144,6 +145,24 @@ func addToLambda(dir string) error {
 	return err
 }
 
+type DockerJsonWriter struct {
+	under io.Writer
+	w     io.Writer
+}
+
+func NewDockerJsonWriter(under io.Writer) *DockerJsonWriter {
+	r, w := io.Pipe()
+	go func() {
+		err := jsonmessage.DisplayJSONMessagesStream(r, under, 1, true, nil)
+		log.Fatal(err)
+	}()
+	return &DockerJsonWriter{under, w}
+}
+
+func (djw *DockerJsonWriter) Write(p []byte) (int, error) {
+	return djw.w.Write(p)
+}
+
 func addToIron(dir string) error {
 	desc, err := util.ReadTestDescription(dir)
 	if err != nil {
@@ -158,7 +177,7 @@ func addToIron(dir string) error {
 		return err
 	}
 
-	opts := iron_lambda.PushImageOptions{imageNameVersion, os.Stdout, false}
+	opts := iron_lambda.PushImageOptions{imageNameVersion, NewDockerJsonWriter(os.Stdout), true}
 	err = iron_lambda.PushImage(opts)
 	if err != nil {
 		return err

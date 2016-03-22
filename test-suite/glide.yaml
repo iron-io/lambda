@@ -17,3 +17,7 @@ import:
 - package: github.com/satori/go.uuid
 - package: github.com/sendgrid/sendgrid-go
   version: ~2.0.0
+- package: github.com/docker/docker
+  version: ~1.10.3
+  subpackages:
+  - pkg/jsonmessage
