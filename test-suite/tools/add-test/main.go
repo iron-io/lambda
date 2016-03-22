@@ -164,7 +164,7 @@ func addToIron(dir string) error {
 		return err
 	}
 
-	return iron_lambda.RegisterWithIron(imageNameVersion, credentials.NewEnvCredentials())
+	return iron_lambda.RegisterWithIron(imageNameVersion)
 }
 
 type RegisterOn struct {

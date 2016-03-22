@@ -323,8 +323,7 @@ func RunImageWithPayload(imageName string, payload string) error {
 // Registers public docker image named `imageNameVersion` as a IronWorker called `imageName`.
 // For example,
 //	  RegisterWithIron("foo/myimage:1", credentials.NewEnvCredentials()) will register a worker called "foo/myimage" that will use Docker Image "foo/myimage:1".
-// The AWS credentials are required to configure environment variables for the image so that the AWS APIs can be used successfully.
-func RegisterWithIron(imageNameVersion string, awsCredentials *credentials.Credentials) error {
+func RegisterWithIron(imageNameVersion string) error {
 	tokens := strings.Split(imageNameVersion, ":")
 	if len(tokens) != 2 || tokens[0] == "" || tokens[1] == "" {
 		return errors.New("Invalid image name. Should be of the form \"name:version\".")
@@ -332,25 +331,29 @@ func RegisterWithIron(imageNameVersion string, awsCredentials *credentials.Crede
 
 	imageName := tokens[0]
 
-	creds, err := awsCredentials.Get()
-	if err != nil {
-		return errors.New(fmt.Sprintf("Could not extract AWS credentials to register environment variables with IronWorker: %s", err))
-	}
-
 	// Worker API doesn't have support for register yet, but we use it to extract the configuration.
 	w := worker.New()
 	url := fmt.Sprintf("https://%s/2/projects/%s/codes?oauth=%s", w.Settings.Host, w.Settings.ProjectId, w.Settings.Token)
-	marshal, err := json.Marshal(map[string]interface{}{
+	registerOpts := map[string]interface{}{
 		"name":  imageName,
 		"image": imageNameVersion,
 		"env_vars": map[string]string{
-			"AWS_ACCESS_KEY_ID":           creds.AccessKeyID,
-			"AWS_SECRET_ACCESS_KEY":       creds.SecretAccessKey,
 			"AWS_LAMBDA_FUNCTION_NAME":    imageName,
 			"AWS_LAMBDA_FUNCTION_VERSION": "1", // FIXME: swapi does not allow $ right now.
 		},
-	})
+	}
 
+	// Try to forward AWS credentials.
+	{
+		creds := credentials.NewEnvCredentials()
+		v, err := creds.Get()
+		if err == nil {
+			registerOpts["env_vars"].(map[string]string)["AWS_ACCESS_KEY_ID"] = v.AccessKeyID
+			registerOpts["env_vars"].(map[string]string)["AWS_SECRET_ACCESS_KEY"] = v.SecretAccessKey
+		}
+	}
+
+	marshal, err := json.Marshal(registerOpts)
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
 	jsonWriter, err := mw.CreateFormField("data")

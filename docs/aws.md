@@ -8,10 +8,14 @@ these credentials explicitly.
 
 ### Using environment variables for the credentials
 
-The easiest way to do this is to register the `AWS_ACCESS_KEY_ID` and
-`AWS_SECRET_ACCESS_KEY` environment variables with IronWorker when registering
-the Docker image. Then you may use the Environment Credentials loader provided
-by the AWS SDK in various languages. Consider this node.js example:
+The easiest way to do this is to pass the `AWS_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY` environment variables to Docker when you run the image.
+
+```sh
+docker run -e AWS_ACCESS_KEY_ID=<access key> -e AWS_SECRET_ACCESS_KEY=<secret key> <image>
+```
+
+The various AWS SDKs will automatically pick these up.
 
     var AWS = require('aws-sdk');
     AWS.config.region = 'us-west-2';
@@ -19,26 +23,36 @@ by the AWS SDK in various languages. Consider this node.js example:
     exports.run = function(event, context) {
       var s3bucket = new AWS.S3({
         params: {Bucket: event.bucket},
-        credentials: new AWS.EnvironmentCredentials('AWS')
       });
       s3bucket.createBucket(function() {
         // Act on bucket here.
       });
     }
 
-We pass the S3 object a credentials created from the environment variables.
+### Credentials on IronWorker
 
 Assuming you [packaged this function](./introduction.md) into a Docker image
 `iron/s3-write` and pushed it to Docker Hub. Instead of just registering with
 IronWorker as:
 
-    ironcli register iron/s3-write
+    ironcli register <hub user>/s3-write
 
 do this instead:
 
     ironcli register -e AWS_ACCESS_KEY_ID=<access key> \
                      -e AWS_SECRET_ACCESS_KEY=<secret key> \
-                     iron/s3-write
+                     <hub user>/s3-write
 
-Now, when you invoke the function, the AWS SDK will load the credentials from
-the environment variables and your AWS API operations should work.
+Alternatively, if you use `ironcli publish-function`, it will automatically
+pick up the environment variables and forward them if valid ones are found.
+
+```sh
+export AWS_ACCESS_KEY_ID=<access key>
+export AWS_SECRET_ACCESS_KEY=<secret key>
+ironcli publish-function -function-name <hub user>/s3-write
+```
+
+If you have an existing image with the same name registered with IronWorker,
+the environment variables will not simply be updated. You need to first delete
+the code from HUD and then publish the function again. This will unfortunately
+result in a new webhook URL for the function.
