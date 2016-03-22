@@ -21,6 +21,7 @@ class ClassTypeHelper {
         ret.add(Integer.class);
         ret.add(int.class);
         ret.add(Boolean.class);
+        ret.add(boolean.class);
         return ret;
     }
 
