@@ -49,7 +49,3 @@ integration with other AWS services. Much of the push-based actions can be
 solved by redirecting the event through [SNS and using webhooks](./sns.md).
 AWS APIs are of course available for use through the AWS SDK available to the
 function. We explain how to deal with authentication in [this guide](./aws.md).
-
-## Contributing
-
-TODO
