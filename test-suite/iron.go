@@ -35,28 +35,28 @@ func cleanIronGeneric(output []byte) []byte {
 	return output
 }
 
-func cleanPython27IronOutput(output string) (string, error) {
+func cleanIronTaskIdAndTimestamp(output string) (string, error) {
 	var buf bytes.Buffer
-	var requestId string = ""
+	var taskId string = ""
 	// expecting request id as hex of bson_id
 	requestIdPattern, _ := regexp.Compile("[a-f0-9]{24}")
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if requestId == "" {
+		if taskId == "" {
 			parts := strings.Fields(line)
 
 			// generic logging through logger.info, logger.warning & etc
 			if len(parts) >= 3 {
 				requestIdCandidate := parts[2]
 				if requestIdPattern.MatchString(requestIdCandidate) {
-					requestId = requestIdCandidate
+					taskId = requestIdCandidate
 				}
 			}
 		}
 
-		line, isOk := util.RemoveTimestampAndRequestIdFromIronLogLine(line, requestId)
+		line, isOk := util.RemoveTimestampAndRequestIdFromIronLogLine(line, taskId)
 		if isOk {
 			buf.WriteString(line)
 			buf.WriteRune('\n')
@@ -69,17 +69,13 @@ func cleanPython27IronOutput(output string) (string, error) {
 	return buf.String(), nil
 }
 
-func cleanIron(runtime string, output []byte) ([]byte, error) {
+func cleanIron(output []byte) ([]byte, error) {
 	output = cleanIronGeneric(output)
-	switch runtime {
-	case "python2.7":
-		cleaned, err := cleanPython27IronOutput(string(output))
-		return []byte(cleaned), err
-	default:
-		return output, nil
-	}
+	cleaned, err := cleanIronTaskIdAndTimestamp(string(output))
+	return []byte(cleaned), err
 }
 
+//Returns a result and a debug channels.
 func runOnIron(w *worker.Worker, test *util.TestDescription) (<-chan string, <-chan string) {
 	result := make(chan string, 1)
 	debug := make(chan string, 1)
@@ -113,7 +109,7 @@ func runOnIron(w *worker.Worker, test *util.TestDescription) (<-chan string, <-c
 		}
 
 		taskid := taskids[0]
-
+		debug <- fmt.Sprintf("Task Id: %s", taskid)
 		debug <- "Waiting for task"
 		<-w.WaitForTask(taskid)
 
@@ -124,7 +120,7 @@ func runOnIron(w *worker.Worker, test *util.TestDescription) (<-chan string, <-c
 			return
 		}
 
-		cleanedLog, err := cleanIron(test.Runtime, iron_log)
+		cleanedLog, err := cleanIron(iron_log)
 		if err != nil {
 			debug <- fmt.Sprintf("Error processing a log %s", test.Name)
 		} else {

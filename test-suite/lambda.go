@@ -25,49 +25,12 @@ func indexOf(a string, list []string) int {
 	return -1
 }
 
-func cleanNodeJsAwsOutput(output string) (string, error) {
-	var buf bytes.Buffer
-	if strings.HasPrefix(output, "START RequestId:") {
-		scanner := bufio.NewScanner(strings.NewReader(output))
-		if scanner.Scan() {
-			firstLine := scanner.Text()
-			fields := strings.Fields(firstLine)
-			if len(fields) > 2 {
-				id := fields[2]
-				for scanner.Scan() {
-					line := strings.TrimSpace(scanner.Text())
-					if strings.HasPrefix(line, "END") {
-						return buf.String(), nil
-					}
-
-					// Remove timestamp
-					idx := strings.IndexByte(line, 'Z')
-					if idx >= 0 {
-						untimed := strings.TrimSpace(line[idx+1:])
-						unprefix := strings.TrimPrefix(untimed, id)
-						buf.WriteString(strings.TrimSpace(unprefix))
-						buf.WriteRune('\n')
-					} else {
-						buf.WriteString(line)
-						buf.WriteRune('\n')
-					}
-				}
-				if err := scanner.Err(); err != nil {
-					return "", err
-				}
-			}
-		}
-	}
-
-	return "", errors.New(fmt.Sprintf("Don't know how to clean '%s'", output))
-}
-
 // Processes all requests log lines inside the log and succedes only with the latest one
 // The log line format:  [some data] [timestamp] [request_id] [some other data]
 // Request start format: START RequestId: [request_id] [some data]
 // Request end format:   END RequestId: [request_id] [some data]
 // AWS report format:    REPORT RequestId: [request_id] [some data]
-func cleanPython27AwsOutput(output string) (string, error) {
+func cleanLambda(output string) (string, error) {
 	var buf bytes.Buffer
 	var requestId string = ""
 	knownRequestIds := make(map[string]bool, 0)
@@ -132,32 +95,69 @@ func cleanPython27AwsOutput(output string) (string, error) {
 
 }
 
-func cleanAwsGeneric(old_output, output string) (string, error) {
-	if old_output == output {
-		return "", errors.New("No change in the log")
+func findFirstRequestIdFromLog(output string) string {
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+
+		//processing START, END and REPORT log lines
+		requestIdFieldIndex := indexOf("RequestId:", fields)
+		if (requestIdFieldIndex > 0) && (requestIdFieldIndex+1 < len(fields)) {
+			requestIdInLine := fields[requestIdFieldIndex+1]
+			prefix := fields[requestIdFieldIndex-1]
+
+			if prefix == "START" {
+				return requestIdInLine
+			}
+		}
 	}
 
-	return strings.TrimPrefix(output, old_output), nil
+	return ""
 }
 
-func cleanAws(old_output, output, runtime string) (string, error) {
-	output, err := cleanAwsGeneric(old_output, output)
+func isEndOfRequestMarkerPresent(output, requestId string) bool {
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+
+		//processing START, END and REPORT log lines
+		requestIdFieldIndex := indexOf("RequestId:", fields)
+		if (requestIdFieldIndex > 0) && (requestIdFieldIndex+1 < len(fields)) {
+			requestIdInLine := fields[requestIdFieldIndex+1]
+			prefix := fields[requestIdFieldIndex-1]
+
+			if prefix == "END" && requestIdInLine == requestId {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func getLogAndDetectRequestComplete(logGetter func() (string, error), old_output, requestId string) (string, string, bool, error) {
+
+	output, err := logGetter()
 	if err != nil {
-		return "", err
+		return "", "", false, err
 	}
 
-	switch runtime {
-	case "nodejs":
-		return cleanPython27AwsOutput(output)
-	case "python2.7":
-		return cleanPython27AwsOutput(output)
-	case "java8":
-		return cleanNodeJsAwsOutput(output)
-	default:
-		return output, nil
+	log := strings.TrimPrefix(output, old_output)
+
+	if requestId == "" {
+		requestId = findFirstRequestIdFromLog(log)
 	}
+
+	if requestId != "" {
+		marker := isEndOfRequestMarkerPresent(strings.TrimPrefix(output, old_output), requestId)
+		return output, requestId, marker, nil
+	}
+
+	return log, "", false, nil
 }
 
+//Returns a result and a debug channels.
 func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, test *util.TestDescription) (<-chan string, <-chan string) {
 	result := make(chan string, 1)
 	debug := make(chan string, 1)
@@ -190,16 +190,60 @@ func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, test *util
 		timeout := time.Duration(test.Timeout) * time.Second
 
 		debug <- "Waiting for task"
-		time.Sleep(timeout)
+		now := time.Now()
+		elapsed := time.After(timeout)
+		ticker := time.NewTicker(3 * time.Second)
+		defer ticker.Stop()
 
-		debug <- "Getting new log"
-		invocation_log, err := getLog(cw, name)
-		if err != nil {
-			debug <- fmt.Sprintf("Error getting log %s ", err)
-			return
+		log := ""
+		completed := false
+		requestId := ""
+		logGetter := func() (string, error) {
+			return getLog(cw, name)
 		}
 
-		final, err := cleanAws(old_invocation_log, invocation_log, test.Runtime)
+	logWaitLoop:
+		for {
+			select {
+			case <-elapsed:
+				break logWaitLoop
+			case <-ticker.C:
+				log, requestId, completed, err = getLogAndDetectRequestComplete(logGetter, old_invocation_log, requestId)
+				if err != nil {
+					debug <- fmt.Sprintf("Error getting log %s ", err)
+					return
+				}
+				if completed {
+					break logWaitLoop
+				}
+			}
+		}
+
+		if !completed {
+			log, requestId, completed, err = getLogAndDetectRequestComplete(logGetter, old_invocation_log, requestId)
+			if err != nil {
+				debug <- fmt.Sprintf("Error getting log %s ", err)
+				return
+			}
+			if !completed {
+				if requestId != "" {
+					debug <- fmt.Sprintf("Request Id: %s", requestId)
+				}
+				debug <- time.Now().Sub(now).String()
+				logLines := strings.Split(log, "\n")
+				switch len(logLines) {
+				case 0:
+					debug <- "Log for current test run is empty"
+				case 1:
+					debug <- fmt.Sprintf("Log does not contain entries for current test run:\n%s", logLines[0])
+				default:
+					debug <- fmt.Sprintf("Log does not contain entries for current test run:\n%s\n...\n%s", logLines[0], logLines[len(logLines)-1])
+				}
+				return
+			}
+		}
+		debug <- fmt.Sprintf("Request Id: %s", requestId)
+		final, err := cleanLambda(log)
 
 		if err != nil {
 			debug <- fmt.Sprintf("Error cleaning log  %s", err)
@@ -248,6 +292,8 @@ func getLog(cw *cloudwatchlogs.CloudWatchLogs, name string) (string, error) {
 		LogStreamName: stream.LogStreamName,
 		LogGroupName:  group.LogGroupName,
 		StartFromHead: aws.Bool(true),
+		// allow 3 minute local vs server time out of sync
+		StartTime: aws.Int64(time.Now().Add(-3*time.Minute).Unix() * 1000),
 	}
 
 	events, err := cw.GetLogEvents(get_log_input)

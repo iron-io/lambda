@@ -166,9 +166,8 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 	var testResults <-chan []string = nil
 	for _, test := range tests {
 		r := runTest(test, w, cw, l, endOfTime)
-		testResults = joinChannels(testResults, r)
+		testResults = util.JoinChannels(testResults, r)
 	}
-
 	for {
 		lines, ok := <-testResults
 		if !ok {
@@ -180,36 +179,7 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 	}
 }
 
-func joinChannels(a <-chan []string, b <-chan []string) <-chan []string {
-	if a == nil {
-		return b
-	}
-	if b == nil {
-		return a
-	}
-	r := make(chan []string)
-	go func() {
-		defer close(r)
-		for a != nil || b != nil {
-			select {
-			case item, ok := <-a:
-				if ok {
-					r <- item
-				} else {
-					a = nil
-				}
-			case item, ok := <-b:
-				if ok {
-					r <- item
-				} else {
-					b = nil
-				}
-			}
-		}
-	}()
-	return r
-}
-
+//Returns a channel with a test run result and debug messages
 func runTest(test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.CloudWatchLogs, l *lambda.Lambda, waitEnd time.Time) <-chan []string {
 	result := make(chan []string)
 
@@ -226,9 +196,11 @@ func runTest(test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.Cl
 		awschan, awsdbg := runOnLambda(l, cw, test)
 		ironchan, irondbg := runOnIron(w, test)
 
-		go forward("DBG AWS Lambda "+testName+" ", awsdbg, result)
-		go forward("DBG Iron "+testName+" ", irondbg, result)
+		// redirecting every debug message from test runs to result without waiting test results
+		util.Forward("DBG AWS Lambda "+testName+" ", awsdbg, result)
+		util.Forward("DBG Iron "+testName+" ", irondbg, result)
 
+		// waiting for test results or for the timeout whichever occurs first
 		var awss, irons *bytes.Buffer
 		elapsed := false
 		for !elapsed && (awschan != nil || ironchan != nil) {
@@ -261,7 +233,6 @@ func runTest(test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.Cl
 		}
 
 		delimiter := "=========================================="
-
 		awsOutputStr, awsOutput := "No AWS lambda output", ""
 		if awss != nil {
 			awsOutput = string(awss.Bytes())
@@ -301,27 +272,4 @@ func runTest(test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.Cl
 	}()
 
 	return result
-}
-
-func forward(prefix string, from <-chan string, to chan<- []string) {
-	defer func() { recover() }()
-	var lastData *string = nil
-	for {
-		select {
-		case data, ok := <-from:
-			{
-				if !ok {
-					return
-				}
-				prefixed := fmt.Sprintf("%s%s", prefix, data)
-				lastData = &prefixed
-				to <- []string{prefixed}
-			}
-		case <-time.After(time.Minute):
-			if lastData != nil {
-				to <- []string{*lastData}
-			}
-		}
-	}
-
 }
