@@ -169,6 +169,12 @@ type CreateImageOptions struct {
 	RawJSONStream bool
 }
 
+type PushImageOptions struct {
+	NameVersion   string
+	OutputStream  io.Writer
+	RawJSONStream bool
+}
+
 // Creates a docker image called `name`, using `base` as the base image.
 // `handler` is the runtime-specific name to use for a lambda invocation (i.e.
 // <module>.<function> for nodejs). `files` should be a list of files+dirs
@@ -365,13 +371,13 @@ func RegisterWithIron(imageNameVersion string, awsCredentials *credentials.Crede
 	return err
 }
 
-func PushImage(imageNameVersion string) error {
+func PushImage(in PushImageOptions) error {
 	client, err := getClient()
 	if err != nil {
 		return err
 	}
 
-	tokens := strings.Split(imageNameVersion, ":")
+	tokens := strings.Split(in.NameVersion, ":")
 	if len(tokens) != 2 || tokens[0] == "" || tokens[1] == "" {
 		return errors.New("Invalid image name. Should be of the form \"name:version\".")
 	}
@@ -379,9 +385,10 @@ func PushImage(imageNameVersion string) error {
 	imageName, version := tokens[0], tokens[1]
 
 	opts := docker.PushImageOptions{
-		Name:         imageName,
-		Tag:          version,
-		OutputStream: os.Stdout,
+		Name:          imageName,
+		Tag:           version,
+		OutputStream:  in.OutputStream,
+		RawJSONStream: in.RawJSONStream,
 	}
 
 	auths, err := docker.NewAuthConfigurationsFromDockerCfg()
