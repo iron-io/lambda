@@ -1,8 +1,8 @@
-hash: 3acc61a3ed582a0bed9b45f7ca21745e319397b3685a57d2b33ee6cf32870eaf
-updated: 2016-03-10T15:41:06.138951394+05:30
+hash: 53e196d6ce241dae228e214717004a4ed3ce39691e8ffee195e37e76f6e9e265
+updated: 2016-03-22T10:32:17.613767945-07:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 2e7cf03d7f5c8a4b4c9f7341ddf1e13102845cf2
+  version: 4da0bec8953a0a540f391930a946917b12a95671
   subpackages:
   - aws
   - aws/awserr
@@ -25,10 +25,24 @@ imports:
   - aws/ec2metadata
   - private/protocol/json/jsonutil
   - private/protocol/rest
+- name: github.com/Azure/go-ansiterm
+  version: 70b2c90b260171e829f1ebd7c17f600c11858dbe
+  subpackages:
+  - winterm
+- name: github.com/docker/docker
+  version: 0dcdd1c5b84c4a066882ea52dd81b5b3a624897a
+  subpackages:
+  - pkg/jsonmessage
+  - pkg/jsonlog
+  - pkg/term
+  - pkg/system
+  - pkg/term/windows
+- name: github.com/docker/go-units
+  version: 5d2041e26a699eaca682e2ea41c8f891e1060444
 - name: github.com/go-ini/ini
-  version: 776aa739ce9373377cd16f526cdf06cb4c89b40f
+  version: 12f418cc7edc5a618a51407b7ac1f1f512139df3
 - name: github.com/iron-io/iron_go3
-  version: 4aec4b86e69b521ea83e4434e274630585b73b54
+  version: d1197926301489b15e418c49a0b17a9c42817acd
   subpackages:
   - worker
   - api
@@ -45,4 +59,10 @@ imports:
   version: 0bf6332788d0230b7da84a1ae68d7531073200e1
 - name: github.com/sendgrid/smtpapi-go
   version: 08102729bcf72bfe74dde6c0da8e0423e94090ca
+- name: github.com/Sirupsen/logrus
+  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
+- name: golang.org/x/sys
+  version: 9d4e42a20653790449273b3c85e67d6d8bae6e2e
+  subpackages:
+  - unix
 devImports: []

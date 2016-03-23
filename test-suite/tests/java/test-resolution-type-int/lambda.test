@@ -1,0 +1,7 @@
+{
+  "handler": "lambdatest.Hello::myHandler",
+  "runtime": "java8",
+  "name": "resolution-type-int",
+  "description": "Pass a bad number as a string to a int handler. Should fail due to JSON parse error. Unfortunately output will not match due to different JSON libs.",
+  "event": "4b5d"
+}
