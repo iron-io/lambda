@@ -2,6 +2,33 @@ var im = require('imagemagick');
 var fs = require('fs');
 var AWS = require('aws-sdk');
 
+// cb(err, resized) is called with true if resized.
+function resizeIfRequired(err, features, fileSrc, fileDst, cb) {
+  if (err) {
+    cb(err, false);
+    return;
+  }
+
+  var targetWidth = 1024;
+  if (features.width > targetWidth)
+  {
+    im.resize({
+      srcPath : fileSrc,
+      dstPath : fileDst,
+      width : targetWidth,
+      format: 'jpg'
+    }, function(err) {
+      if (err) {
+        cb(err, false);
+      } else {
+        cb(null, true);
+      }
+    });
+  } else {
+    cb(null, false);
+  }
+}
+
 exports.run = function(event, context) {
   var bucketName = event['bucket']
   var srcImageKey = event['srcKey']
@@ -21,17 +48,9 @@ exports.run = function(event, context) {
     fs.writeFileSync(fileSrc, data.Body)
 
     im.identify(fileSrc, function(err, features) {
-      if (err) throw err;
-      if (features.width > 1024)
-      {
-        var targetWidth = 1024;
-        im.resize({
-          srcPath : fileSrc,
-          dstPath : fileDst,
-          width : targetWidth,
-          format: 'jpg'
-        }, function(err) {
-          if (err) throw err;
+      resizeIfRequired(err, features, fileSrc, fileDst, function(err, resized) {
+        if (err) throw err;
+        if (resized) {
           s3.putObject({
             Bucket:bucketName,
             Key: dstImageKey,
@@ -40,12 +59,12 @@ exports.run = function(event, context) {
             ACL: 'public-read',
           }, function (err, data) {
             if (err) throw err;
-            context.done();
+            context.done()
           });
-        });
-      } else {
-        context.done();
-      }
+        } else {
+          context.done();
+        }
+      });
     });
   });
 }

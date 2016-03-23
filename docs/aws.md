@@ -264,3 +264,82 @@ be able to see that the IronWorker task has been run again. If everything went
 well, it should have printed out a summary and exited successfully.
 
 That's it, a simple, notification based, Lambda function.
+
+## Example: Reading and writing to S3 Bucket
+
+This example demonstrates modifying S3 buckets and using the included
+ImageMagick tools in a node.js function. Our function will fetch an image
+stored in a key specified by the event, resize it to a width of 1024px and save
+it to another key.
+
+The code for this example is located [here](../examples/s3/example.js).
+
+The event will look like:
+
+```js
+{
+    "bucket": "iron-lambda-demo-images",
+    "srcKey": "waterfall.jpg", 
+    "dstKey": "waterfall-1024.jpg"
+}
+```
+
+The setup, imports and SDK initialization.
+
+```js
+var im = require('imagemagick');
+var fs = require('fs');
+var AWS = require('aws-sdk');
+
+exports.run = function(event, context) {
+  var bucketName = event['bucket']
+  var srcImageKey = event['srcKey']
+  var dstImageKey = event['dstKey']
+
+  var s3 = new AWS.S3();
+}
+```
+
+First we retrieve the source and write it to a local file so ImageMagick can
+work with it.
+
+```js
+s3.getObject({
+    Bucket: bucketName,
+    Key: srcImageKey
+  }, function (err, data) {
+
+  if (err) throw err;
+
+  var fileSrc = '/tmp/image-src.dat';
+  var fileDst = '/tmp/image-dst.dat'
+  fs.writeFileSync(fileSrc, data.Body)
+
+});
+```
+
+The actual resizing involves using the identify function to get the current
+size (we only resize if the image is wider than 1024px), then doing the actual
+conversion to `fileDst`. Finally we upload to S3.
+
+```js
+im.identify(fileSrc, function(err, features) {
+  resizeIfRequired(err, features, fileSrc, fileDst, function(err, resized) {
+    if (err) throw err;
+    if (resized) {
+      s3.putObject({
+        Bucket:bucketName,
+        Key: dstImageKey,
+        Body: fs.createReadStream(fileDst),
+        ContentType: 'image/jpeg',
+        ACL: 'public-read',
+      }, function (err, data) {
+        if (err) throw err;
+        context.done()
+      });
+    } else {
+      context.done();
+    }
+  });
+});
+```
