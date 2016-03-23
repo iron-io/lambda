@@ -21,7 +21,7 @@ type TestDescription struct {
 
 	// The test's timeout in seconds, valid timeout as imposed by Lambda
 	// is between 1 and 300 inclusive.
-	// If no Timeout is specified the 30 sec default is used
+	// If no Timeout is specified the 60 sec default is used
 	Timeout int
 }
 
@@ -40,7 +40,7 @@ func ReadTestDescription(dir string) (*TestDescription, error) {
 	desc.Name = fmt.Sprintf("lambda-test-suite-%s-%s", normalizedRuntime, desc.Name)
 
 	if desc.Timeout == 0 {
-		desc.Timeout = 30
+		desc.Timeout = 60
 	} else if desc.Timeout < 1 {
 		desc.Timeout = 1
 	} else if desc.Timeout > 300 {

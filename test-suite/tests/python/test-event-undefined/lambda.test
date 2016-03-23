@@ -2,6 +2,5 @@
   "handler": "test.run",
   "runtime": "python2.7",
   "name": "event-undefined",
-  "description": "Test behavior when event it not specified",
-  "timeout" : 5
+  "description": "Test behavior when event it not specified"
 }

@@ -11,6 +11,5 @@
       "msg":"i'm an object"
     },
     "arr" : [1, "a string 2", null]
-  },
-  "timeout" : 5
+  }
 }
