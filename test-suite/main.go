@@ -156,16 +156,19 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 		log.Fatal("No tests to run")
 	}
 
-	fullTimeout := 5 * len(tests)
-
+	// expected duration for all tests to run in a sequential way
+	// after the fullTimeout expires no test result is excepted and `Timeout` message is reported for a test
+	fullTimeout := 0
 	for _, test := range tests {
-		fullTimeout += test.Timeout
+		fullTimeout += test.Timeout + 5
 	}
 
 	endOfTime := time.Now().Add(time.Duration(fullTimeout) * time.Second)
 	var testResults <-chan []string = nil
 	for _, test := range tests {
 		r := runTest(test, w, cw, l, endOfTime)
+
+		// forwarding messages from all tests to a single channel
 		testResults = util.JoinChannels(testResults, r)
 	}
 	for {

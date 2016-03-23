@@ -157,7 +157,7 @@ func getLogAndDetectRequestComplete(logGetter func() (string, error), old_output
 	return log, "", false, nil
 }
 
-//Returns a result and a debug channels.
+//Returns a result and a debug channels. The channels are closed on test run finalization
 func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, test *util.TestDescription) (<-chan string, <-chan string) {
 	result := make(chan string, 1)
 	debug := make(chan string, 1)
@@ -201,7 +201,8 @@ func runOnLambda(l *lambda.Lambda, cw *cloudwatchlogs.CloudWatchLogs, test *util
 		logGetter := func() (string, error) {
 			return getLog(cw, name)
 		}
-
+		
+		// waiting for test.Timeout or for the full log whichever occurs first
 	logWaitLoop:
 		for {
 			select {

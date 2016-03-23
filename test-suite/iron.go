@@ -75,7 +75,7 @@ func cleanIron(output []byte) ([]byte, error) {
 	return []byte(cleaned), err
 }
 
-//Returns a result and a debug channels.
+//Returns a result and a debug channels. The channels are closed on test run finalization
 func runOnIron(w *worker.Worker, test *util.TestDescription) (<-chan string, <-chan string) {
 	result := make(chan string, 1)
 	debug := make(chan string, 1)
