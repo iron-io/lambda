@@ -1,0 +1,7 @@
+{
+  "handler": "lambdatest.Hello::myHandler",
+  "runtime": "java8",
+  "name": "resolution-type-list-number",
+  "description": "Pass list of numbers, should work.",
+  "event": [1, 3.14, -2, 21453523, -2e24]
+}

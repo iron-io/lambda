@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.*;
 
+import com.google.gson.JsonSyntaxException;
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 
 public class Launcher {
@@ -98,13 +99,16 @@ public class Launcher {
         // int, string, bool
         } else if (checkIfLambdaMethodRequiredPrimitiveType(parameterTypes)) {
             if (parameterTypes[0].getName().equals("java.lang.String")) {
-                result = callWithMaybeContext(lambdaMethod, lambdaInstance, contextRequired, payload, aws_ctx);
+                String p = ClassTypeHelper.gson.fromJson(payload, String.class);
+                result = callWithMaybeContext(lambdaMethod, lambdaInstance, contextRequired, p, aws_ctx);
                 processed = true;
-            } else if (Objects.equals(parameterTypes[0].toString(), "int") || Objects.equals(parameterTypes[0].toString(), "Integer")) {
-                result = callWithMaybeContext(lambdaMethod, lambdaInstance, contextRequired, Integer.parseInt(payload), aws_ctx);
+            } else if (parameterTypes[0].toString().equals("int") || Objects.equals(parameterTypes[0].toString(), "Integer")) {
+                int i = ClassTypeHelper.gson.fromJson(payload, int.class);
+                result = callWithMaybeContext(lambdaMethod, lambdaInstance, contextRequired, i, aws_ctx);
                 processed = true;
-            } else if (Objects.equals(parameterTypes[0].toString(), "boolean") || Objects.equals(parameterTypes[0].toString(), "Boolean")) {
-                result = callWithMaybeContext(lambdaMethod, lambdaInstance, contextRequired, Boolean.valueOf(payload), aws_ctx);
+            } else if (parameterTypes[0].toString().equals("boolean") || Objects.equals(parameterTypes[0].toString(), "Boolean")) {
+                boolean b = ClassTypeHelper.gson.fromJson(payload, boolean.class);
+                result = callWithMaybeContext(lambdaMethod, lambdaInstance, contextRequired, b, aws_ctx);
                 processed = true;
             }
         }
