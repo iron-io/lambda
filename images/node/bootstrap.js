@@ -242,22 +242,28 @@ function run() {
     // FIXME(nikhil): Error checking.
     var script = parts[0];
     var entry = parts[1];
+    var started = false;
     try {
       var mod = require('./'+script);
-      if (mod[entry] === undefined) {
-        throw "Handler '" + entry + "' missing on module '" + script + "'"
+      var func = mod[entry];
+      if (func === undefined) {
+        console.log("Handler '" + entry + "' missing on module '" + script + "'");
+        return;
       }
 
-      if (typeof mod[entry] !== 'function') {
-        throw "TypeError: " + (typeof mod[entry]) + " is not a function"
+      if (typeof func !== 'function') {
+        throw "TypeError: " + (typeof func) + " is not a function";
       }
-
+      started = true;
       mod[entry](payload, makeCtx())
     } catch(e) {
       if (typeof e === 'string') {
         console.log(e)
       } else {
         console.log(e.message)
+      }
+      if (!started) {
+        console.log("Process exited before completing request\n")
       }
     }
   } else {
