@@ -3,6 +3,5 @@
   "runtime": "python2.7",
   "name": "context-meta",
   "description": "Test context object compatibility.",
-  "event" : {},
-  "timeout" : 5
+  "event" : {}
 }

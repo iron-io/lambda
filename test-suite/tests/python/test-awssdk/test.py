@@ -7,20 +7,14 @@ def run(event, context):
     print ("Test start")
     s3 = boto3.resource('s3')
 
-    bucket = s3.Bucket(Bucket=event['bucket'])
+    print ("Creating object ...")
+    obj = s3.Object(
+        bucket_name=event['bucket'],
+        key='myKey-' + str(uuid.uuid4())
+        )
 
-    if bucket.creation_date is None:
-        print ("Creating bucket ...")
-        bucket.create(
-            ACL='private',
-            CreateBucketConfiguration={'LocationConstraint': event['region']}
-            )
-    bucket.wait_until_exists()
-
-    print ("Adding object ...")
-    obj = bucket.put_object(
-        Key='myKey-'+str(uuid.uuid4()),
-        Body='Hello!')
+    print ("Putting object value ...")
+    obj.put(Body='Hello!')
 
     print ("Deleting object ...")
     obj.delete()

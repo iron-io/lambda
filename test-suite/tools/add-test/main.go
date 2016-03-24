@@ -101,6 +101,7 @@ func createLambdaFunction(l *lambda.Lambda, code []byte, runtime, role, name, ha
 
 			configInput := &lambda.UpdateFunctionConfigurationInput{
 				FunctionName: aws.String(name),
+				Handler:      aws.String(handler),
 				Timeout:      aws.Int64(int64(timeout)),
 			}
 			resp, err = l.UpdateFunctionConfiguration(configInput)
