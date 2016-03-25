@@ -173,14 +173,39 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 		// forwarding messages from all tests to a single channel
 		testResults = util.JoinChannels(testResults, r)
 	}
+
+	passed, failed := make([]string, 0, len(tests)), make([]string, 0, len(tests))
+
 	for {
 		lines, ok := <-testResults
 		if !ok {
 			break
 		}
+
+		if len(lines) > 0 {
+			if strings.HasPrefix(lines[0], "PASS ") {
+				passed = append(passed, lines[0])
+			}
+			if strings.HasPrefix(lines[0], "FAIL ") {
+				failed = append(failed, lines[0])
+			}
+		}
+
 		for _, line := range lines {
 			log.Println(line)
 		}
+	}
+
+	log.Println(fmt.Sprintf("Total %d passed and %d failed tests", len(passed), len(failed)))
+	for _, line := range passed {
+		log.Println(line)
+	}
+	for _, line := range failed {
+		log.Println(line)
+	}
+
+	if len(failed) > 0 {
+		os.Exit(1)
 	}
 }
 
