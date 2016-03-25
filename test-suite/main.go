@@ -163,10 +163,12 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 		fullTimeout += test.Timeout + 5
 	}
 
+	concurrency := util.NewSemaphore(5) // using a limit, otherwise AWS fails with `ThrottlingException: Rate exceeded` on log retrieval
+
 	endOfTime := time.Now().Add(time.Duration(fullTimeout) * time.Second)
 	var testResults <-chan []string = nil
 	for _, test := range tests {
-		r := runTest(test, w, cw, l, endOfTime)
+		r := runTest(test, w, cw, l, endOfTime, concurrency)
 
 		// forwarding messages from all tests to a single channel
 		testResults = util.JoinChannels(testResults, r)
@@ -183,11 +185,15 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 }
 
 //Returns a channel with a test run result and debug messages
-func runTest(test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.CloudWatchLogs, l *lambda.Lambda, waitEnd time.Time) <-chan []string {
+func runTest(test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.CloudWatchLogs, l *lambda.Lambda, waitEnd time.Time, s util.Semaphore) <-chan []string {
 	result := make(chan []string)
 
 	go func() {
 		defer close(result)
+
+		s.Lock()
+		defer s.Unlock()
+
 		testName := test.Name
 
 		result <- []string{
