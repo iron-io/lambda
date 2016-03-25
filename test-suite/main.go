@@ -231,8 +231,9 @@ func runTest(test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.Cl
 		ironchan, irondbg := runOnIron(w, test)
 
 		// redirecting every debug message from test runs to result without waiting test results
-		util.Forward("DBG AWS Lambda "+testName+" ", awsdbg, result)
-		util.Forward("DBG Iron "+testName+" ", irondbg, result)
+		// before closing `result` aslo waits for closing of debug channels
+		defer util.ForwardInBackground("DBG AWS Lambda "+testName+" ", awsdbg, result)()
+		defer util.ForwardInBackground("DBG Iron "+testName+" ", irondbg, result)()
 
 		// waiting for test results or for the timeout whichever occurs first
 		var awss, irons *bytes.Buffer
