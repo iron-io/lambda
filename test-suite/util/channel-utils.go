@@ -26,7 +26,7 @@ func ForwardInBackground(prefix string, source <-chan string, target chan<- []st
 	return f
 }
 
-// Concatinate two channels in async way, i.e., any message comming from a or b passes to result without any change
+// Concatenate two channels in async way, i.e., any message comming from a or b passes to result without any change
 func JoinChannels(a <-chan []string, b <-chan []string) <-chan []string {
 	if a == nil {
 		return b

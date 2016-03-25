@@ -157,7 +157,7 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 	}
 
 	// expected duration for all tests to run in a sequential way
-	// after the fullTimeout expires no test result is excepted and `Timeout` message is reported for a test
+	// after the fullTimeout expires no test result is accepted and `Timeout` message is reported for a test
 	fullTimeout := 0
 	for _, test := range tests {
 		fullTimeout += test.Timeout + 5
