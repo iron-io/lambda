@@ -3,6 +3,5 @@
   "runtime": "python2.7",
   "name": "context-logging-checkoutput",
   "description": "Test default logging format compatibility.",
-  "event" : {},
-  "timeout" : 5
+  "event" : {}
 }

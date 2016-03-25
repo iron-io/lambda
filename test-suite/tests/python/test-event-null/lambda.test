@@ -3,6 +3,5 @@
   "runtime": "python2.7",
   "name": "event-null",
   "description": "Test behavior when event set to null",
-  "event" : null,
-  "timeout" : 5
+  "event" : null
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/docker/docker/pkg/jsonmessage"
 	iron_lambda "github.com/iron-io/lambda/lambda"
 	"github.com/iron-io/lambda/test-suite/util"
 	"github.com/satori/go.uuid"
@@ -97,6 +98,18 @@ func createLambdaFunction(l *lambda.Lambda, code []byte, runtime, role, name, ha
 				log.Println("Could not update function code", err)
 				return err
 			}
+
+			configInput := &lambda.UpdateFunctionConfigurationInput{
+				FunctionName: aws.String(name),
+				Handler:      aws.String(handler),
+				Timeout:      aws.Int64(int64(timeout)),
+			}
+			resp, err = l.UpdateFunctionConfiguration(configInput)
+			if err != nil {
+				log.Println("Could not update function configuration", err)
+				return err
+			}
+
 		} else {
 			return err
 		}
@@ -133,6 +146,24 @@ func addToLambda(dir string) error {
 	return err
 }
 
+type DockerJsonWriter struct {
+	under io.Writer
+	w     io.Writer
+}
+
+func NewDockerJsonWriter(under io.Writer) *DockerJsonWriter {
+	r, w := io.Pipe()
+	go func() {
+		err := jsonmessage.DisplayJSONMessagesStream(r, under, 1, true, nil)
+		log.Fatal(err)
+	}()
+	return &DockerJsonWriter{under, w}
+}
+
+func (djw *DockerJsonWriter) Write(p []byte) (int, error) {
+	return djw.w.Write(p)
+}
+
 func addToIron(dir string) error {
 	desc, err := util.ReadTestDescription(dir)
 	if err != nil {
@@ -147,12 +178,13 @@ func addToIron(dir string) error {
 		return err
 	}
 
-	err = iron_lambda.PushImage(imageNameVersion)
+	opts := iron_lambda.PushImageOptions{imageNameVersion, NewDockerJsonWriter(os.Stdout), true}
+	err = iron_lambda.PushImage(opts)
 	if err != nil {
 		return err
 	}
 
-	return iron_lambda.RegisterWithIron(imageNameVersion, credentials.NewEnvCredentials())
+	return iron_lambda.RegisterWithIron(imageNameVersion)
 }
 
 type RegisterOn struct {

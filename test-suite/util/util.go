@@ -22,7 +22,7 @@ type TestDescription struct {
 
 	// The test's timeout in seconds, valid timeout as imposed by Lambda
 	// is between 1 and 300 inclusive.
-	// If no Timeout is specified the 30 sec default is used
+	// If no Timeout is specified the 60 sec default is used
 	Timeout int
 }
 
@@ -41,7 +41,7 @@ func ReadTestDescription(dir string) (*TestDescription, error) {
 	desc.Name = fmt.Sprintf("lambda-test-suite-%s-%s", normalizedRuntime, desc.Name)
 
 	if desc.Timeout == 0 {
-		desc.Timeout = 30
+		desc.Timeout = 60
 	} else if desc.Timeout < 1 {
 		desc.Timeout = 1
 	} else if desc.Timeout > 300 {
@@ -96,8 +96,12 @@ func MakeImage(dir string, desc *TestDescription, imageNameVersion string) error
 		return errors.New("One of the files MUST be test-build.jar for Java tests.")
 	}
 
+	opts := iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, "", desc.Handler, os.Stdout, false}
 	// FIXME(nikhil): Use some configuration username.
-	err = iron_lambda.CreateImage(iron_lambda.CreateImageOptions{imageNameVersion, "iron/lambda-" + desc.Runtime, "test-build.jar", desc.Handler, os.Stdout, false}, files...)
+	if desc.Runtime == "java8" {
+		opts.Package = "test-build.jar"
+	}
+	err = iron_lambda.CreateImage(opts, files...)
 	return err
 }
 

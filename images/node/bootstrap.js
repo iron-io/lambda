@@ -65,12 +65,14 @@ var Context = function() {
     }
 
     var str;
+    var failed = false;
     try {
       str = JSON.stringify(result)
       // Succeed does not output to log, it only responds to the HTTP request.
     } catch(e) {
       // Set X-Amz-Function-Error: Unhandled header
-      return contextSelf.fail("Unable to stringify body as json: " + e);
+      console.log("Unable to stringify body as json: " + e);
+      failed = true;
     }
 
     // FIXME(nikhil): Return 202 or 200 based on invocation type and set response
@@ -78,7 +80,7 @@ var Context = function() {
 
     // OK, everything good.
     concluded = true;
-    process.nextTick(function() { process.exit(0) })
+    process.nextTick(function() { process.exit(failed ? 1 : 0) })
   }
 
   this.fail = function(error) {
@@ -147,7 +149,7 @@ var makeCtx = function() {
   // FIXME(nikhil): Generate UUID.
   var taskID = getEnv("TASK_ID");
 
-  var mem = getEnv("TASK_MAXMEM").toLowerCase();
+  var mem = getEnv("TASK_MAXRAM").toLowerCase();
   var bytes = 300 * 1024 * 1024;
 
   var scale = { 'b': 1, 'k': 1024, 'm': 1024*1024, 'g': 1024*1024*1024 };
@@ -240,22 +242,28 @@ function run() {
     // FIXME(nikhil): Error checking.
     var script = parts[0];
     var entry = parts[1];
+    var started = false;
     try {
       var mod = require('./'+script);
-      if (mod[entry] === undefined) {
-        throw "Handler '" + entry + "' missing on module '" + script + "'"
+      var func = mod[entry];
+      if (func === undefined) {
+        console.log("Handler '" + entry + "' missing on module '" + script + "'");
+        return;
       }
 
-      if (typeof mod[entry] !== 'function') {
-        throw "TypeError: " + (typeof mod[entry]) + " is not a function"
+      if (typeof func !== 'function') {
+        throw "TypeError: " + (typeof func) + " is not a function";
       }
-
+      started = true;
       mod[entry](payload, makeCtx())
     } catch(e) {
       if (typeof e === 'string') {
         console.log(e)
       } else {
         console.log(e.message)
+      }
+      if (!started) {
+        console.log("Process exited before completing request\n")
       }
     }
   } else {

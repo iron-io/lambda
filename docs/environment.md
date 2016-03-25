@@ -89,6 +89,72 @@ a JSON object with trace information.
 The Java8 runtime is significantly lacking at this piont and we **do not
 recommend** using it.
 
+### Handler types
+
+There are some restrictions on the handler types supported.
+
+#### Only a void return type is allowed
+
+Since Lambda does not support request/response invocation, we explicitly
+prohibit a non-void return type on the handler.
+
+#### JSON parse error stack differences
+
+AWS uses the Jackson parser, this project uses the GSON parser. So JSON parse
+errors will have different traces.
+
+#### Single item vs. List
+
+Given a list handler like:
+
+```java
+public static void myHandler(List<Double> l) {
+    // ...
+}
+```
+
+If the payload is a single number, AWS Lambda will succeed and pass the handler
+a list with a single item. This project will raise an exception.
+
+#### Collections of POJOs
+
+This project cannot currently deserialize a List or Map containing POJOs. For
+example:
+
+```java
+public class Handler {
+  public static MyPOJO {
+    private String attribute;
+    public void setAttribute(String a) {
+      attribute = a;
+    }
+
+    public String getAttribute() {
+      return attribute;
+    }
+  }
+
+  public static void myHandler(List<MyPOJO> l) {
+    // ...
+  }
+}
+```
+
+This handler invoked with the below event will fail!
+
+```js
+[{ "attribute": "value 1"}, { "attribute": "value 2" }]
+```
+
+#### Leveraging predefined types is not supported
+
+Using the types in `aws-lambda-java-core` to [implement handlers][predef] is
+untested and unsupported right now. While the package is available in your
+function, we have not tried it out.
+
+[predef]: http://docs.aws.amazon.com/lambda/latest/dg/java-handler-using-predefined-interfaces.html
+
 ### Context object
 
 TODO
+

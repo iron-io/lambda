@@ -38,4 +38,6 @@ exports.run = function(event, context) {
   assert.ok(typeof context.awsRequestId == 'string' && context.awsRequestId.length > 0, "context.awsRequestId is defined.");
 
   assert.ok(typeof context.memoryLimitInMB == 'string' && parseInt(context.memoryLimitInMB) >= 0, "context.memoryLimitInMB is a string representing a non-negative number.");
+
+  context.done('ok')
 }
