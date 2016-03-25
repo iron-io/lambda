@@ -108,15 +108,29 @@ func runOnIron(w *worker.Worker, test *util.TestDescription) (<-chan string, <-c
 			return
 		}
 
+		end := time.After(timeout)
 		taskid := taskids[0]
 		debug <- fmt.Sprintf("Task Id: %s", taskid)
-		debug <- "Waiting for task"
-		<-w.WaitForTask(taskid)
 
+		debug <- "Waiting for task"
+		select {
+		case <-w.WaitForTask(taskid):
+		case <-end:
+			debug <- fmt.Sprintf("Task timed out %s", taskid)
+			return
+		}
+
+		var iron_log []byte
 		debug <- "Waiting for task log"
-		iron_log, wait_log_ok := <-w.WaitForTaskLog(taskid)
-		if !wait_log_ok {
-			debug <- fmt.Sprintf("Something went wrong, no task log %s", taskid)
+		select {
+		case _iron_log, wait_log_ok := <-w.WaitForTaskLog(taskid):
+			if !wait_log_ok {
+				debug <- fmt.Sprintf("Something went wrong, no task log %s", taskid)
+				return
+			}
+			iron_log = _iron_log
+		case <-end:
+			debug <- fmt.Sprintf("Task timed out to get task log or the log is empty %s", taskid)
 			return
 		}
 
