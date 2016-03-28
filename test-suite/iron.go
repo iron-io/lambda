@@ -5,12 +5,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/iron-io/iron_go3/worker"
@@ -37,31 +35,32 @@ func cleanIronGeneric(output []byte) []byte {
 	return output
 }
 
-func cleanPython27IronOutput(output string) (string, error) {
+func cleanIronTaskIdAndTimestamp(output string) (string, error) {
 	var buf bytes.Buffer
-	var requestId string = ""
+	var taskId string = ""
 	// expecting request id as hex of bson_id
 	requestIdPattern, _ := regexp.Compile("[a-f0-9]{24}")
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if requestId == "" {
+		if taskId == "" {
 			parts := strings.Fields(line)
 
 			// generic logging through logger.info, logger.warning & etc
 			if len(parts) >= 3 {
 				requestIdCandidate := parts[2]
 				if requestIdPattern.MatchString(requestIdCandidate) {
-					requestId = requestIdCandidate
+					taskId = requestIdCandidate
 				}
 			}
 		}
 
-		line = util.RemoveTimestampAndRequestIdFromLogLine(line, requestId)
-
-		buf.WriteString(line)
-		buf.WriteRune('\n')
+		line, isOk := util.RemoveTimestampAndRequestIdFromIronLogLine(line, taskId)
+		if isOk {
+			buf.WriteString(line)
+			buf.WriteRune('\n')
+		}
 		if err := scanner.Err(); err != nil {
 			return "", err
 		}
@@ -70,57 +69,77 @@ func cleanPython27IronOutput(output string) (string, error) {
 	return buf.String(), nil
 }
 
-func cleanIron(runtime string, output []byte) ([]byte, error) {
+func cleanIron(output []byte) ([]byte, error) {
 	output = cleanIronGeneric(output)
-	switch runtime {
-	case "python2.7":
-		cleaned, err := cleanPython27IronOutput(string(output))
-		return []byte(cleaned), err
-	default:
-		return output, nil
-	}
+	cleaned, err := cleanIronTaskIdAndTimestamp(string(output))
+	return []byte(cleaned), err
 }
 
-func runOnIron(w *worker.Worker, wg *sync.WaitGroup, test *util.TestDescription, result chan<- io.Reader) {
-	var imagePrefix string
-	if imagePrefix = os.Getenv("IRON_LAMBDA_TEST_IMAGE_PREFIX"); imagePrefix == "" {
-		log.Fatalf("IRON_LAMBDA_TEST_IMAGE_PREFIX not set")
-	}
+//Returns a result and a debug channels. The channels are closed on test run finalization
+func runOnIron(w *worker.Worker, test *util.TestDescription) (<-chan string, <-chan string) {
+	result := make(chan string, 1)
+	debug := make(chan string, 1)
+	go func() {
+		defer close(result)
+		defer close(debug)
+		var imagePrefix string
+		if imagePrefix = os.Getenv("IRON_LAMBDA_TEST_IMAGE_PREFIX"); imagePrefix == "" {
+			log.Fatalf("IRON_LAMBDA_TEST_IMAGE_PREFIX not set")
+		}
 
-	var output bytes.Buffer
-	defer func() {
-		result <- &output
-		wg.Done()
+		payload, _ := json.Marshal(test.Event)
+		timeout := time.Duration(test.Timeout) * time.Second
+
+		debug <- "Enqueuing the task"
+		taskids, err := w.TaskQueue(worker.Task{
+			Cluster:  "internal",
+			CodeName: fmt.Sprintf("%s/%s", imagePrefix, test.Name),
+			Payload:  string(payload),
+			Timeout:  &timeout,
+		})
+
+		if err != nil {
+			debug <- fmt.Sprintf("Error queueing task %s", err)
+			return
+		}
+
+		if len(taskids) < 1 {
+			debug <- "Something went wrong, empty taskids list"
+			return
+		}
+
+		end := time.After(timeout)
+		taskid := taskids[0]
+		debug <- fmt.Sprintf("Task Id: %s", taskid)
+
+		debug <- "Waiting for task"
+		select {
+		case <-w.WaitForTask(taskid):
+		case <-end:
+			debug <- fmt.Sprintf("Task timed out %s", taskid)
+			return
+		}
+
+		var iron_log []byte
+		debug <- "Waiting for task log"
+		select {
+		case _iron_log, wait_log_ok := <-w.WaitForTaskLog(taskid):
+			if !wait_log_ok {
+				debug <- fmt.Sprintf("Something went wrong, no task log %s", taskid)
+				return
+			}
+			iron_log = _iron_log
+		case <-end:
+			debug <- fmt.Sprintf("Task timed out to get task log or the log is empty %s", taskid)
+			return
+		}
+
+		cleanedLog, err := cleanIron(iron_log)
+		if err != nil {
+			debug <- fmt.Sprintf("Error processing a log %s", test.Name)
+		} else {
+			result <- string(cleanedLog)
+		}
 	}()
-
-	payload, _ := json.Marshal(test.Event)
-	timeout := time.Duration(test.Timeout) * time.Second
-
-	taskids, err := w.TaskQueue(worker.Task{
-		Cluster:  "internal",
-		CodeName: fmt.Sprintf("%s/%s", imagePrefix, test.Name),
-		Payload:  string(payload),
-		Timeout:  &timeout,
-	})
-
-	if err != nil {
-		output.WriteString(fmt.Sprintf("Error queueing task %s %s", test.Name, err))
-		return
-	}
-
-	if len(taskids) < 1 {
-		output.WriteString(fmt.Sprintf("Something went wrong, empty taskids list", test.Name))
-		return
-	}
-
-	taskid := taskids[0]
-
-	<-w.WaitForTask(taskid)
-	iron_log := <-w.WaitForTaskLog(taskid)
-	cleanedLog, err := cleanIron(test.Runtime, iron_log)
-	if err != nil {
-		output.WriteString(fmt.Sprintf("Error processing a log for task %s %s", test.Name, err))
-	} else {
-		output.Write(cleanedLog)
-	}
+	return result, debug
 }

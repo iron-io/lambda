@@ -47,10 +47,6 @@ imports:
   - worker
   - api
   - config
-- name: github.com/iron-io/lambda
-  version: ""
-  subpackages:
-  - lambda
 - name: github.com/jmespath/go-jmespath
   version: 0b12d6b521d83fc7f755e7cfc1b1fbdd35a01a74
 - name: github.com/satori/go.uuid

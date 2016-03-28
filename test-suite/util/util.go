@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	iron_lambda "github.com/iron-io/lambda/lambda"
@@ -104,22 +105,39 @@ func MakeImage(dir string, desc *TestDescription, imageNameVersion string) error
 	return err
 }
 
-func RemoveTimestampAndRequestIdFromLogLine(line, requestId string) string {
-	if requestId != "" {
-		parts := strings.Fields(line)
+func RemoveTimestampAndRequestIdFromAwsLogLine(line, requestId string) (string, bool) {
+	return removeTimestampAndRequestIdFromLogLine(line, requestId, awsRequestIdRegexp)
+}
+func RemoveTimestampAndRequestIdFromIronLogLine(line, requestId string) (string, bool) {
+	return removeTimestampAndRequestIdFromLogLine(line, requestId, ironRequestIdRegexp)
+}
 
-		// assume timestamp is before request_id
-		for i, p := range parts {
-			if p == requestId {
-				ts := parts[i-1]
-				if strings.HasSuffix(ts, "Z") && strings.HasPrefix(ts, "20") {
-					line = strings.Replace(line, ts, "<timestamp>", 1)
-				}
-				line = strings.Replace(line, parts[i], "<request_id>", 1)
-				break
+var ironRequestIdRegexp *regexp.Regexp = regexp.MustCompile("^[0-9a-fA-F]{24}$")
+var awsRequestIdRegexp *regexp.Regexp = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+var timestampRegexp *regexp.Regexp = regexp.MustCompile("^20\\d{2}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3,6}Z")
+
+func removeTimestampAndRequestIdFromLogLine(line, requestId string, requestIdRegexp *regexp.Regexp) (string, bool) {
+	sep := "\t"
+	parts := strings.Split(line, sep)
+
+	// assume timestamp is before request_id
+	for i, p := range parts {
+		if p == requestId {
+			hasTimeStamp := i > 0 && timestampRegexp.MatchString(parts[i-1])
+			if hasTimeStamp {
+				parts = append(parts[:i-1], parts[i+1:]...)
+			} else {
+				parts = append(parts[:i], parts[i+1:]...)
 			}
+			return strings.Join(parts, sep), true
 		}
 	}
 
-	return line
+	//remove a log line from another request_id
+	for _, p := range parts {
+		if requestIdRegexp.MatchString(p) {
+			return "", false
+		}
+	}
+	return line, true
 }

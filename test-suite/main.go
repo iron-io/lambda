@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -20,7 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/iron-io/iron_go3/worker"
 	"github.com/iron-io/lambda/test-suite/util"
-	"github.com/satori/go.uuid"
 	"github.com/sendgrid/sendgrid-go"
 )
 
@@ -155,65 +152,159 @@ Runs all tests. If filter is passed, only runs tests matching filter. Filter is 
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	endMarker := uuid.NewV4().String()
-	testResults := make(chan []string)
-	endMarkerCount := 0
-	for _, test := range tests {
-		endMarkerCount++
-		go runTest(endMarker, testResults, test, w, cw, l)
+	if len(tests) == 0 {
+		log.Fatal("No tests to run")
 	}
 
-	for endMarkerCount > 0 {
-		lines := <-testResults
-		for _, line := range lines {
-			if line == endMarker {
-				endMarkerCount--
-			} else {
-				log.Println(line)
+	// expected duration for all tests to run in a sequential way
+	// after the fullTimeout expires no test result is accepted and `Timeout` message is reported for a test
+	fullTimeout := 0
+	for _, test := range tests {
+		fullTimeout += test.Timeout + 5
+	}
+
+	concurrency := util.NewSemaphore(5) // using a limit, otherwise AWS fails with `ThrottlingException: Rate exceeded` on log retrieval
+
+	endOfTime := time.Now().Add(time.Duration(fullTimeout) * time.Second)
+	var testResults <-chan []string = nil
+	for _, test := range tests {
+		r := runTest(test, w, cw, l, endOfTime, concurrency)
+
+		// forwarding messages from all tests to a single channel
+		testResults = util.JoinChannels(testResults, r)
+	}
+
+	passed, failed := make([]string, 0, len(tests)), make([]string, 0, len(tests))
+
+	for {
+		lines, ok := <-testResults
+		if !ok {
+			break
+		}
+
+		if len(lines) > 0 {
+			if strings.HasPrefix(lines[0], "PASS ") {
+				passed = append(passed, lines[0])
+			}
+			if strings.HasPrefix(lines[0], "FAIL ") {
+				failed = append(failed, lines[0])
 			}
 		}
+
+		for _, line := range lines {
+			log.Println(line)
+		}
+	}
+
+	log.Println(fmt.Sprintf("Total %d passed and %d failed tests", len(passed), len(failed)))
+	for _, line := range passed {
+		log.Println(line)
+	}
+	for _, line := range failed {
+		log.Println(line)
+	}
+
+	if len(failed) > 0 {
+		os.Exit(1)
 	}
 }
 
-func runTest(endMarker string, result chan<- []string, test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.CloudWatchLogs, l *lambda.Lambda) {
-	defer func() {
-		result <- []string{endMarker}
+//Returns a channel with a test run result and debug messages
+func runTest(test *util.TestDescription, w *worker.Worker, cw *cloudwatchlogs.CloudWatchLogs, l *lambda.Lambda, waitEnd time.Time, s util.Semaphore) <-chan []string {
+	result := make(chan []string)
+
+	go func() {
+		defer close(result)
+
+		s.Lock()
+		defer s.Unlock()
+
+		testName := test.Name
+
+		result <- []string{
+			fmt.Sprintf("Starting test %s", testName),
+		}
+
+		endOfWait := time.NewTimer(waitEnd.Sub(time.Now()))
+
+		awschan, awsdbg := runOnLambda(l, cw, test)
+		ironchan, irondbg := runOnIron(w, test)
+
+		// redirecting every debug message from test runs to result without waiting test results
+		// before closing `result` aslo waits for closing of debug channels
+		defer util.ForwardInBackground("DBG AWS Lambda "+testName+" ", awsdbg, result)()
+		defer util.ForwardInBackground("DBG Iron "+testName+" ", irondbg, result)()
+
+		// waiting for test results or for the timeout whichever occurs first
+		var awss, irons *bytes.Buffer
+		elapsed := false
+		for !elapsed && (awschan != nil || ironchan != nil) {
+			select {
+			case data, ok := <-awschan:
+				{
+					if ok {
+						if awss == nil {
+							awss = &bytes.Buffer{}
+						}
+						awss.WriteString(data)
+					} else {
+						awschan = nil
+					}
+				}
+			case data, ok := <-ironchan:
+				{
+					if ok {
+						if irons == nil {
+							irons = &bytes.Buffer{}
+						}
+						irons.WriteString(data)
+					} else {
+						ironchan = nil
+					}
+				}
+			case <-endOfWait.C:
+				elapsed = true
+			}
+		}
+
+		delimiter := "=========================================="
+		awsOutputStr, awsOutput := "No AWS lambda output", ""
+		if awss != nil {
+			awsOutput = string(awss.Bytes())
+			awsOutputStr = fmt.Sprintf("AWS lambda output\n%s\n%s\n%s", delimiter, awsOutput, delimiter)
+		}
+		ironOutputStr, ironOutput := "No Iron output", ""
+		if irons != nil {
+			ironOutput = string(irons.Bytes())
+			ironOutputStr = fmt.Sprintf("Iron output\n%s\n%s\n%s", delimiter, ironOutput, delimiter)
+		}
+
+		if elapsed {
+			result <- []string{
+				fmt.Sprintf("FAIL %s Timeout elapsed!", testName),
+				awsOutputStr,
+				ironOutputStr,
+			}
+			notifyFailure(testName)
+		} else if awsOutput != ironOutput || awss == nil || irons == nil {
+			result <- []string{
+				fmt.Sprintf("FAIL %s Output does not match!", testName),
+				awsOutputStr,
+				ironOutputStr,
+			}
+			notifyFailure(testName)
+		} else {
+			if awss == nil {
+				panic(testName + " " + awsOutputStr)
+			}
+			if irons == nil {
+				panic(testName + " " + ironOutputStr)
+			}
+			result <- []string{
+				fmt.Sprintf("PASS %s", testName),
+			}
+		}
 	}()
 
-	testName := test.Name
-
-	result <- []string{
-		fmt.Sprintf("Starting test %s", testName),
-	}
-
-	awschan := make(chan io.Reader, 1)
-	ironchan := make(chan io.Reader, 1)
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go runOnLambda(l, cw, &wg, test, awschan)
-	go runOnIron(w, &wg, test, ironchan)
-
-	wg.Wait()
-
-	awsreader := <-awschan
-	awss, _ := ioutil.ReadAll(awsreader)
-
-	ironreader := <-ironchan
-	irons, _ := ioutil.ReadAll(ironreader)
-
-	if !bytes.Equal(awss, irons) {
-		delimiter := "=========================================="
-		result <- []string{
-			fmt.Sprintf("FAIL %s Output does not match!", testName),
-			fmt.Sprintf("AWS lambda output\n%s\n%s\n%s", delimiter, awss, delimiter),
-			fmt.Sprintf("Iron output\n%s\n%s\n%s", delimiter, irons, delimiter),
-		}
-		notifyFailure(testName)
-	} else {
-		result <- []string{
-			fmt.Sprintf("PASS %s", testName),
-		}
-	}
+	return result
 }
