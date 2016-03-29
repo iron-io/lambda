@@ -258,6 +258,15 @@ func RunImageWithPayload(imageName string, payload string) error {
 	envs = append(envs, "AWS_LAMBDA_FUNCTION_VERSION=$LATEST")
 	envs = append(envs, "TASK_ID="+uuid.NewV4().String())
 	envs = append(envs, fmt.Sprintf("TASK_MAXRAM=%d", allocatedMemory))
+	// Try to forward AWS credentials.
+	{
+		creds := credentials.NewEnvCredentials()
+		v, err := creds.Get()
+		if err == nil {
+			envs = append(envs, "AWS_ACCESS_KEY_ID="+v.AccessKeyID)
+			envs = append(envs, "AWS_SECRET_ACCESS_KEY="+v.SecretAccessKey)
+		}
+	}
 
 	opts := docker.CreateContainerOptions{
 		Config: &docker.Config{

@@ -154,7 +154,17 @@ function, we have not tried it out.
 
 [predef]: http://docs.aws.amazon.com/lambda/latest/dg/java-handler-using-predefined-interfaces.html
 
+### Logging
+
+The [log4j and LambdaLogger
+styles](http://docs.aws.amazon.com/lambda/latest/dg/java-logging.html) that log
+to CloudWatch are not supported.
+
 ### Context object
 
-TODO
-
+* `context.getFunctionName()` returns a String of the form of a docker image,
+  for example `iron/test-function`.
+* `context.getFunctionVersion()` is always the string `"$LATEST"`.
+* `context.getAwsRequestId()` reflects the environment variable `TASK_ID` which is
+  set to the task ID on IronWorker. If TASK_ID is empty, a new UUID is used.
+* `getInvokedFunctionArn()`, `getLogGroupName()`, `getLogStreamName()`, `getIdentity()`, `getClientContext()`, `getLogger()` return `null`.

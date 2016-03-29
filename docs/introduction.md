@@ -22,8 +22,6 @@ easy to write containerized applications that will run anywhere without having
 to fiddle with Docker and get the various runtimes set up. Instead you can just
 write a simple function and have an "executable" ready to go.
 
-TODO
-
 ## How does it work?
 
 We provide base Docker images for the various runtimes that AWS Lambda
@@ -38,18 +36,15 @@ The Docker container has to be run with a certain configuration, described
 
 ## Next steps
 
-Write and package your Lambda functions with our [Getting started
+Write, package and run your Lambda functions with our [Getting started
 guide](./getting-started.md). [Here is the environment](./environment.md) that
 Lambda provides. `ironcli lambda` lists the commands to work with Lambda
 functions locally.
 
-There is a short guide to [using Lambda with IronWorker](./ironworker.md).
-Non-AWS Lambda functions do have the disadvantage of not having deep
-integration with other AWS services. Much of the push-based actions can be
-solved by redirecting the event through [SNS and using webhooks](./sns.md).
-AWS APIs are of course available for use through the AWS SDK available to the
-function. We explain how to deal with authentication in [this guide](./aws.md).
+The Docker environment required to run Lambda functions is described
+[here](./docker.md).
 
-## Contributing
-
-TODO
+Non-AWS Lambda functions can continue to interact with AWS services. [Working
+with AWS](./aws.md) describes how to access AWS credentials, interact with
+services like S3 and how to launch a Lambda function due a notification from
+SNS.
