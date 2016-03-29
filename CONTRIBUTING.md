@@ -3,11 +3,16 @@ Contributing to Lambda
 
 ### Prerequisites
 
-This has only been tested on OSX and Linux.
+These workflows have been tested on Linux and Mac. You must have a:
 
-* Working Go 1.5 onwards installation.
-* Working [Docker](http://docker.com) installation.
-* GNU Make.
+- Working `make` command
+- Working [Go][go] >=1.5 installation,
+- Working [Glide][glide] installation,
+- Working [Docker][docker] installation.
+
+[go]: http://golang.org
+[glide]: http://glide.sh
+[docker]: http://www.docker.com
 
 To work on Java code, you'll need a working JDK and [Apache Maven](http://maven.apache.org).
 For node.js, any version of node >=0.10.0 will do.

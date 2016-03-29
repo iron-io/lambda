@@ -6,15 +6,8 @@ We will then upload it to IronWorker and run it.
 
 ## Prerequisites
 
-These workflows have been tested on Linux and Mac. You must have a:
-
-- Working [Go][go] >=1.5 installation,
-- Working [Glide][glide] installation,
-- Working [Docker][docker] installation.
-
-[go]: http://golang.org
-[glide]: http://glide.sh
-[docker]: http://www.docker.com
+TODO: Update these to use real ironcli static build. Also add ironcli
+installation instructions.
 
 We are going to use a development branch of `ironcli` instead of the official
 release. TODO: `go install` will fail due to (lack of) vendoring.
@@ -53,7 +46,7 @@ Create an empty directory for your project and save this code in a file called
 Now let's use `ironcli`'s Lambda functionality to create a Docker image. We can
 then run the Docker image with a payload to execute the Lambda function.
 
-    $ $GOPATH/bin/ironcli lambda create-function --function-name irontest/node-exec:1 --runtime nodejs --handler node_exec.handler node_exec.js
+    $ ironcli lambda create-function --function-name irontest/node-exec:1 --runtime nodejs --handler node_exec.handler node_exec.js
     Image output Step 1 : FROM iron/lambda-nodejs
     ---> 66fb7af42230
     Step 2 : ADD node_exec.js ./node_exec.js
@@ -67,8 +60,8 @@ then run the Docker image with a payload to execute the Lambda function.
 
 As you can see, this is very similar to creating a Lambda function using the
 `aws` CLI tool. We name the function as we would name other Docker images. The
-`1` indicates the version. You can use any string. This way you can make
-changes to your code and tell IronWorker to run the newer code. The handler is
+`1` indicates the version. You can use any string. This way you can configure
+your deployment environment to use different versions. The handler is
 the name of the function to run, in the form that nodejs expects
 (`module.function`). Where you would package the files into a `.zip` to upload
 to Lambda, we just pass the list of files to `ironcli`. If you had node
@@ -86,7 +79,7 @@ You should now see the generated Docker image.
 The `test-function` subcommand can launch the Dockerized function with the
 right parameters.
 
-    $ $GOPATH/bin/ironcli lambda test-function --function-name irontest/node-exec:1 --payload '{ "cmd": "echo Dockerized Lambda" }'
+    $ ironcli lambda test-function --function-name irontest/node-exec:1 --payload '{ "cmd": "echo Dockerized Lambda" }'
     Dockerized Lambda!
 
 You should see the output. Try changing the command to `date` or something more
@@ -147,9 +140,4 @@ You can also launch the task via Webhooks. You can find the Webhook URL on the
 Code page.
 
     $ curl -X POST -d '{ "cmd": "echo Dockerized Lambda" }' '<webhook URL>'
-
----
-
-TODO:
-NOTE to devs: Perhaps prefetch Lambda function runners on to certain machines?
 
