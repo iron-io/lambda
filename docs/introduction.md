@@ -41,6 +41,7 @@ guide](./getting-started.md). [Here is the environment](./environment.md) that
 Lambda provides. `ironcli lambda` lists the commands to work with Lambda
 functions locally.
 
+You can [import](./import.md) existing Lambda functions hosted on Amazon!
 The Docker environment required to run Lambda functions is described
 [here](./docker.md).
 
