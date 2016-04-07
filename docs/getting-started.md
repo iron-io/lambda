@@ -4,19 +4,8 @@ This guide will walk you through creating and testing a simple Lambda function.
 
 We will then upload it to IronWorker and run it.
 
-## Prerequisites
-
-TODO: Update these to use real ironcli static build. Also add ironcli
-installation instructions.
-
-We are going to use a development branch of `ironcli` instead of the official
-release. TODO: `go install` will fail due to (lack of) vendoring.
-
-    $ cd $GOPATH
-    $ go get github.com/iron-io/ironcli
-    $ cd src/github.com/iron-io/ironcli
-    $ git checkout -t origin/lambda
-    $ go install .
+We need the the `ironcli` tool for the rest of this guide. You can install it
+by following [these instructions](https://github.com/iron-io/ironcli).
 
 ## Creating the function
 
@@ -46,7 +35,7 @@ Create an empty directory for your project and save this code in a file called
 Now let's use `ironcli`'s Lambda functionality to create a Docker image. We can
 then run the Docker image with a payload to execute the Lambda function.
 
-    $ ironcli lambda create-function --function-name irontest/node-exec:1 --runtime nodejs --handler node_exec.handler node_exec.js
+    $ iron lambda create-function --function-name irontest/node-exec:1 --runtime nodejs --handler node_exec.handler node_exec.js
     Image output Step 1 : FROM iron/lambda-nodejs
     ---> 66fb7af42230
     Step 2 : ADD node_exec.js ./node_exec.js
@@ -79,7 +68,7 @@ You should now see the generated Docker image.
 The `test-function` subcommand can launch the Dockerized function with the
 right parameters.
 
-    $ ironcli lambda test-function --function-name irontest/node-exec:1 --payload '{ "cmd": "echo Dockerized Lambda" }'
+    $ iron lambda test-function --function-name irontest/node-exec:1 --payload '{ "cmd": "echo Dockerized Lambda" }'
     Dockerized Lambda!
 
 You should see the output. Try changing the command to `date` or something more
@@ -107,7 +96,7 @@ The `publish-function` command first uploads the image to Docker Hub, then
 registers it with IronWorker so you can queue tasks or launch a task in
 response to a webhook.
 
-    $ $GOPATH/bin/ironcli lambda publish-function --function-name irontest/node-exec:1
+    $ iron lambda publish-function --function-name irontest/node-exec:1
     ----->  Configuring client
             Project '<project name>' with id='<project id>'
     ----->  Registering worker 'irontest/node-exec'
@@ -121,7 +110,7 @@ page.
 
 We can now run this from the command line.
 
-    $ $GOPATH/bin/ironcli worker queue -payload '{ "cmd": "echo Dockerized Lambda" }' -wait irontest/node-exec
+    $ iron worker queue -payload '{ "cmd": "echo Dockerized Lambda" }' -wait irontest/node-exec
     ----->  Configuring client
             Project '<project name>' with id='<project id>'
     ----->  Queueing task 'irontest/node-exec'

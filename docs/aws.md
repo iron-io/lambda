@@ -41,21 +41,21 @@ Assuming you [packaged this function](./introduction.md) into a Docker image
 `iron/s3-write` and pushed it to Docker Hub. Instead of just registering with
 IronWorker as:
 
-    ironcli register <hub user>/s3-write
+    iron register <hub user>/s3-write
 
 do this instead:
 
-    ironcli register -e AWS_ACCESS_KEY_ID=<access key> \
+    iron register -e AWS_ACCESS_KEY_ID=<access key> \
                      -e AWS_SECRET_ACCESS_KEY=<secret key> \
                      <hub user>/s3-write
 
-Alternatively, if you use `ironcli publish-function`, it will automatically
+Alternatively, if you use `iron publish-function`, it will automatically
 pick up the environment variables and forward them if valid ones are found.
 
 ```sh
 export AWS_ACCESS_KEY_ID=<access key>
 export AWS_SECRET_ACCESS_KEY=<secret key>
-ironcli publish-function -function-name <hub user>/s3-write
+iron publish-function -function-name <hub user>/s3-write
 ```
 
 If you have an existing image with the same name registered with IronWorker,
@@ -222,7 +222,7 @@ With this function ready, we can Dockerize it and publish it to actually try it
 out with SNS.
 
 ```sh
-ironcli lambda create-function -function-name <Docker Hub username>/sns-example -runtime
+iron lambda create-function -function-name <Docker Hub username>/sns-example -runtime
 nodejs -handler sns.handler sns.js
 ```
 
@@ -238,7 +238,7 @@ variables. The values must be your AWS credentials.
 AWS_ACCESS_KEY_ID=<access key>
 AWS_SECRET_ACCESS_KEY=<secret key>
 
-ironcli publish-function -function-name <Docker Hub username>/sns-example:latest
+iron publish-function -function-name <Docker Hub username>/sns-example:latest
 ```
 
 Visit the published function's code page in the [IronWorker control
