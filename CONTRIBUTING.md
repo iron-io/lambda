@@ -76,12 +76,17 @@ ironcli is built from source. To make sure you can hack on the `lambda` package
 within the vendoring workflow, you should do something like this.
 
 * Clone ironcli.
-* Fork this repository.
-* Edit the glide.yaml file to change the `lambda` package import path from
-  `github.com/iron-io/lambda/lambda` to `github.com/<username>/lambda/lambda`.
-  You'll also need to fix the imports in the ironcli lambda.go file.
-* Run `glide i` to get the new package.
-* Now `ironcli/vendor/github.com/<username>/lambda` will have your fork. Hack
-  in here and submit a PR.
-* If you have a better idea of a workflow, we would appreciate leaving us
-  a note.
+* Run `glide i` to install dependencies.
+* Now `ironcli/vendor/github.com/iron-io/lambda` will have a clone of the
+  master branch of lambda.
+* Create a new branch, hack hack hack.
+* Make sure relevant code compiles and ironcli builds.
+* Fork the lambda repository on Github.
+* Add your fork as a remote: `git remote add <username> git@github.com:<username>/lambda`
+* Push your branch to your fork: `git push <username> <feature-branch>`
+* Submit a PR.
+
+### Improving Lambda Docker images
+
+Simply clone this repository, make changes to the Dockerfile for individual
+images in the `images/<runtime>` directories and submit a Pull Request.
