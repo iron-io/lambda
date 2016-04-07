@@ -46,8 +46,8 @@ IronWorker as:
 do this instead:
 
     iron register -e AWS_ACCESS_KEY_ID=<access key> \
-                     -e AWS_SECRET_ACCESS_KEY=<secret key> \
-                     <hub user>/s3-write
+                  -e AWS_SECRET_ACCESS_KEY=<secret key> \
+                  <hub user>/s3-write
 
 Alternatively, if you use `iron publish-function`, it will automatically
 pick up the environment variables and forward them if valid ones are found.
