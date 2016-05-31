@@ -112,8 +112,10 @@ def getPAYLOAD_FILE():
 
 
 def getTASK_TIMEOUT():
-    return os.environ.get('TASK_TIMEOUT') or 3600
-
+    try:
+        return int(os.environ.get('TASK_TIMEOUT'))
+    except ValueError:
+        return 3600
 
 def getTASK_MAXRAM():
     # IronWorker uses MAXMEM, Hybrid uses MAXRAM.
@@ -190,7 +192,7 @@ def configLogging(context):
     }
     logging.config.dictConfig(loggingConfig)
 
-plannedEnd = time.time() + getTASK_TIMEOUT()
+plannedEnd = int(time.time()) + getTASK_TIMEOUT()
 
 debugging and print ('os.environ      = ', os.environ)
 debugging and print ('/mnt content    = ', os.listdir("/mnt"))
