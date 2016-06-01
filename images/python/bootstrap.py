@@ -33,7 +33,7 @@ class Context(object):
         self.memory_limit_in_mb = int(getTASK_MAXRAM() / 1024 / 1024)
 
     def get_remaining_time_in_millis(self):
-        remaining = plannedEnd - time.time()
+        remaining = plannedEnd - int(time.time())
         if remaining < 0:
             remaining = 0
         return remaining * 1000
