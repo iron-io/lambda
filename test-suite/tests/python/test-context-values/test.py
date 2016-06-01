@@ -5,7 +5,7 @@ import time
 def run(event, context):
     print("Function name is set:", not (context.function_name is None))
     print("Function version is set:", not (context.function_version is None))
-    print("Memory limit in MB (grater or equal than 100):", context.memory_limit_in_mb > 100)
+    print("Memory limit in MB is positive:", context.memory_limit_in_mb > 0)
     print("AWS request ID is set:", not (context.aws_request_id is None))
 
     remaining1 = context.get_remaining_time_in_millis()
