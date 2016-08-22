@@ -113,7 +113,7 @@ def getPAYLOAD_FILE():
 
 def getTASK_TIMEOUT():
     try:
-        return int(os.environ.get('TASK_TIMEOUT'))
+        return int(os.environ.get('TASK_TIMEOUT', ''))
     except ValueError:
         return 3600
 
