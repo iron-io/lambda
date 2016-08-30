@@ -29,6 +29,11 @@ ironcli lambda aws-import my-function
 will import the function code to a directory called `./my-function`. It will
 then create a docker image called `my-function`.
 
+Using Lambda with Docker Hub and Iron Worker requires that the Docker image be
+named `<Docker Hub username>/<image name>`. This is used to uniquely identify
+images on Docker Hub. Please use the `-image <Docker Hub username>/<image
+name>` flag  to `aws-import` to create a correctly named image.
+
 If you only want to download the code, pass the `-download-only` flag. The
 `-region` and `-profile` flags are available similar to the `aws` tool to help
 you tweak the settings on a command level. If you want to call the docker image

@@ -229,8 +229,6 @@ nodejs -handler sns.handler sns.js
 This will create a local docker image. The `publish-function` command will
 upload this to Docker Hub and register it with IronWorker.
 
-FIXME(nikhil): AWS credentials bit.
-
 To be able to use the AWS SDK, you'll also need to set two environment
 variables. The values must be your AWS credentials.
 
