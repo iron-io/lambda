@@ -21,3 +21,11 @@ import:
   version: ~1.10.3
   subpackages:
   - pkg/jsonmessage
+- package: github.com/docker/engine-api
+  subpackages:
+  - types/filters
+  - types/swarm
+- package: github.com/hashicorp/go-cleanhttp
+- package: github.com/opencontainers/runc
+  subpackages:
+  - libcontainer/user

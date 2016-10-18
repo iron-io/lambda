@@ -1,8 +1,8 @@
-hash: 53e196d6ce241dae228e214717004a4ed3ce39691e8ffee195e37e76f6e9e265
-updated: 2016-03-22T10:32:17.613767945-07:00
+hash: 144bd93c4247f3246e459717b36598951283499fa842ff3bed8ad23dfea2478d
+updated: 2016-10-18T11:20:43.851037791-07:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 4da0bec8953a0a540f391930a946917b12a95671
+  version: 8f2725740345a0561fa09669f5f75f905404ef8b
   subpackages:
   - aws
   - aws/awserr
@@ -26,39 +26,54 @@ imports:
   - private/protocol/json/jsonutil
   - private/protocol/rest
 - name: github.com/Azure/go-ansiterm
-  version: 70b2c90b260171e829f1ebd7c17f600c11858dbe
+  version: fa152c58bc15761d0200cb75fe958b89a9d4888e
   subpackages:
   - winterm
 - name: github.com/docker/docker
-  version: 0dcdd1c5b84c4a066882ea52dd81b5b3a624897a
+  version: 20f81dde9bd97c86b2d0e33bbbf1388018611929
   subpackages:
   - pkg/jsonmessage
   - pkg/jsonlog
   - pkg/term
   - pkg/system
   - pkg/term/windows
+- name: github.com/docker/engine-api
+  version: 4290f40c056686fcaa5c9caf02eac1dde9315adf
+  subpackages:
+  - types/filters
+  - types/swarm
 - name: github.com/docker/go-units
-  version: 5d2041e26a699eaca682e2ea41c8f891e1060444
+  version: f2145db703495b2e525c59662db69a7344b00bb8
 - name: github.com/go-ini/ini
-  version: 12f418cc7edc5a618a51407b7ac1f1f512139df3
+  version: 6e4869b434bd001f6983749881c7ead3545887d8
+- name: github.com/hashicorp/go-cleanhttp
+  version: ad28ea4487f05916463e2423a55166280e8254b5
 - name: github.com/iron-io/iron_go3
-  version: d1197926301489b15e418c49a0b17a9c42817acd
+  version: cd9cc95ce2d2bb25d2e4e10cd62fff1d97ad1906
   subpackages:
   - worker
   - api
   - config
+- name: github.com/iron-io/lambda
+  version: ""
+  subpackages:
+  - lambda
 - name: github.com/jmespath/go-jmespath
-  version: 0b12d6b521d83fc7f755e7cfc1b1fbdd35a01a74
+  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
+- name: github.com/opencontainers/runc
+  version: bf77e5976ad42b6167a167a9f3093748f7c154db
+  subpackages:
+  - libcontainer/user
 - name: github.com/satori/go.uuid
-  version: e673fdd4dea8a7334adbbe7f57b7e4b00bdc5502
+  version: b061729afc07e77a8aa4fad0a2fd840958f1942a
 - name: github.com/sendgrid/sendgrid-go
   version: 0bf6332788d0230b7da84a1ae68d7531073200e1
 - name: github.com/sendgrid/smtpapi-go
-  version: 08102729bcf72bfe74dde6c0da8e0423e94090ca
+  version: 072b6f477c501c30348f442559997853f12b364e
 - name: github.com/Sirupsen/logrus
-  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
+  version: 3ec0642a7fb6488f65b06f9040adc67e3990296a
 - name: golang.org/x/sys
-  version: 9d4e42a20653790449273b3c85e67d6d8bae6e2e
+  version: 002cbb5f952456d0c50e0d2aff17ea5eca716979
   subpackages:
   - unix
 devImports: []
