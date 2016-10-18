@@ -15,13 +15,29 @@ public class Launcher {
     public static void main(String[] args) {
         String handler = args[0];
         String payload = "";
-        try {
-            String file = System.getenv("PAYLOAD_FILE");
-            if (file != null) {
+        String file = System.getenv("PAYLOAD_FILE");
+        if (file != null) {
+            try {
                 payload = new String(Files.readAllBytes(Paths.get(file)));
+            } catch (IOException ioe) {
+                System.err.println("bootstrap: Could not read payload file " + ioe);
+                System.exit(1);
             }
-        } catch (IOException ioe) {
-            // Should probably log this somewhere useful but not in the output.
+        } else {
+            try {
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                byte[] buffer = new byte[4096];
+                int n;
+                while ((n = System.in.read(buffer)) != -1) {
+                  os.write(buffer, 0, n);
+                }
+                os.close();
+
+                payload = os.toString("UTF-8");
+            } catch (IOException ioe) {
+                System.err.println("bootstrap: Could not read stdin " + ioe);
+                System.exit(1);
+            }
         }
 
         try {
