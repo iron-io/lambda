@@ -16,7 +16,7 @@ public class Launcher {
         String handler = args[0];
         String payload = "";
         String file = System.getenv("PAYLOAD_FILE");
-        if (file != null) {
+        if (file != null && !file.isEmpty()) {
             try {
                 payload = new String(Files.readAllBytes(Paths.get(file)));
             } catch (IOException ioe) {
