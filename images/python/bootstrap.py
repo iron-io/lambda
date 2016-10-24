@@ -238,7 +238,7 @@ try:
         payload = f.read()
 
 except Exception, e:
-    stopWithError("Failed to read {payloadFileName}. err={err}".format(payloadFileName=(payloadFileName and payloadFileName or '<stdin>'), err=e))
+    stopWithError("Failed to read {payloadFileName}. err={err}".format(payloadFileName=(payloadFileName or '<stdin>'), err=e))
 
 try:
     payload = json.loads(payload)
