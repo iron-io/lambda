@@ -230,7 +230,6 @@ if funcName is None:
 
 try:
     if payloadFileName:
-        stopWithError("No payload present")
         payloadFile = file(payloadFileName, 'r')
     else:
         payloadFile = sys.stdin
@@ -238,8 +237,8 @@ try:
     with payloadFile as f:
         payload = f.read()
 
-except:
-    stopWithError("Failed to read {payloadFile}".format(payloadFileName=(payloadFileName and payloadFileName or '<stdin>')))
+except Exception, e:
+    stopWithError("Failed to read {payloadFileName}. err={err}".format(payloadFileName=(payloadFileName and payloadFileName or '<stdin>'), err=e))
 
 try:
     payload = json.loads(payload)
