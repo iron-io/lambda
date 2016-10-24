@@ -225,50 +225,71 @@ var makeCtx = function() {
 
 function run() {
   // FIXME(nikhil): Check for file existence and allow non-payload.
-  var payload = {};
   var path = process.env["PAYLOAD_FILE"];
+  var stream = process.stdin;
   if (path) {
     try {
-      var contents = fs.readFileSync(path, { encoding: 'utf8' });
-      payload = JSON.parse(contents);
+      stream = fs.createReadStream(path);
     } catch(e) {
-      console.error("bootstrap: Error reading payload file", e)
+      console.error("bootstrap: Error opening payload file", e)
+      process.exit(1);
     }
   }
 
-  if (process.argv.length > 2) {
-    var handler = process.argv[2];
-    var parts = handler.split('.');
-    // FIXME(nikhil): Error checking.
-    var script = parts[0];
-    var entry = parts[1];
-    var started = false;
+  var input = "";
+  stream.setEncoding('utf8');
+  stream.on('data', function(chunk) {
+    input += chunk;
+  });
+
+  stream.on('error', function(err) {
+    console.error("bootstrap: Error reading payload stream", err);
+    process.exit(1);
+  });
+
+  stream.on('end', function() {
     try {
-      var mod = require('./'+script);
-      var func = mod[entry];
-      if (func === undefined) {
-        console.log("Handler '" + entry + "' missing on module '" + script + "'");
-        return;
-      }
-
-      if (typeof func !== 'function') {
-        throw "TypeError: " + (typeof func) + " is not a function";
-      }
-      started = true;
-      mod[entry](payload, makeCtx())
+      var payload = JSON.parse(input);
     } catch(e) {
-      if (typeof e === 'string') {
-        console.log(e)
-      } else {
-        console.log(e.message)
-      }
-      if (!started) {
-        console.log("Process exited before completing request\n")
-      }
+      console.error("bootstrap: Error parsing JSON", e);
+      process.exit(1);
     }
-  } else {
-    console.error("bootstrap: No script specified")
-  }
+
+    if (process.argv.length > 2) {
+      var handler = process.argv[2];
+      var parts = handler.split('.');
+      // FIXME(nikhil): Error checking.
+      var script = parts[0];
+      var entry = parts[1];
+      var started = false;
+      try {
+        var mod = require('./'+script);
+        var func = mod[entry];
+        if (func === undefined) {
+          console.log("Handler '" + entry + "' missing on module '" + script + "'");
+          return;
+        }
+
+        if (typeof func !== 'function') {
+          throw "TypeError: " + (typeof func) + " is not a function";
+        }
+        started = true;
+        mod[entry](payload, makeCtx())
+      } catch(e) {
+        if (typeof e === 'string') {
+          console.log(e)
+        } else {
+          console.log(e.message)
+        }
+        if (!started) {
+          console.log("Process exited before completing request\n")
+        }
+      }
+    } else {
+      console.error("bootstrap: No script specified")
+      process.exit(1);
+    }
+  })
 }
 
 run()

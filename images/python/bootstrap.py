@@ -213,11 +213,6 @@ debugging and print ('handlerName = ', handlerName)
 
 if handlerName is None:
     stopWithError("handlerName arg is not specified")
-if payloadFileName is None:
-    stopWithError("PAYLOAD_FILE variable is not specified")
-
-if not os.path.isfile(payloadFileName):
-    stopWithError("No payload present")
 
 handlerParts = string.rsplit(handlerName, ".", 2)
 
@@ -234,12 +229,16 @@ if funcName is None:
     stopWithError("Function name is not defined")
 
 try:
-    with file(payloadFileName) as f:
-        payload = f.read()
-except:
-    stopWithError("Failed to read {payloadFileName}".format(payloadFileName=payloadFileName))
+    if payloadFileName:
+        payloadFile = file(payloadFileName, 'r')
+    else:
+        payloadFile = sys.stdin
 
-debugging and print ('payload loaded')
+    with payloadFile as f:
+        payload = f.read()
+
+except Exception, e:
+    stopWithError("Failed to read {payloadFileName}. err={err}".format(payloadFileName=(payloadFileName or '<stdin>'), err=e))
 
 try:
     payload = json.loads(payload)
