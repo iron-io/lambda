@@ -64,11 +64,10 @@ var Context = function() {
       result = null
     }
 
-    var str;
     var failed = false;
     try {
-      str = JSON.stringify(result)
-      // Succeed does not output to log, it only responds to the HTTP request.
+      // Output result to log
+      console.log(JSON.stringify(result));
     } catch(e) {
       // Set X-Amz-Function-Error: Unhandled header
       console.log("Unable to stringify body as json: " + e);
@@ -248,8 +247,11 @@ function run() {
   });
 
   stream.on('end', function() {
+    var payload = {}
     try {
-      var payload = JSON.parse(input);
+      if (input.length > 0) {
+        payload = JSON.parse(input);
+      }
     } catch(e) {
       console.error("bootstrap: Error parsing JSON", e);
       process.exit(1);
