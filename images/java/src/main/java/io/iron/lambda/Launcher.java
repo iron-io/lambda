@@ -137,7 +137,7 @@ public class Launcher {
             System.out.println(jsonInString);
         }
         catch (Exception e) {
-            System.err.println(e);
+            System.out.println("{\"error\": \"" + ClassTypeHelper.gson.toJson(e.toString()) + "\"}");
             System.exit(1);
          }
     }
