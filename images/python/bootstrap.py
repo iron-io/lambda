@@ -241,7 +241,8 @@ except Exception, e:
     stopWithError("Failed to read {payloadFileName}. err={err}".format(payloadFileName=(payloadFileName or '<stdin>'), err=e))
 
 try:
-    payload = json.loads(payload)
+    if len(payload) > 0:
+        payload = json.loads(payload)
 except:
     debugging and print ('payload is ') and print (payload)
     stopWithError('Payload is not JSON')
@@ -261,7 +262,7 @@ debugging and print ('handler found')
 
 try:
     result = caller.call(payload, context)
-    #FIXME where to put result in async mode?
+    sys.stdout.write(json.dumps(result))
 except Exception as e:
     stopWithError(e)
 
