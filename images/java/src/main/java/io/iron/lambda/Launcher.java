@@ -131,8 +131,15 @@ public class Launcher {
         if (!processed) {
             System.err.println(String.format("Handler %s with simple, POJO, or IO(input/output) types not found", handlerName));
         }
-        String jsonInString = ClassTypeHelper.gson.toJson(result);
-        System.out.println(jsonInString);
+
+        try {
+            String jsonInString = ClassTypeHelper.gson.toJson(result);
+            System.out.println(jsonInString);
+        }
+        catch (Exception e) {
+            System.err.println(e);
+            System.exit(1);
+         }
     }
 
     private void launchMethod(String[] packageHandler, String payload) throws Exception {
