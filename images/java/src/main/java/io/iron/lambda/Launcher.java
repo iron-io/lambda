@@ -131,6 +131,15 @@ public class Launcher {
         if (!processed) {
             System.err.println(String.format("Handler %s with simple, POJO, or IO(input/output) types not found", handlerName));
         }
+
+        try {
+            String jsonInString = ClassTypeHelper.gson.toJson(result);
+            System.out.println(jsonInString);
+        }
+        catch (Exception e) {
+            System.out.println("{\"error\": \"" + ClassTypeHelper.gson.toJson(e.toString()) + "\"}");
+            System.exit(1);
+         }
     }
 
     private void launchMethod(String[] packageHandler, String payload) throws Exception {
@@ -195,10 +204,6 @@ public class Launcher {
         });
 
         Class returnType = matchedArray[0].getReturnType();
-        if (!returnType.getTypeName().equals("void")) {
-            System.err.println(String.format("Handler can only have 'void' return type. Found '%s'.", returnType.getTypeName()));
-            System.exit(1);
-        }
         runMethod(matchedArray[0], payload, cls, handlerName);
     }
 
