@@ -192,6 +192,18 @@ def configLogging(context):
     }
     logging.config.dictConfig(loggingConfig)
 
+def setEnvFromHeader():
+    headerPrefix = "CONFIG_"
+    newEnvVars = {}
+    for key, value in os.environ.iteritems():
+        if key.startswith(headerPrefix):
+            newEnvVars[key[len(headerPrefix):]] = value
+
+    for key, value in newEnvVars.iteritems():
+        os.environ[key] = value
+
+
+setEnvFromHeader()
 plannedEnd = int(time.time()) + getTASK_TIMEOUT()
 
 debugging and print ('os.environ      = ', os.environ)
