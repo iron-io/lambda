@@ -17,6 +17,13 @@ else
   exit 1
 fi
 
+# set env variables from CONFIG_* prefixed ones
+for i in $(env); do
+    if [[ $i  == CONFIG_* ]]; then
+        export ${i:7}
+    fi
+done
+
 java -jar lambda.jar $2
 
 exit 0
