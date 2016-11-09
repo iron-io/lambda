@@ -222,7 +222,23 @@ var makeCtx = function() {
   return ctx;
 }
 
+var setEnvFromHeader = function () {
+  var headerPrefix = "CONFIG_";
+  var newEnvVars = {};
+  for (var key in process.env) {
+    if (key.indexOf(headerPrefix) == 0) {
+      newEnvVars[key.slice(headerPrefix.length)] = process.env[key];
+    }
+  }
+
+  for (var key in newEnvVars) {
+    process.env[key] = newEnvVars[key];
+  }
+}
+
+
 function run() {
+  setEnvFromHeader();
   // FIXME(nikhil): Check for file existence and allow non-payload.
   var path = process.env["PAYLOAD_FILE"];
   var stream = process.stdin;
