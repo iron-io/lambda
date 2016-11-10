@@ -8,6 +8,8 @@ import logging.config
 import time
 import uuid
 
+oldstdout = sys.stdout
+sys.stdout = sys.stderr
 
 debugging = False
 
@@ -274,7 +276,7 @@ debugging and print ('handler found')
 
 try:
     result = caller.call(payload, context)
-    sys.stdout.write(json.dumps(result))
+    oldstdout.write(json.dumps(result))
 except Exception as e:
     stopWithError(e)
 
