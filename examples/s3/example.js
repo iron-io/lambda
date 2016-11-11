@@ -59,10 +59,10 @@ exports.run = function(event, context) {
             ACL: 'public-read',
           }, function (err, data) {
             if (err) throw err;
-            context.done()
+            context.succeed("Image updated");
           });
         } else {
-          context.done();
+          context.succeed("Image not updated");
         }
       });
     });

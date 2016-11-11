@@ -2,6 +2,9 @@
 
 var fs = require('fs');
 
+var oldlog = console.log
+console.log = console.error
+
 // Some notes on the semantics of the succeed(), fail() and done() methods.
 // Tests are the source of truth!
 // First call wins in terms of deciding the result of the function. BUT,
@@ -67,7 +70,7 @@ var Context = function() {
     var failed = false;
     try {
       // Output result to log
-      console.log(JSON.stringify(result));
+      oldlog(JSON.stringify(result));
     } catch(e) {
       // Set X-Amz-Function-Error: Unhandled header
       console.log("Unable to stringify body as json: " + e);
@@ -107,10 +110,10 @@ var Context = function() {
       } else {
         errstr = error.toString()
       }
-      console.log(JSON.stringify({"errorMessage": errstr }))
+      oldlog(JSON.stringify({"errorMessage": errstr }))
     } catch(e) {
       // Set X-Amz-Function-Error: Unhandled header
-      console.log(errstr)
+      oldlog(errstr)
     }
   }
 
@@ -284,7 +287,7 @@ function run() {
         var mod = require('./'+script);
         var func = mod[entry];
         if (func === undefined) {
-          console.log("Handler '" + entry + "' missing on module '" + script + "'");
+          oldlog("Handler '" + entry + "' missing on module '" + script + "'");
           return;
         }
 
@@ -295,12 +298,12 @@ function run() {
         mod[entry](payload, makeCtx())
       } catch(e) {
         if (typeof e === 'string') {
-          console.log(e)
+          oldlog(e)
         } else {
-          console.log(e.message)
+          oldlog(e.message)
         }
         if (!started) {
-          console.log("Process exited before completing request\n")
+          oldlog("Process exited before completing request\n")
         }
       }
     } else {

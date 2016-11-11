@@ -12,6 +12,14 @@ import com.google.gson.JsonSyntaxException;
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 
 public class Launcher {
+
+    PrintStream oldout;
+
+    public Launcher() {
+        oldout =  System.out;
+        System.setOut(System.err);
+    }
+
     public static void main(String[] args) {
         String handler = args[0];
         String payload = "";
@@ -134,10 +142,10 @@ public class Launcher {
 
         try {
             String jsonInString = ClassTypeHelper.gson.toJson(result);
-            System.out.println(jsonInString);
+            oldout.println(jsonInString);
         }
         catch (Exception e) {
-            System.out.println("{\"error\": \"" + ClassTypeHelper.gson.toJson(e.toString()) + "\"}");
+            oldout.println("{\"error\": \"" + ClassTypeHelper.gson.toJson(e.toString()) + "\"}");
             System.exit(1);
          }
     }
